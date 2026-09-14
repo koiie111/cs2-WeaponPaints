@@ -592,11 +592,9 @@ public partial class WeaponPaints
 
 			_ = Task.Run(async () =>
 			{
-				// Sync glove to database for all teams
+				// Update the in-memory skin rows first, then persist each batch once.
 				foreach (var team in teamsToCheck)
 				{
-					await WeaponSync.SyncGloveToDatabase(playerInfo, (ushort)weaponDefindex, teamsToCheck);
-        
 					// Check if the weapon info exists for the glove
 					if (!GPlayerWeaponsInfo[playerInfo.Slot][team].TryGetValue(weaponDefindex, out var value))
 					{
@@ -609,9 +607,10 @@ public partial class WeaponPaints
 					value.Wear = 0.00f;
 					value.Seed = 0;
 
-					// Sync weapon paints to database
-					await WeaponSync.SyncWeaponPaintsToDatabase(playerInfo);
 				}
+
+				await WeaponSync.SyncGloveToDatabase(playerInfo, (ushort)weaponDefindex, teamsToCheck);
+				await WeaponSync.SyncWeaponPaintsToDatabase(playerInfo);
 			});
 				
 			AddTimer(0.1f, () => GivePlayerGloves(player));

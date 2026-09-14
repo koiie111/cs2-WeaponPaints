@@ -3,13 +3,32 @@ using MySqlConnector;
 using System.Collections.Concurrent;
 using CounterStrikeSharp.API.Modules.Utils;
 using System.Globalization;
+using System.Text;
 
 namespace WeaponPaints;
 
 internal class WeaponSynchronization
 {
+	private const int PlayerSkinLockTimeoutSeconds = 2;
+	private const int PlayerSkinWriteAttempts = 4;
+	private static readonly SemaphoreSlim[] PlayerSkinWriteLocks = Enumerable.Range(0, 256)
+		.Select(_ => new SemaphoreSlim(1, 1))
+		.ToArray();
+
 	private readonly WeaponPaintsConfig _config;
 	private readonly Database _database;
+
+	private sealed record PlayerSkinRow(
+		int Team,
+		int DefIndex,
+		int Paint,
+		float Wear,
+		int Seed,
+		bool StatTrak,
+		int StatTrakCount);
+
+	private sealed class PlayerSkinLockTimeoutException(string lockName)
+		: TimeoutException($"Timed out waiting for MySQL lock '{lockName}'.");
 
 	internal WeaponSynchronization(Database database, WeaponPaintsConfig config)
 	{
@@ -466,51 +485,9 @@ internal class WeaponSynchronization
 
 	internal async Task SyncWeaponPaintsToDatabase(PlayerInfo player)
 	{
-		if (string.IsNullOrEmpty(player.SteamId) || !WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamWeaponInfos))
-			return;
-
 		try
 		{
-			await using var connection = await _database.GetConnectionAsync();
-
-			// Loop through each team (Terrorist and CounterTerrorist)
-			foreach (var (teamId, weaponsInfo) in teamWeaponInfos)
-			{
-				foreach (var (weaponDefIndex, weaponInfo) in weaponsInfo)
-				{
-					var paintId = weaponInfo.Paint;
-					var wear = weaponInfo.Wear;
-					var seed = weaponInfo.Seed;
-
-					// Prepare the queries to check and update/insert weapon skin data
-					const string queryCheckExistence = "SELECT COUNT(*) FROM `wp_player_skins` WHERE `steamid` = @steamid AND `weapon_defindex` = @weaponDefIndex AND `weapon_team` = @weaponTeam";
-		                
-					var existingRecordCount = await connection.ExecuteScalarAsync<int>(
-						queryCheckExistence, 
-						new { steamid = player.SteamId, weaponDefIndex, weaponTeam = teamId }
-					);
-
-					string query;
-					object parameters;
-
-					if (existingRecordCount > 0)
-					{
-						// Update existing record
-						query = "UPDATE `wp_player_skins` SET `weapon_paint_id` = @paintId, `weapon_wear` = @wear, `weapon_seed` = @seed " +
-						        "WHERE `steamid` = @steamid AND `weapon_defindex` = @weaponDefIndex AND `weapon_team` = @weaponTeam";
-						parameters = new { steamid = player.SteamId, weaponDefIndex, weaponTeam = (int)teamId, paintId, wear, seed };
-					}
-					else
-					{
-						// Insert new record
-						query = "INSERT INTO `wp_player_skins` (`steamid`, `weapon_defindex`, `weapon_team`, `weapon_paint_id`, `weapon_wear`, `weapon_seed`) " +
-						        "VALUES (@steamid, @weaponDefIndex, @weaponTeam, @paintId, @wear, @seed)";
-						parameters = new { steamid = player.SteamId, weaponDefIndex, weaponTeam = (int)teamId, paintId, wear, seed };
-					}
-
-					await connection.ExecuteAsync(query, parameters);
-				}
-			}
+			await SyncPlayerSkinRowsAsync(player, updateStatTrakOnly: false);
 		}
 		catch (Exception e)
 		{
@@ -564,67 +541,153 @@ internal class WeaponSynchronization
 
 	internal async Task SyncStatTrakToDatabase(PlayerInfo player)
 	{
-	    if (WeaponPaints.WeaponSync == null || WeaponPaints.GPlayerWeaponsInfo.IsEmpty) return;
-	    if (string.IsNullOrEmpty(player.SteamId))
-	        return;
+		if (WeaponPaints.WeaponSync == null || WeaponPaints.GPlayerWeaponsInfo.IsEmpty) return;
 
-	    try
-	    {
-	        await using var connection = await _database.GetConnectionAsync();
-	        await using var transaction = await connection.BeginTransactionAsync();
+		try
+		{
+			await SyncPlayerSkinRowsAsync(player, updateStatTrakOnly: true);
+		}
+		catch (Exception e)
+		{
+			Utility.Log($"Error syncing stattrak to database: {e.Message}");
+		}
+	}
 
-	        // Check if player's slot exists in GPlayerWeaponsInfo
-	        if (!WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamWeaponsInfo))
-	            return;
-	        
-	        // Iterate through each team in the player's weapon info
-	        foreach (var teamInfo in teamWeaponsInfo)
-	        {
-	            // Retrieve weaponInfos for the current team
-	            var weaponInfos = teamInfo.Value;
+	private async Task SyncPlayerSkinRowsAsync(PlayerInfo player, bool updateStatTrakOnly)
+	{
+		if (string.IsNullOrEmpty(player.SteamId)) return;
 
-	            // Get StatTrak weapons for the current team
-	            var statTrakWeapons = weaponInfos
-		            .ToDictionary(
-			            w => w.Key, 
-			            w => (w.Value.StatTrak, w.Value.StatTrakCount) // Store both StatTrak and StatTrakCount in a tuple
-		            );
+		var playerLock = GetPlayerSkinWriteLock(player.SteamId);
+		await playerLock.WaitAsync();
 
-	            // Check if there are StatTrak weapons to sync
-	            if (statTrakWeapons.Count == 0) continue;
-	            
-	            // Get the current team ID
-	            int weaponTeam = (int)teamInfo.Key;
+		try
+		{
+			if (!WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamWeaponInfos)) return;
 
-	            // Sync StatTrak values for the current team
-	            foreach (var (defindex, (statTrak, statTrakCount)) in statTrakWeapons)
-	            {
-		            const string query = @"
-					    UPDATE `wp_player_skins` 
-					    SET `weapon_stattrak` = @StatTrak, 
-					        `weapon_stattrak_count` = @StatTrakCount
-					    WHERE `steamid` = @steamid 
-					      AND `weapon_defindex` = @weaponDefIndex
-					      AND `weapon_team` = @weaponTeam";
+			// ConcurrentDictionary enumeration is safe, but copying primitive values gives every
+			// retry the exact same immutable batch. Sorting guarantees identical InnoDB lock order.
+			var rows = teamWeaponInfos
+				.SelectMany(team => team.Value.Select(weapon => new PlayerSkinRow(
+					(int)team.Key,
+					weapon.Key,
+					weapon.Value.Paint,
+					weapon.Value.Wear,
+					weapon.Value.Seed,
+					weapon.Value.StatTrak,
+					weapon.Value.StatTrakCount)))
+				.OrderBy(row => row.Team)
+				.ThenBy(row => row.DefIndex)
+				.ToArray();
 
-	                var parameters = new
-	                {
-	                    steamid = player.SteamId,
-	                    weaponDefIndex = defindex,
-	                    StatTrak = statTrak,
-	                    StatTrakCount = statTrakCount,
-	                    weaponTeam
-	                };
+			if (rows.Length == 0) return;
 
-	                await connection.ExecuteAsync(query, parameters, transaction);
-	            }
-	        }
+			var (query, parameters) = BuildPlayerSkinUpsert(player.SteamId, rows, updateStatTrakOnly);
+			var lockName = $"wp_player_skins:{player.SteamId}";
 
-	        await transaction.CommitAsync();
-	    }
-	    catch (Exception e)
-	    {
-	        Utility.Log($"Error syncing stattrak to database: {e.Message}");
-	    }
+			for (var attempt = 1; attempt <= PlayerSkinWriteAttempts; attempt++)
+			{
+				try
+				{
+					await ExecutePlayerSkinUpsertAsync(query, parameters, lockName);
+					return;
+				}
+				catch (Exception e) when (attempt < PlayerSkinWriteAttempts && IsRetryablePlayerSkinWrite(e))
+				{
+					var backoffMs = Random.Shared.Next(25, 101) * attempt;
+					Utility.Log($"Retrying player skin batch for {player.SteamId} after attempt {attempt}: {e.Message}");
+					await Task.Delay(backoffMs);
+				}
+			}
+		}
+		finally
+		{
+			playerLock.Release();
+		}
+	}
+
+	private async Task ExecutePlayerSkinUpsertAsync(
+		string query,
+		DynamicParameters parameters,
+		string lockName)
+	{
+		await using var connection = await _database.GetConnectionAsync();
+		var lockAcquired = false;
+
+		try
+		{
+			var lockResult = await connection.ExecuteScalarAsync<long?>(
+				"SELECT GET_LOCK(@lockName, @lockTimeout)",
+				new { lockName, lockTimeout = PlayerSkinLockTimeoutSeconds });
+
+			if (lockResult != 1)
+				throw new PlayerSkinLockTimeoutException(lockName);
+
+			lockAcquired = true;
+			// A single statement is atomic, so an explicit transaction would only extend lock lifetime.
+			await connection.ExecuteAsync(query, parameters);
+		}
+		finally
+		{
+			if (lockAcquired)
+			{
+				try
+				{
+					await connection.ExecuteScalarAsync<long?>(
+						"SELECT RELEASE_LOCK(@lockName)",
+						new { lockName });
+				}
+				catch
+				{
+					// Closing the connection releases a session lock even if RELEASE_LOCK fails.
+				}
+			}
+		}
+	}
+
+	private static (string Query, DynamicParameters Parameters) BuildPlayerSkinUpsert(
+		string steamId,
+		IReadOnlyList<PlayerSkinRow> rows,
+		bool updateStatTrakOnly)
+	{
+		var query = new StringBuilder();
+		query.Append("INSERT INTO `wp_player_skins` ");
+		query.Append("(`steamid`,`weapon_team`,`weapon_defindex`,`weapon_paint_id`,`weapon_wear`,`weapon_seed`,`weapon_stattrak`,`weapon_stattrak_count`) VALUES ");
+
+		var parameters = new DynamicParameters();
+		parameters.Add("steamid", steamId);
+
+		for (var i = 0; i < rows.Count; i++)
+		{
+			if (i > 0) query.Append(',');
+			query.Append($"(@steamid,@team{i},@defindex{i},@paint{i},@wear{i},@seed{i},@stattrak{i},@stattrakCount{i})");
+
+			var row = rows[i];
+			parameters.Add($"team{i}", row.Team);
+			parameters.Add($"defindex{i}", row.DefIndex);
+			parameters.Add($"paint{i}", row.Paint);
+			parameters.Add($"wear{i}", row.Wear);
+			parameters.Add($"seed{i}", row.Seed);
+			parameters.Add($"stattrak{i}", row.StatTrak);
+			parameters.Add($"stattrakCount{i}", row.StatTrakCount);
+		}
+
+		query.Append(" ON DUPLICATE KEY UPDATE ");
+		query.Append(updateStatTrakOnly
+			? "`weapon_stattrak`=VALUES(`weapon_stattrak`),`weapon_stattrak_count`=VALUES(`weapon_stattrak_count`)"
+			: "`weapon_paint_id`=VALUES(`weapon_paint_id`),`weapon_wear`=VALUES(`weapon_wear`),`weapon_seed`=VALUES(`weapon_seed`)");
+
+		return (query.ToString(), parameters);
+	}
+
+	private static SemaphoreSlim GetPlayerSkinWriteLock(string steamId)
+	{
+		var index = (int)((uint)StringComparer.Ordinal.GetHashCode(steamId) % PlayerSkinWriteLocks.Length);
+		return PlayerSkinWriteLocks[index];
+	}
+
+	private static bool IsRetryablePlayerSkinWrite(Exception exception)
+	{
+		if (exception is PlayerSkinLockTimeoutException) return true;
+		return exception is MySqlException { Number: 1205 or 1213 or 3572 };
 	}
 }
