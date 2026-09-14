@@ -539,13 +539,16 @@ internal class WeaponSynchronization
 		}
 	}
 
-	internal async Task SyncStatTrakToDatabase(PlayerInfo player)
+	internal async Task SyncStatTrakToDatabase(
+		PlayerInfo player,
+		ConcurrentDictionary<CsTeam, ConcurrentDictionary<int, WeaponInfo>>? detachedWeapons = null)
 	{
-		if (WeaponPaints.WeaponSync == null || WeaponPaints.GPlayerWeaponsInfo.IsEmpty) return;
+		if (WeaponPaints.WeaponSync == null ||
+			(detachedWeapons == null && WeaponPaints.GPlayerWeaponsInfo.IsEmpty)) return;
 
 		try
 		{
-			await SyncPlayerSkinRowsAsync(player, updateStatTrakOnly: true);
+			await SyncPlayerSkinRowsAsync(player, updateStatTrakOnly: true, detachedWeapons);
 		}
 		catch (Exception e)
 		{
@@ -553,7 +556,10 @@ internal class WeaponSynchronization
 		}
 	}
 
-	private async Task SyncPlayerSkinRowsAsync(PlayerInfo player, bool updateStatTrakOnly)
+	private async Task SyncPlayerSkinRowsAsync(
+		PlayerInfo player,
+		bool updateStatTrakOnly,
+		ConcurrentDictionary<CsTeam, ConcurrentDictionary<int, WeaponInfo>>? detachedWeapons = null)
 	{
 		if (string.IsNullOrEmpty(player.SteamId)) return;
 
@@ -562,7 +568,9 @@ internal class WeaponSynchronization
 
 		try
 		{
-			if (!WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamWeaponInfos)) return;
+			var teamWeaponInfos = detachedWeapons;
+			if (teamWeaponInfos == null &&
+				!WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out teamWeaponInfos)) return;
 
 			// ConcurrentDictionary enumeration is safe, but copying primitive values gives every
 			// retry the exact same immutable batch. Sorting guarantees identical InnoDB lock order.

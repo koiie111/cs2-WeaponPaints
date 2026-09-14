@@ -14,7 +14,7 @@ namespace WeaponPaints
 		
 		[GameEventHandler]
 		public HookResult OnClientFullConnect(EventPlayerConnectFull @event, GameEventInfo info)
-     	{
+		{
 			CCSPlayerController? player = @event.Userid;
 
 			if (player is null || !player.IsValid || player.IsBot ||
@@ -30,37 +30,38 @@ namespace WeaponPaints
 				IpAddress = player.IpAddress?.Split(":")[0]
 			};
 
-			try
+			// A slot can be reused immediately after a disconnect. Never let spawn/item hooks
+			// apply the previous occupant's native item state while MySQL is still loading.
+			GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
+			GPlayersKnife.TryRemove(player.Slot, out _);
+			GPlayersGlove.TryRemove(player.Slot, out _);
+			GPlayersAgent.TryRemove(player.Slot, out _);
+			GPlayersPin.TryRemove(player.Slot, out _);
+			GPlayersMusic.TryRemove(player.Slot, out _);
+			var loadId = NextPlayerDataLoadId();
+			PlayerDataLoading[player.Slot] = loadId;
+
+			var weaponSync = WeaponSync;
+			if (weaponSync == null) return HookResult.Continue;
+			_ = Task.Run(async () =>
 			{
-				_ = Task.Run(async () => await WeaponSync.GetPlayerData(playerInfo));
-				/*
-				if (Config.Additional.SkinEnabled)
+				await weaponSync.GetPlayerData(playerInfo);
+				Server.NextFrame(() =>
 				{
-					_ = Task.Run(async () => await weaponSync.GetWeaponPaintsFromDatabase(playerInfo));
-				}
-				if (Config.Additional.KnifeEnabled)
-				{
-					_ = Task.Run(async () => await weaponSync.GetKnifeFromDatabase(playerInfo));
-				}
-				if (Config.Additional.GloveEnabled)
-				{
-					_ = Task.Run(async () => await weaponSync.GetGloveFromDatabase(playerInfo));
-				}
-				if (Config.Additional.AgentEnabled)
-				{
-					_ = Task.Run(async () => await weaponSync.GetAgentFromDatabase(playerInfo));
-				}
-				if (Config.Additional.MusicEnabled)
-				{
-					_ = Task.Run(async () => await weaponSync.GetMusicFromDatabase(playerInfo));
-				}
-				*/
-			}
-			catch
-			{
-			}
-			
-			Players.Add(player);
+					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
+					PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != playerInfo.SteamId) return;
+
+					if (!Players.Contains(player)) Players.Add(player);
+					if ((LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE) return;
+
+					GivePlayerMusicKit(player);
+					GivePlayerAgent(player);
+					GivePlayerGloves(player);
+					GivePlayerPin(player);
+					RefreshWeapons(player);
+				});
+			});
 
 			return HookResult.Continue;
 		}
@@ -82,16 +83,15 @@ namespace WeaponPaints
 				IpAddress = player.IpAddress?.Split(":")[0]
 			};
 
-			Task.Run(async () => 
+			// Detach the slot state synchronously. Waiting for MySQL before removing it lets a
+			// reconnecting client inherit stale WeaponInfo and can crash native item hooks.
+			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
+			PlayerDataLoading.TryRemove(player.Slot, out _);
+			var weaponSync = WeaponSync;
+			if (weaponSync != null && detachedWeapons != null)
 			{
-				if (WeaponSync != null)
-					await WeaponSync.SyncStatTrakToDatabase(playerInfo);
-
-				if (Config.Additional.SkinEnabled)
-				{
-					GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
-				}
-			});
+				_ = Task.Run(async () => await weaponSync.SyncStatTrakToDatabase(playerInfo, detachedWeapons));
+			}
 
 			if (Config.Additional.KnifeEnabled)
 			{
@@ -138,6 +138,7 @@ namespace WeaponPaints
 
 			if (player is null || !player.IsValid || Config.Additional is { KnifeEnabled: false, GloveEnabled: false })
 				return HookResult.Continue;
+			if (PlayerDataLoading.ContainsKey(player.Slot)) return HookResult.Continue;
 
 			CCSPlayerPawn? pawn = player.PlayerPawn.Value;
 

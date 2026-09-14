@@ -79,6 +79,8 @@ public partial class WeaponPaints
 	internal static readonly ConcurrentDictionary<int, ConcurrentDictionary<CsTeam, ushort>> GPlayersPin = new();
 	internal static readonly ConcurrentDictionary<int, (string? CT, string? T)> GPlayersAgent = new();
 	internal static readonly ConcurrentDictionary<int, ConcurrentDictionary<CsTeam, ConcurrentDictionary<int, WeaponInfo>>> GPlayerWeaponsInfo = new();
+	internal static readonly ConcurrentDictionary<int, long> PlayerDataLoading = new();
+	private static long _playerDataLoadSequence;
 	internal static List<JObject> SkinsList = [];
 	internal static List<JObject> PinsList = [];
 	internal static List<JObject> GlovesList = [];
@@ -168,6 +170,8 @@ public partial class WeaponPaints
 	private static readonly PluginCapability<IMenuApi> MenuCapability = new("menu:nfcore");
 	
 	private int _fadeSeed;
+
+	private static long NextPlayerDataLoadId() => Interlocked.Increment(ref _playerDataLoadSequence);
 
 	internal List<CCSPlayerController> Players = [];
 }

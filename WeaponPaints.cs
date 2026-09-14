@@ -20,7 +20,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db1";
+	public override string ModuleVersion => "3.3a-db2";
 
 	public override void Load(bool hotReload)
 	{
@@ -42,6 +42,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 			GPlayersAgent.Clear();
 			GPlayersPin.Clear();
 			GPlayersMusic.Clear();
+			PlayerDataLoading.Clear();
 
 			foreach (var player in Enumerable
 				         .OfType<CCSPlayerController>(Utilities.GetPlayers().TakeWhile(_ => WeaponSync != null))

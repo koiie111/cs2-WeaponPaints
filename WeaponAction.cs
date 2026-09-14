@@ -262,133 +262,37 @@ namespace WeaponPaints
 			if (player.PlayerPawn.Value.WeaponServices == null || player.PlayerPawn.Value.ItemServices == null)
 				return;
 
-			var weapons = player.PlayerPawn.Value.WeaponServices.MyWeapons;
+			var weapons = player.PlayerPawn.Value.WeaponServices.MyWeapons.ToArray();
 
-			if (weapons.Count == 0)
+			if (weapons.Length == 0)
 				return;
 			if (player.Team is CsTeam.None or CsTeam.Spectator)
 				return;
 
-			var hasKnife = false;
-			
-			Dictionary<string, List<(int, int)>> weaponsWithAmmo = [];
-
 			foreach (var weapon in weapons)
 			{
-				if (!weapon.IsValid || weapon.Value == null ||
-					!weapon.Value.IsValid || !weapon.Value.DesignerName.Contains("weapon_"))
-					continue;
-				
-				CCSWeaponBaseGun gun = weapon.Value.As<CCSWeaponBaseGun>();
-
-				if (weapon.Value.Entity == null) continue;
-				if (!weapon.Value.OwnerEntity.IsValid) continue;
-				if (gun.Entity == null) continue;
-				if (!gun.IsValid) continue;
-
 				try
 				{
-					CCSWeaponBaseVData? weaponData = weapon.Value.As<CCSWeaponBase>().VData;
+					var weaponEntity = weapon.Value;
+					if (!weapon.IsValid || weaponEntity == null || !weaponEntity.IsValid ||
+						!weaponEntity.DesignerName.Contains("weapon_")) continue;
 
-					if (weaponData == null) continue;
-
-					if (weaponData.GearSlot is gear_slot_t.GEAR_SLOT_RIFLE or gear_slot_t.GEAR_SLOT_PISTOL)
-					{
-						if (!WeaponDefindex.TryGetValue(weapon.Value.AttributeManager.Item.ItemDefinitionIndex, out var weaponByDefindex))
-							continue;
-
-						int clip1 = weapon.Value.Clip1;
-						int reservedAmmo = weapon.Value.ReserveAmmo[0];
-
-						if (!weaponsWithAmmo.TryGetValue(weaponByDefindex, out var value))
-						{
-							value = [];
-							weaponsWithAmmo.Add(weaponByDefindex, value);
-						}
-
-						value.Add((clip1, reservedAmmo));
-
-						if (gun.VData == null) return;
-						
-						weapon.Value?.AddEntityIOEvent("Kill", weapon.Value, null, "", 0.1f);
-					}
-
-					if (weaponData.GearSlot == gear_slot_t.GEAR_SLOT_KNIFE)
-					{
-						weapon.Value?.AddEntityIOEvent("Kill", weapon.Value, null, "", 0.1f);
-						hasKnife = true;
-					}
+					// Re-apply fallback attributes in place. Destroying and recreating every weapon
+					// from a delayed callback can dereference stale native entities and crash CS2.
+					GivePlayerWeaponSkin(player, weaponEntity);
+					IncrementWearForWeaponWithStickers(player, weaponEntity);
 				}
 				catch (Exception ex)
 				{
-					Logger.LogWarning(ex.Message);
+					Logger.LogWarning("Error refreshing weapon in place: " + ex.Message);
 				}
 			}
-
-			AddTimer(0.23f, () =>
-					{
-						if (!_gBCommandsAllowed) return;
-
-						if (!PlayerHasKnife(player) && hasKnife)
-						{
-							var newKnife = new CBasePlayerWeapon(player.GiveNamedItem(CsItem.Knife));
-							var newWeapon = new CBasePlayerWeapon(player.GiveNamedItem(CsItem.USP));
-							player.GiveNamedItem(CsItem.Knife);
-							player.ExecuteClientCommand("slot3");
-
-							Server.NextFrame(() =>
-							{
-								try
-								{
-									if (newKnife != null && newKnife.IsValid)
-										newKnife.AddEntityIOEvent("Kill", newKnife, null, "", 0.01f);
-									if (newWeapon != null && newWeapon.IsValid)
-										newWeapon.AddEntityIOEvent("Kill", newWeapon, null, "", 0.01f);
-								}
-								catch (Exception ex)
-								{
-									Logger.LogWarning("Error AddEntityIOEvent " + ex.Message);
-								}
-							});
-						}
-
-
-						foreach (var entry in weaponsWithAmmo)
-						{
-							foreach (var ammo in entry.Value)
-							{
-								var newWeapon = new CBasePlayerWeapon(player.GiveNamedItem(entry.Key));
-								Server.NextFrame(() =>
-						{
-							try
-							{
-								newWeapon.Clip1 = ammo.Item1;
-								newWeapon.ReserveAmmo[0] = ammo.Item2;
-
-								IncrementWearForWeaponWithStickers(player, newWeapon);
-							}
-							catch (Exception ex)
-							{
-								Logger.LogWarning("Error setting weapon properties: " + ex.Message);
-							}
-						});
-							}
-						}
-					}, TimerFlags.STOP_ON_MAPCHANGE);
 		}
 
 		private void GivePlayerGloves(CCSPlayerController player)
 		{
 			if (!Utility.IsPlayerValid(player) || (LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE) return;
-
-			CCSPlayerPawn? pawn = player.PlayerPawn.Value;
-			if (pawn == null || !pawn.IsValid)
-				return;
-
-			CEconItemView item = pawn.EconGloves;
-
-			item.NetworkedDynamicAttributes.Attributes.RemoveAll();
-			item.AttributeList.Attributes.RemoveAll();
+			var expectedSteamId = player.SteamID.ToString();
 
 			//force gloves model refresh to prevent model overlap
 			player.ExecuteClientCommand("lastinv");
@@ -396,17 +300,18 @@ namespace WeaponPaints
 			{	
 				try
 				{
-					if (!player.IsValid)
-						return;
-
-					if (!player.PawnIsAlive)
-						return;
+					if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive ||
+						player.SteamID.ToString() != expectedSteamId) return;
 
 					if (!GPlayersGlove.TryGetValue(player.Slot, out var gloveInfo) ||
 					    !gloveInfo.TryGetValue(player.Team, out var gloveId) ||
 					    gloveId == 0 ||
 					    !HasChangedPaint(player, gloveId, out var weaponInfo) || weaponInfo == null)
 						return;
+
+					var pawn = player.PlayerPawn.Value;
+					if (pawn == null || !pawn.IsValid) return;
+					var item = pawn.EconGloves;
 
 					item.ItemDefinitionIndex = gloveId;
 					
@@ -427,7 +332,13 @@ namespace WeaponPaints
 					//force gloves model refresh to prevent model overlap
 					player.ExecuteClientCommand("lastinv");
 					SetBodygroup(pawn, "first_or_third_person", 0);
-					AddTimer(0.2f, () => SetBodygroup(pawn, "first_or_third_person", 1), TimerFlags.STOP_ON_MAPCHANGE);
+					AddTimer(0.2f, () =>
+					{
+						if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
+						var currentPawn = player.PlayerPawn.Value;
+						if (currentPawn != null && currentPawn.IsValid)
+							SetBodygroup(currentPawn, "first_or_third_person", 1);
+					}, TimerFlags.STOP_ON_MAPCHANGE);
 				}
 				catch (Exception) { }
 			}, TimerFlags.STOP_ON_MAPCHANGE);
@@ -483,16 +394,16 @@ namespace WeaponPaints
 			var model = player.TeamNum == 3 ? value.CT : value.T;
 			if (string.IsNullOrEmpty(model)) return;
 
-			if (player.PlayerPawn.Value == null)
-				return;
+			var expectedSteamId = player.SteamID.ToString();
 
 			try
 			{
 				Server.NextFrame(() =>
 				{
-					player.PlayerPawn.Value.SetModel(
-						$"agents/models/{model}.vmdl"
-					);
+					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
+					var pawn = player.PlayerPawn.Value;
+					if (pawn != null && pawn.IsValid)
+						pawn.SetModel($"agents/models/{model}.vmdl");
 				});
 			}
 			catch (Exception)
@@ -574,6 +485,7 @@ namespace WeaponPaints
 		private static bool HasChangedKnife(CCSPlayerController player, out string? knifeValue)
 		{
 			knifeValue = null;
+			if (PlayerDataLoading.ContainsKey(player.Slot)) return false;
 
 			// Check if player has knife info for their slot and team
 			if (!GPlayersKnife.TryGetValue(player.Slot, out var knife) ||
@@ -586,6 +498,7 @@ namespace WeaponPaints
 		private static bool HasChangedPaint(CCSPlayerController player, int weaponDefIndex, out WeaponInfo? weaponInfo)
 		{
 			weaponInfo = null;
+			if (PlayerDataLoading.ContainsKey(player.Slot)) return false;
 
 			// Check if player has weapons info for their slot and team
 			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamInfo) || 

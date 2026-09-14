@@ -35,20 +35,37 @@ public partial class WeaponPaints
 			{
 				CommandsCooldown[player.Slot] = DateTime.UtcNow.AddSeconds(Config.CmdRefreshCooldownSeconds);
 
-				if (WeaponSync != null)
+				var weaponSync = WeaponSync;
+				if (weaponSync != null)
 				{
-					_ = Task.Run(async () => await WeaponSync.GetPlayerData(playerInfo));
+					var expectedSteamId = playerInfo.SteamId;
+					var loadId = NextPlayerDataLoadId();
+					PlayerDataLoading[player.Slot] = loadId;
+					GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
+					GPlayersKnife.TryRemove(player.Slot, out _);
+					GPlayersGlove.TryRemove(player.Slot, out _);
+					GPlayersAgent.TryRemove(player.Slot, out _);
+					GPlayersPin.TryRemove(player.Slot, out _);
+					GPlayersMusic.TryRemove(player.Slot, out _);
+					_ = Task.Run(async () =>
+					{
+						await weaponSync.GetPlayerData(playerInfo);
+						Server.NextFrame(() =>
+						{
+							if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
+							PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+							if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
 
-					GivePlayerGloves(player);
-					RefreshWeapons(player);
-					GivePlayerAgent(player);
-					GivePlayerMusicKit(player);
-					AddTimer(0.15f, () => GivePlayerPin(player));
-				}
+							GivePlayerGloves(player);
+							RefreshWeapons(player);
+							GivePlayerAgent(player);
+							GivePlayerMusicKit(player);
+							AddTimer(0.15f, () => GivePlayerPin(player), TimerFlags.STOP_ON_MAPCHANGE);
 
-				if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
-				{
-					player.Print(Localizer["wp_command_refresh_done"]);
+							if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
+								player.Print(Localizer["wp_command_refresh_done"]);
+						});
+					});
 				}
 				return;
 			}
@@ -218,23 +235,39 @@ public partial class WeaponPaints
 					IpAddress = targetPlayer.IpAddress?.Split(":")[0]
 				};
 
-				if (WeaponSync != null)
+				var weaponSync = WeaponSync;
+				if (weaponSync == null) continue;
+
+				var expectedSteamId = playerInfo.SteamId;
+				var loadId = NextPlayerDataLoadId();
+				PlayerDataLoading[targetPlayer.Slot] = loadId;
+				GPlayerWeaponsInfo.TryRemove(targetPlayer.Slot, out _);
+				GPlayersKnife.TryRemove(targetPlayer.Slot, out _);
+				GPlayersGlove.TryRemove(targetPlayer.Slot, out _);
+				GPlayersAgent.TryRemove(targetPlayer.Slot, out _);
+				GPlayersPin.TryRemove(targetPlayer.Slot, out _);
+				GPlayersMusic.TryRemove(targetPlayer.Slot, out _);
+				_ = Task.Run(async () =>
 				{
-					_ = Task.Run(async () => await WeaponSync.GetPlayerData(playerInfo));
-				}
+					await weaponSync.GetPlayerData(playerInfo);
+					Server.NextFrame(() =>
+					{
+						if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
+						PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+						if (!Utility.IsPlayerValid(targetPlayer) || targetPlayer.SteamID.ToString() != expectedSteamId) return;
 
-				GivePlayerGloves(targetPlayer);
-				RefreshWeapons(targetPlayer);
-				GivePlayerAgent(targetPlayer);
-				GivePlayerMusicKit(targetPlayer);
-				AddTimer(0.15f, () => GivePlayerPin(targetPlayer));
+						GivePlayerGloves(targetPlayer);
+						RefreshWeapons(targetPlayer);
+						GivePlayerAgent(targetPlayer);
+						GivePlayerMusicKit(targetPlayer);
+						AddTimer(0.15f, () => GivePlayerPin(targetPlayer), TimerFlags.STOP_ON_MAPCHANGE);
 
-				if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
-				{
-					targetPlayer.Print(Localizer["wp_command_refresh_done"]);
-				}
+						if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
+							targetPlayer.Print(Localizer["wp_command_refresh_done"]);
 
-				Console.WriteLine($"[WeaponPaints] Skins refreshed for {targetPlayer.PlayerName}");
+						Console.WriteLine($"[WeaponPaints] Skins refreshed for {targetPlayer.PlayerName}");
+					});
+				});
 			}
 			catch (Exception ex)
 			{
