@@ -2,7 +2,6 @@ name: Build
 
 on:
   push:
-    branches: ['**']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -54,7 +53,7 @@ jobs:
           retention-days: 30
 
   publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
