@@ -1,5 +1,7 @@
 # CS2 Weapon Paints
 
+[![Build](https://github.com/koiie111/cs2-WeaponPaints/actions/workflows/build.yml/badge.svg)](https://github.com/koiie111/cs2-WeaponPaints/actions/workflows/build.yml)
+
 ## Description
 Unfinished, unoptimized and not fully functional ugly demo weapon paints plugin for **[CSSharp](https://docs.cssharp.dev/docs/guides/getting-started.html)**. 
 
