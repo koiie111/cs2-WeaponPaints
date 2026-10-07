@@ -30,12 +30,18 @@ Unfinished, unoptimized and not fully functional ugly demo weapon paints plugin 
 - MySQL database
 
 ## CS2 Server
-- Have working CounterStrikeSharp (**with RUNTIME!**)
-- Download from Release and copy plugin to plugins
+- Have working CounterStrikeSharp (**with the .NET 10 runtime!**)
+- Download `WeaponPaints.zip` from Release and extract it into `game/csgo/`
 - Run server with plugin, **it will generate config if installed correctly!**
 - Edit `addons/counterstrikesharp/configs/`**`plugins/WeaponPaints/WeaponPaints.json`** include database credentials
 - In `addons/counterstrikesharp/configs/`**`core.json`** set **FollowCS2ServerGuidelines** to **`false`**
-- Copy from plugins folder gamedata file **`weaponpaints.json`** to folder **`addons/counterstrikesharp/gamedata/`**
+- Release zip already places gamedata file **`weaponpaints.json`** in **`addons/counterstrikesharp/gamedata/`** (extract zip into **`game/csgo/`**)
+
+## Automated builds
+
+GitHub Actions builds and packages the plugin on every branch push, on pull requests to `main`, and on manual runs. Download `WeaponPaints-<commit SHA>` from the successful workflow run for the plugin and website ZIPs. Every successful push to `main` also publishes those same ZIPs as a GitHub Release.
+
+Extract `WeaponPaints.zip` into `game/csgo/`; it includes the plugin, dependencies, translations, item data, and the gamedata file in their server directories. Website images are distributed separately, as before. Local builds require the .NET 10 SDK: `dotnet build WeaponPaints.csproj -c Release`.
 
 ## Plugin Configuration
 <details>

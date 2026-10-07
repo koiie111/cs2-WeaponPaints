@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities.Constants;
 using CounterStrikeSharp.API.Modules.Memory;
@@ -17,7 +17,8 @@ namespace WeaponPaints
 			if (!Config.Additional.SkinEnabled) return;
 			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out _)) return;
 			
-			bool isKnife = weapon.DesignerName.Contains("knife") || weapon.DesignerName.Contains("bayonet");
+			var designerName = weapon.DesignerName ?? "";
+			bool isKnife = designerName.Contains("knife") || designerName.Contains("bayonet");
 			
 			switch (isKnife)
 			{
@@ -477,7 +478,7 @@ namespace WeaponPaints
 		private static CCSPlayerController? GetPlayerFromItemServices(CCSPlayer_ItemServices itemServices)
 		{
 			var pawn = itemServices.Pawn.Value;
-			if (!pawn.IsValid || !pawn.Controller.IsValid || pawn.Controller.Value == null) return null;
+			if (pawn == null || !pawn.IsValid || !pawn.Controller.IsValid || pawn.Controller.Value == null) return null;
 			var player = new CCSPlayerController(pawn.Controller.Value.Handle);
 			return !Utility.IsPlayerValid(player) ? null : player;
 		}

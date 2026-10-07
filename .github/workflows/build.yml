@@ -2,80 +2,76 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
-    paths-ignore:
-      - '**/README.md'
-      - '**/.gitignore'
-      - '**/LICENSE'
+    branches: ['**']
   pull_request:
-    branches: [ "main" ]
-    paths-ignore:
-      - '**/README.md'
-      - '**/.gitignore'
-      - '**/LICENSE'
+    branches: [main]
+  workflow_dispatch:
 
-env:
-  BUILD_NUMBER: ${{ github.run_number }}
-  PROJECT_PATH: "WeaponPaints.csproj"
-  PROJECT_NAME: "WeaponPaints"
-  OUTPUT_PATH: "./WeaponPaints"
+permissions:
+  contents: read
 
 jobs:
   build:
-    permissions: write-all
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 8.0.x
-    - name: Restore
-      run: dotnet restore
-    - name: Build
-      run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
+      - uses: actions/checkout@v7
+        with:
+          # Images are served separately and are not part of either release archive.
+          sparse-checkout: |
+            /*
+            !/website/img/
+          sparse-checkout-cone-mode: false
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore
+        run: dotnet restore WeaponPaints.csproj
+      - name: Build
+        run: dotnet build WeaponPaints.csproj --no-restore -c Release -o build/WeaponPaints
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          plugin=release/addons/counterstrikesharp/plugins/WeaponPaints
+          mkdir -p "$plugin" release/addons/counterstrikesharp/gamedata artifacts
+          cp -R build/WeaponPaints/. "$plugin/"
+          rm -f "$plugin/CounterStrikeSharp.API.dll" \
+            "$plugin/McMaster.NETCore.Plugins.dll" \
+            "$plugin/Microsoft.DotNet.PlatformAbstractions.dll" \
+            "$plugin/Microsoft.Extensions.DependencyModel.dll"
+          cp -R website/data "$plugin/"
+          cp gamedata/weaponpaints.json release/addons/counterstrikesharp/gamedata/
+          (cd release && zip -qr ../artifacts/WeaponPaints.zip addons)
+          zip -qr artifacts/WeaponPaints-Website.zip website -x 'website/img/*'
+      - name: Upload build
+        uses: actions/upload-artifact@v7
+        with:
+          name: WeaponPaints-${{ github.sha }}
+          path: artifacts/*.zip
+          if-no-files-found: error
+          retention-days: 30
 
   publish:
-    if: github.event_name == 'push'
-    permissions: write-all
-    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 8.0.x
-    - name: Restore
-      run: dotnet restore
-    - name: Build
-      run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
-    - name: Clean files
-      run: |
-        rm -f \
-          ${{ env.OUTPUT_PATH }}/CounterStrikeSharp.API.dll \
-          ${{ env.OUTPUT_PATH }}/McMaster.NETCore.Plugins.dll \
-          ${{ env.OUTPUT_PATH }}/Microsoft.DotNet.PlatformAbstractions.dll \
-          ${{ env.OUTPUT_PATH }}/Microsoft.Extensions.DependencyModel.dll \
-    - name: Copy skins
-      run: cp -R website/data ${{ env.OUTPUT_PATH }}
-    - name: Zip
-      run: zip -r "${{ env.PROJECT_NAME }}.zip" "${{ env.OUTPUT_PATH }}" gamedata/
-    - name: Clean files Website
-      run: |
-        rm -rf website/img/
-    - name: Zip
-      uses: thedoctor0/zip-release@0.7.5
-      with:
-        type: 'zip'
-        filename: '${{ env.PROJECT_NAME }}-Website.zip'
-        path: website
-    - name: WeaponPaints
-      uses: ncipollo/release-action@v1.12.0
-      with:
-        artifacts: "${{ env.PROJECT_NAME }}.zip,${{ env.PROJECT_NAME }}-Website.zip"
-        name: "Build ${{ env.BUILD_NUMBER }}"
-        tag: "build-${{ env.BUILD_NUMBER }}"
-        body: |
-          Place the plugin in game/csgo/addons/counterstrikesharp/plugins/WeaponPaints
+      - uses: actions/download-artifact@v8
+        with:
+          name: WeaponPaints-${{ github.sha }}
+          path: artifacts
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+          RELEASE_TAG: build-${{ github.run_number }}
+        run: |
+          gh release create "$RELEASE_TAG" artifacts/*.zip \
+            --target "$COMMIT_SHA" \
+            --title "Build ${{ github.run_number }}" \
+            --notes "Extract WeaponPaints.zip into game/csgo/. Requires CounterStrikeSharp with the .NET 10 runtime. Website images are distributed separately."
