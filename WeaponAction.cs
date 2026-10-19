@@ -255,6 +255,10 @@ namespace WeaponPaints
 			return false;
 		}
 
+		// IMPORTANT: never create or remove weapon entities here (GiveNamedItem / Remove / Kill).
+		// Removal is deferred, so repeated refreshes (css_wp spam, menu selection + !wp) used to
+		// re-give weapons that were not yet gone and duplicate them on the ground.
+		// Only re-apply attributes to the existing entities.
 		private void RefreshWeapons(CCSPlayerController? player)
 		{
 			if (!_gBCommandsAllowed) return;
@@ -442,30 +446,39 @@ namespace WeaponPaints
 		
 		private void GiveOnItemPickup(CCSPlayerController player)
 		{
+			if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive) return;
+
 			var pawn = player.PlayerPawn.Value;
-			if (pawn == null) return;
-			
+			if (pawn == null || !pawn.IsValid) return;
+
 			var myWeapons = pawn.WeaponServices?.MyWeapons;
 			if (myWeapons == null) return;
-			
-			foreach (var handle in myWeapons)
+
+			// Snapshot: GiveNamedItem below mutates MyWeapons, which must not happen while enumerating it.
+			var handles = myWeapons.ToArray();
+			var swapped = false;
+
+			foreach (var handle in handles)
 			{
 				var weapon = handle.Value;
-			
+
 				if (weapon == null || !weapon.IsValid) continue;
-				if (myWeapons.Count == 1)
+				if (!swapped && handles.Length == 1)
 				{
+					swapped = true;
 					var newWeapon = new CBasePlayerWeapon(player.GiveNamedItem(CsItem.USP));
 					weapon.AddEntityIOEvent("Kill", weapon, null, "", 0.01f);
 					player.GiveNamedItem(CsItem.Knife);
 					player.ExecuteClientCommand("slot3");
-					newWeapon.AddEntityIOEvent("Kill", newWeapon, null, "", 0.01f);
+					if (newWeapon.IsValid)
+						newWeapon.AddEntityIOEvent("Kill", newWeapon, null, "", 0.01f);
+					continue;
 				}
-					
+
 				GivePlayerWeaponSkin(player, weapon);
 			}
 		}
-		
+
 		private void UpdatePlayerEconItemId(CEconItemView econItemView)
 		{
 			var itemId = _nextItemId++;

@@ -28,6 +28,14 @@ public partial class WeaponPaints
 			IpAddress = player?.IpAddress?.Split(":")[0]
 		};
 
+		// A previous refresh is still loading from the database: ignore spam instead of stacking refreshes.
+		if (PlayerDataLoading.ContainsKey(player!.Slot))
+		{
+			if (!string.IsNullOrEmpty(Localizer["wp_command_cooldown"]))
+				player.Print(Localizer["wp_command_cooldown"]);
+			return;
+		}
+
 		try
 		{
 			if (player != null && !CommandsCooldown.TryGetValue(player.Slot, out var cooldownEndTime) ||

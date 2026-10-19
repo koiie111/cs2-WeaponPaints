@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed weapon duplication via `!wp` / `css_wp` spam: refresh no longer overlaps a still-loading refresh, `GiveOnItemPickup` no longer mutates the weapon list while enumerating it and swaps the knife only once. `RefreshWeapons` documents that it must not create or remove entities.
+
 ## 3.3a-db3 — 2026-10-07
 
 Merged Nereziel/cs2-WeaponPaints through `6b1039d63042b0bbadbf142054c86f79284fdb6a`.
