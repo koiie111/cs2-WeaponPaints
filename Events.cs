@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Entities;
@@ -10,7 +10,6 @@ namespace WeaponPaints
 {
 	public partial class WeaponPaints
 	{
-		private bool _mvpPlayed;
 		private bool _giveNamedItemHooked;
 		
 		[GameEventHandler]
@@ -124,6 +123,7 @@ namespace WeaponPaints
 
 		private void OnMapStart(string mapName)
 		{
+			InvalidateKnifePaint();
 			_fadeSeed = 0;
 			_nextItemId = MinimumCustomItemId;
 		}
@@ -161,15 +161,11 @@ namespace WeaponPaints
 		private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
 		{
 			_gBCommandsAllowed = true;
-			_mvpPlayed = false;
 			return HookResult.Continue;
 		}
 		
 		private HookResult OnRoundMvp(EventRoundMvp @event, GameEventInfo info)
 		{
-			if (_mvpPlayed)
-				return HookResult.Continue;
-			
 			var player = @event.Userid;
 			
 			if (player == null || !player.IsValid || player.IsBot)
@@ -182,18 +178,6 @@ namespace WeaponPaints
 					
 			@event.Musickitid = musicId;
 			@event.Nomusic = 0;
-			info.DontBroadcast = true;
-			
-			var newEvent = new EventRoundMvp(true)
-			{
-				Userid = player,
-				Musickitid = musicId,
-				Nomusic = 0,
-			};
-
-			_mvpPlayed = true;
-			
-			newEvent.FireEvent(false);
 			return HookResult.Continue;
 		}
 
@@ -339,7 +323,9 @@ namespace WeaponPaints
 			RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
 			RegisterEventHandler<EventRoundStart>(OnRoundStart);
 			RegisterEventHandler<EventRoundEnd>(OnRoundEnd);
-			RegisterEventHandler<EventRoundMvp>(OnRoundMvp);
+			// Change the engine event before it is sent; re-firing it from a post hook
+			// sends two MVP events and can restart/overlap the anthem on the client.
+			RegisterEventHandler<EventRoundMvp>(OnRoundMvp, HookMode.Pre);
 			RegisterListener<Listeners.OnEntitySpawned>(OnEntityCreated);
 			RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
 
