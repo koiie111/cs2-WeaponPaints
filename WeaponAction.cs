@@ -102,7 +102,7 @@ namespace WeaponPaints
 			
 			UpdatePlayerEconItemId(weapon.AttributeManager.Item);
 
-			weapon.AttributeManager.Item.CustomName = weaponInfo.Nametag;
+			weapon.AttributeManager.Item.CustomName = ItemName.Truncate(weaponInfo.Nametag);
 			weapon.FallbackPaintKit = weaponInfo.Paint;
 			
 			weapon.FallbackSeed = weaponInfo is { Paint: 38, Seed: 0 } ? _fadeSeed++ : weaponInfo.Seed;

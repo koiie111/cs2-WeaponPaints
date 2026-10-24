@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fit weapon name tags into the 160-byte UTF-8 payload of the networked item name, without cutting a Unicode code point or changing the stored database value. Overlong names no longer abort skin application.
 - Send one MVP event: update the engine's original event in a pre hook instead of firing a replacement from a post hook, preserving its other fields.
 - Reapply knife paint on the next frame after `ChangeSubclass` completes. Deferred work checks the map/plugin generation, player identity, ownership and full entity handle before touching the existing knife.
 - Fixed weapon duplication via `!wp` / `css_wp` spam: refresh no longer overlaps a still-loading refresh, `GiveOnItemPickup` no longer mutates the weapon list while enumerating it and swaps the knife only once. `RefreshWeapons` documents that it must not create or remove entities.
