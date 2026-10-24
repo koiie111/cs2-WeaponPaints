@@ -33,6 +33,7 @@ namespace WeaponPaints
 					if (weapon.AttributeManager.Item.ItemDefinitionIndex != newDefIndex.Key)
 					{
 						SubclassChange(weapon, (ushort)newDefIndex.Key);
+						ScheduleKnifePaint(player, weapon);
 					}
 
 					weapon.AttributeManager.Item.ItemDefinitionIndex = (ushort)newDefIndex.Key;
@@ -371,6 +372,49 @@ namespace WeaponPaints
 		public static void SubclassChange(CBasePlayerWeapon weapon, ushort itemD)
 		{
 			weapon.AcceptInput("ChangeSubclass", value: itemD.ToString());
+		}
+
+		private readonly HashSet<uint> _pendingKnifePaint = new();
+		private int _knifePaintGeneration;
+
+		private void InvalidateKnifePaint()
+		{
+			_knifePaintGeneration++;
+			_pendingKnifePaint.Clear();
+		}
+
+		// ChangeSubclass can finish changing the model after this give hook returns.
+		// Reapply the paint to the same owned entity once that work has completed.
+		private void ScheduleKnifePaint(CCSPlayerController player, CBasePlayerWeapon weapon)
+		{
+			uint handle = weapon.EntityHandle.Raw;
+			if (!_pendingKnifePaint.Add(handle)) return;
+			int generation = _knifePaintGeneration;
+			ulong steamId = player.SteamID;
+			int slot = player.Slot;
+			Server.NextFrame(() =>
+			{
+				if (generation != _knifePaintGeneration) return;
+				try
+				{
+					var current = Utilities.GetPlayerFromSlot(slot);
+					if (current == null || !Utility.IsPlayerValid(current) ||
+					    current.SteamID != steamId || !current.PawnIsAlive ||
+					    PlayerDataLoading.ContainsKey(slot)) return;
+					var pawn = current.PlayerPawn.Value;
+					var knife = Utilities.GetEntityFromIndex<CBasePlayerWeapon>((int)(handle & 0x7FFF));
+					if (pawn == null || !pawn.IsValid || knife == null || !knife.IsValid ||
+					    knife.EntityHandle.Raw != handle || knife.OwnerEntity.Value?.Index != pawn.Index) return;
+					var name = knife.DesignerName ?? "";
+					if (!name.Contains("knife") && !name.Contains("bayonet")) return;
+					GivePlayerWeaponSkin(current, knife);
+				}
+				catch (Exception ex)
+				{
+					Logger.LogWarning(ex, "Unable to reapply knife paint after subclass change");
+				}
+				finally { _pendingKnifePaint.Remove(handle); }
+			});
 		}
 
 		public static void SetBodygroup(CCSPlayerPawn pawn, string group, int value)
