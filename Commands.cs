@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -731,14 +731,14 @@ public partial class WeaponPaints
 				if (player.TeamNum == 3)
 				{
 					GPlayersAgent.AddOrUpdate(player.Slot,
-						key => (selectedAgent["model"]!.ToString().Equals("null") ? null : selectedAgent["model"]!.ToString(), null),
-						(key, oldValue) => (selectedAgent["model"]!.ToString().Equals("null") ? null : selectedAgent["model"]!.ToString(), oldValue.T));
+						key => (AgentModel.Normalize((string?)selectedAgent["model"]), null),
+						(key, oldValue) => (AgentModel.Normalize((string?)selectedAgent["model"]), oldValue.T));
 				}
 				else
 				{
 					GPlayersAgent.AddOrUpdate(player.Slot,
-						key => (null, selectedAgent["model"]!.ToString().Equals("null") ? null : selectedAgent["model"]!.ToString()),
-						(key, oldValue) => (oldValue.CT, selectedAgent["model"]!.ToString().Equals("null") ? null : selectedAgent["model"]!.ToString())
+						key => (null, AgentModel.Normalize((string?)selectedAgent["model"])),
+						(key, oldValue) => (oldValue.CT, AgentModel.Normalize((string?)selectedAgent["model"]))
 					);
 				}
 

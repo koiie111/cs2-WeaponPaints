@@ -1,3 +1,9 @@
+# Agent safety (3.3a-db6)
+
+- Normalize default agent values on read, menu selection and write; reject unknown/wrong-team models before applying.
+- Clear stale agent cache for empty database selections.
+- Installation deferred: no game plugin reload or server restart performed.
+
 # Changelog
 
 ## Unreleased

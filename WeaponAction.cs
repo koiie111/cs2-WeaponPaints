@@ -440,8 +440,9 @@ namespace WeaponPaints
 		{
 			if (!GPlayersAgent.TryGetValue(player.Slot, out var value)) return;
 
-			var model = player.TeamNum == 3 ? value.CT : value.T;
-			if (string.IsNullOrEmpty(model)) return;
+			var team = player.TeamNum;
+            var model = AgentModel.Normalize(team == 3 ? value.CT : value.T);
+            if (!AgentModel.IsAllowed(model, team)) return;
 
 			var expectedSteamId = player.SteamID.ToString();
 
@@ -449,7 +450,7 @@ namespace WeaponPaints
 			{
 				Server.NextFrame(() =>
 				{
-					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
+					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
 					var pawn = player.PlayerPawn.Value;
 					if (pawn != null && pawn.IsValid)
 						pawn.SetModel($"agents/models/{model}.vmdl");

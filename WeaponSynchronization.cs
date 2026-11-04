@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using MySqlConnector;
 using System.Collections.Concurrent;
 using CounterStrikeSharp.API.Modules.Utils;
@@ -161,17 +161,12 @@ internal class WeaponSynchronization
 			const string query = "SELECT `agent_ct`, `agent_t` FROM `wp_player_agents` WHERE `steamid` = @steamid";
 			var agentData = connection.QueryFirstOrDefault<(string, string)>(query, new { steamid = player.SteamId });
 
-			if (agentData == default) return;
-			var agentCT = agentData.Item1;
-			var agentT = agentData.Item2;
-
-			if (!string.IsNullOrEmpty(agentCT) || !string.IsNullOrEmpty(agentT))
-			{
-				WeaponPaints.GPlayersAgent[player.Slot] = (
-					agentCT,
-					agentT
-				);
-			}
+            var agentCT = AgentModel.Normalize(agentData.Item1);
+            var agentT = AgentModel.Normalize(agentData.Item2);
+            if (agentCT == null && agentT == null)
+                WeaponPaints.GPlayersAgent.TryRemove(player.Slot, out _);
+            else
+                WeaponPaints.GPlayersAgent[player.Slot] = (agentCT, agentT);
 		}
 		catch (Exception ex)
 		{
@@ -475,7 +470,8 @@ internal class WeaponSynchronization
 		{
 			await using var connection = await _database.GetConnectionAsync();
 
-			await connection.ExecuteAsync(query, new { steamid = player.SteamId, agent_ct = WeaponPaints.GPlayersAgent[player.Slot].CT, agent_t = WeaponPaints.GPlayersAgent[player.Slot].T });
+			if (!WeaponPaints.GPlayersAgent.TryGetValue(player.Slot, out var agents)) return;
+            await connection.ExecuteAsync(query, new { steamid = player.SteamId, agent_ct = AgentModel.ForTeam(agents.CT, 3), agent_t = AgentModel.ForTeam(agents.T, 2) });
 		}
 		catch (Exception e)
 		{
