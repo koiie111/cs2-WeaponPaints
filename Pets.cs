@@ -31,6 +31,7 @@ public partial class WeaponPaints
     private readonly HashSet<PetTimer> _petTimers = new();
     private static int _ownerOffset;
     private MemoryFunctionVoid<nint, uint, byte>? _setPetActivity;
+    private long _petRecoveryVersion;
     private const string PetEntityName = "weaponpaints_pet";
     private const string PetHatEntityName = "weaponpaints_pet_hat";
     private static readonly string[] PetModels = ["models/chicken/chick.vmdl", "models/chicken/chicken.vmdl", "models/chicken/chicken_silkie.vmdl", "models/chicken/chicken_polish.vmdl"];
@@ -64,9 +65,10 @@ public partial class WeaponPaints
         AddCommand("css_petemote", "Play a chicken emote: trick, squat, sleep, feed, shoulder, panic, idle", OnPetEmote);
         // Load runs before the entity system exists on a cold start. Recover old
         // plugin entities once a world is available, without a recurring sweep.
+        var recoveryVersion = ++_petRecoveryVersion;
         Server.NextWorldUpdate(() =>
         {
-            if (!Config.Additional.PetsEnabled) return;
+            if (recoveryVersion != _petRecoveryVersion || !Config.Additional.PetsEnabled) return;
             foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
                 if (chicken.IsValid && chicken.Entity?.Name == PetEntityName) KillPetEntity(chicken);
             foreach (var prop in Utilities.FindAllEntitiesByDesignerName<CDynamicProp>("prop_dynamic"))
@@ -299,6 +301,7 @@ public partial class WeaponPaints
 
     private void ClearAllPets()
     {
+        ++_petRecoveryVersion;
         foreach (var timer in _petTimers.ToArray()) StopPetTimer(timer);
         _petExpiryTimers.Clear();
         _petEmoteTimers.Clear();
@@ -445,7 +448,6 @@ public partial class WeaponPaints
             if (!string.Equals(currentModel, model, StringComparison.OrdinalIgnoreCase)) chicken.SetModel(model);
             chicken.AcceptInput("Skin", value: (stage == 1 ? 0 : Math.Clamp(choice.Variant, 0, choice.Id == 3 ? 13 : choice.Id == 4 ? 9 : 12)).ToString(CultureInfo.InvariantCulture));
             chicken.Owner.Raw = player.EntityHandle.Raw;
-            Utilities.SetStateChanged(chicken, "CChicken", "m_owner");
             chicken.Teleport(position, angles, Vector3.Zero);
             chicken.Leader.Raw = Utilities.InvalidEHandleIndex;
             chicken.MoveType = MoveType_t.MOVETYPE_NONE;
