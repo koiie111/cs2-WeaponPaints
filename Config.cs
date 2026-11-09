@@ -5,6 +5,9 @@ namespace WeaponPaints
 {
 	public class Additional
 	{
+		[JsonPropertyName("PetsEnabled")]
+		public bool PetsEnabled { get; set; } = true;
+
 		[JsonPropertyName("KnifeEnabled")]
 		public bool KnifeEnabled { get; set; } = true;
 

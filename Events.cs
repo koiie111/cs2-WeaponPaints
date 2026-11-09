@@ -40,6 +40,7 @@ namespace WeaponPaints
 			GPlayersMusic.TryRemove(player.Slot, out _);
 			var loadId = NextPlayerDataLoadId();
 			PlayerDataLoading[player.Slot] = loadId;
+			if (Config.Additional.PetsEnabled) LoadPetFor(player);
 
 			var weaponSync = WeaponSync;
 			if (weaponSync == null) return HookResult.Continue;
@@ -87,6 +88,7 @@ namespace WeaponPaints
 			// reconnecting client inherit stale WeaponInfo and can crash native item hooks.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
+			RemovePetFor(player.Slot);
 			var weaponSync = WeaponSync;
 			if (weaponSync != null && detachedWeapons != null)
 			{
