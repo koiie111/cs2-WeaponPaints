@@ -1,6 +1,6 @@
 # Chicken pets
 
-Pets are **opt-in**: `Additional.PetsEnabled` defaults to `false`, including when an existing configuration has no such property. The gameplay integration is experimental until the isolated-server checks below pass. Enabling it requires the current CS2 pet schema and CounterStrikeSharp API 1.0.376 or newer. After enabling, change the map or restart the test server so the chicken and hat models are precached before spawning pets.
+Pets are **opt-in**: `Additional.PetsEnabled` defaults to `false`, including when an existing configuration has no such property. The gameplay integration is experimental until the isolated-server checks below pass. Enabling it requires the current CS2 pet schema and CounterStrikeSharp API 1.0.376 or newer. After enabling, reload the plugin and change the map (or restart the test server) so listeners are registered and the chicken and hat models are precached before spawning pets. Disabling pets through a configuration reload clears current plugin pets and timers and stops further pet queries.
 
 The website's `php/migrations/sql/20261109_0001_wp_player_pets.sql` and the plugin's table initializer define the same `wp_player_pets` schema. Both use the configured `cs2admin` database. Install the existing `plus_active` view before enabling pets; its `expires_at` values are Moscow time (UTC+03:00), and the plugin reads an absolute UTC deadline. No pet subscription queries run while `PetsEnabled` is false.
 

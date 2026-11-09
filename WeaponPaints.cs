@@ -89,6 +89,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 	{
 		Config = config;
 		_config = config;
+		if (!config.Additional.PetsEnabled) ClearAllPets();
 
 		if (config.DatabaseHost.Length < 1 || config.DatabaseName.Length < 1 || config.DatabaseUser.Length < 1)
 		{

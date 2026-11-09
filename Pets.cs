@@ -122,6 +122,7 @@ public partial class WeaponPaints
 
     private void LoadPetFor(CCSPlayerController player)
     {
+        if (!Config.Additional.PetsEnabled) return;
         var slot = player.Slot;
         var steamId = player.SteamID.ToString();
         var version = _petLoadVersions.Next(slot);
@@ -183,6 +184,7 @@ public partial class WeaponPaints
     // A single indexed batch query refreshes subscription expiry and website changes once per round.
     private void RefreshPetsForRound()
     {
+        if (!Config.Additional.PetsEnabled) return;
         var players = Utilities.GetPlayers().Where(p => p.IsValid && !p.IsBot && !p.IsHLTV).ToArray();
         if (players.Length == 0 || Database == null) return;
         var slots = players.ToDictionary(p => p.Slot, p => p.SteamID.ToString());
@@ -213,6 +215,7 @@ public partial class WeaponPaints
 
     private HookResult OnPetSpawn(EventPlayerSpawn e, GameEventInfo info)
     {
+        if (!Config.Additional.PetsEnabled) return HookResult.Continue;
         var player = e.Userid;
         if (player != null && player.IsValid && !player.IsBot)
         {
@@ -225,6 +228,7 @@ public partial class WeaponPaints
 
     private HookResult OnPetRoundStart(EventRoundStart e, GameEventInfo info)
     {
+        if (!Config.Additional.PetsEnabled) return HookResult.Continue;
         _petSpawnVersions.InvalidateAll();
         foreach (var slot in _petEmoteTimers.Keys.ToArray()) CancelPetEmote(slot);
         foreach (var slot in _livePets.Keys.ToArray()) RemovePetEntity(slot);
@@ -243,7 +247,7 @@ public partial class WeaponPaints
 
     private void OnChickenSpawned(CEntityInstance entity)
     {
-        if (entity.DesignerName != "chicken" || _ownerOffset <= 0) return;
+        if (!Config.Additional.PetsEnabled || entity.DesignerName != "chicken" || _ownerOffset <= 0) return;
         var handle = entity.EntityHandle.Raw;
         AddPetTimer(.15f, () =>
         {
