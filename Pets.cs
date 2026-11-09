@@ -5,6 +5,7 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Memory;
+using CounterStrikeSharp.API.Modules.Memory.DynamicFunctions;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,7 @@ public partial class WeaponPaints
     private readonly Dictionary<int, PetTimer> _petEmoteTimers = new();
     private readonly HashSet<PetTimer> _petTimers = new();
     private static int _ownerOffset;
+    private MemoryFunctionVoid<nint, uint, byte>? _setPetActivity;
     private const string PetEntityName = "weaponpaints_pet";
     private const string PetHatEntityName = "weaponpaints_pet_hat";
     private static readonly string[] PetModels = ["models/chicken/chick.vmdl", "models/chicken/chicken.vmdl", "models/chicken/chicken_silkie.vmdl", "models/chicken/chicken_polish.vmdl"];
@@ -49,6 +51,8 @@ public partial class WeaponPaints
     {
         try { _ownerOffset = Schema.GetSchemaOffset("CChicken", "m_owner"); }
         catch (Exception) { _ownerOffset = 0; Logger.LogWarning("CChicken.m_owner is unavailable; custom pets are disabled to prevent duplicates"); }
+        try { _setPetActivity = new(GameData.GetSignature("CChicken_SetDesiredActivity")); }
+        catch (Exception ex) { Logger.LogWarning("Native chicken activity transition is unavailable; pet emotes are disabled: {Message}", ex.Message); }
         RegisterEventHandler<EventPlayerSpawn>(OnPetSpawn);
         RegisterEventHandler<EventRoundStart>(OnPetRoundStart);
         RegisterEventHandler<EventPlayerTeam>(OnPetTeam);
@@ -58,11 +62,16 @@ public partial class WeaponPaints
         RegisterListener<Listeners.OnEntitySpawned>(OnChickenSpawned);
         RegisterListener<Listeners.OnEntityDeleted>(OnPetEntityDeleted);
         AddCommand("css_petemote", "Play a chicken emote: trick, squat, sleep, feed, shoulder, panic, idle", OnPetEmote);
-        // One-time recovery for entities left by a plugin reload. No recurring entity sweep.
-        foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
-            if (chicken.IsValid && chicken.Entity?.Name == PetEntityName) KillPetEntity(chicken);
-        foreach (var prop in Utilities.FindAllEntitiesByDesignerName<CDynamicProp>("prop_dynamic"))
-            if (prop.IsValid && prop.Entity?.Name == PetHatEntityName) KillPetEntity(prop);
+        // Load runs before the entity system exists on a cold start. Recover old
+        // plugin entities once a world is available, without a recurring sweep.
+        Server.NextWorldUpdate(() =>
+        {
+            if (!Config.Additional.PetsEnabled) return;
+            foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
+                if (chicken.IsValid && chicken.Entity?.Name == PetEntityName) KillPetEntity(chicken);
+            foreach (var prop in Utilities.FindAllEntitiesByDesignerName<CDynamicProp>("prop_dynamic"))
+                if (prop.IsValid && prop.Entity?.Name == PetHatEntityName) KillPetEntity(prop);
+        });
     }
 
     private void PrecachePets(ResourceManifest manifest)
@@ -500,6 +509,7 @@ public partial class WeaponPaints
     private void OnPetEmote(CCSPlayerController? player, CommandInfo command)
     {
         if (player == null || !player.IsValid || !_petChoices.TryGetValue(player.Slot, out var state) || state.SteamId != player.SteamID.ToString() || !state.IsActive(DateTime.UtcNow)) return;
+        if (_setPetActivity == null) { player.PrintToChat("[4ill+] Эмоции питомца недоступны на этой версии сервера."); return; }
         var activities = new Dictionary<string, int> { ["trick"] = 7, ["squat"] = 1, ["sleep"] = 10, ["feed"] = 9, ["shoulder"] = 11, ["panic"] = 6, ["idle"] = 0 };
         var name = command.ArgString.Trim().Trim('"').ToLowerInvariant();
         if (!activities.TryGetValue(name, out var activity))
@@ -523,7 +533,11 @@ public partial class WeaponPaints
             try
             {
                 if (Schema.GetRef<int>(target.Handle, "CChicken", "m_currentActivity") == activity) { CancelPetEmote(slot); return; }
-                Schema.GetRef<int>(target.Handle, "CChicken", "m_desiredActivity") = activity;
+                // Writing m_desiredActivity alone does not notify the AnimGraph2
+                // controller. The native immediate transition sets both the
+                // activity and the graph input without enabling movement.
+                _setPetActivity.Invoke(target.Handle, (uint)activity, 1);
+                if (Schema.GetRef<int>(target.Handle, "CChicken", "m_currentActivity") == activity) CancelPetEmote(slot);
             }
             catch (Exception ex) { CancelPetEmote(slot); Logger.LogWarning("Pet emote failed: {Message}", ex.Message); }
         }

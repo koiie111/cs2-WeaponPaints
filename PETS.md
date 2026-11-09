@@ -10,6 +10,12 @@ The last known subscription deadline is enforced locally, even if a round refres
 
 `!petemote trick|squat|sleep|feed|shoulder|panic|idle` requests an emotion. At most one repeat timer per player runs until the requested activity is reached or 30 seconds have elapsed; commands have a three-second cooldown. Emotes stop on pet removal, team change, disconnect, round change, subscription expiry and unload. Completed pet timers are removed from the plugin's timer list.
 
+## Native activity transitions
+
+Emotes call the native immediate activity transition so AnimGraph2 is notified. Writing `m_desiredActivity` alone does not start the requested animation. The shipped activity signature has been verified on Linux. If the current platform/build has no matching signature, emotes report that they are unavailable while skins and pets continue to work. A new Windows activity signature has not been verified.
+
+One-time stale-entity recovery waits for the first world update: plugin `Load` can run before the entity system exists on a cold start.
+
 ## Automated checks
 
 ```sh
