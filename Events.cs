@@ -40,7 +40,11 @@ namespace WeaponPaints
 			GPlayersMusic.TryRemove(player.Slot, out _);
 			var loadId = NextPlayerDataLoadId();
 			PlayerDataLoading[player.Slot] = loadId;
-			if (Config.Additional.PetsEnabled) LoadPetFor(player);
+			if (Config.Additional.PetsEnabled)
+			{
+				RemovePetFor(player.Slot);
+				LoadPetFor(player);
+			}
 
 			var weaponSync = WeaponSync;
 			if (weaponSync == null) return HookResult.Continue;
