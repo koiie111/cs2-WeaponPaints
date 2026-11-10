@@ -49,7 +49,7 @@ namespace WeaponPaints
 
 			var weaponSync = WeaponSync;
 			if (weaponSync == null) return HookResult.Continue;
-			_ = Task.Run(async () =>
+			_ = ObserveAsync(async () =>
 			{
 				if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
 				Server.NextFrame(() =>
@@ -97,7 +97,7 @@ namespace WeaponPaints
 			var weaponSync = WeaponSync;
 			if (weaponSync != null && detachedWeapons != null)
 			{
-				_ = Task.Run(async () => await weaponSync.SyncStatTrakToDatabase(playerInfo, detachedWeapons));
+				_ = ObserveAsync(async () => await weaponSync.SyncStatTrakToDatabase(playerInfo, detachedWeapons));
 			}
 
 			if (Config.Additional.KnifeEnabled)
@@ -219,10 +219,13 @@ namespace WeaponPaints
 
 			if (designerName != null && designerName.Contains("weapon"))
 			{
-				Server.NextWorldUpdate(() =>
-				{
-					var weapon = new CBasePlayerWeapon(entity.Handle);
-					if (!weapon.IsValid) return;
+                var handle = entity.EntityHandle.Raw;
+                var generation = DataGeneration;
+                Server.NextWorldUpdate(() =>
+                {
+                    if (generation != DataGeneration) return;
+                    var weapon = new CHandle<CBasePlayerWeapon>(handle).Value;
+                    if (weapon == null || !weapon.IsValid) return;
 
 					try
 					{

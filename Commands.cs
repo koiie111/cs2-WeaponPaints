@@ -56,7 +56,7 @@ public partial class WeaponPaints
 
 
 
-					_ = Task.Run(async () =>
+					_ = ObserveAsync(async () =>
 					{
 						if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
 						Server.NextFrame(() =>
@@ -257,7 +257,7 @@ public partial class WeaponPaints
 
 
 
-				_ = Task.Run(async () =>
+				_ = ObserveAsync(async () =>
 				{
 					if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
 					Server.NextFrame(() =>
@@ -362,7 +362,7 @@ public partial class WeaponPaints
 				RefreshWeapons(player);
 
 			if (WeaponSync != null)
-				_ = Task.Run(async () => await WeaponSync.SyncKnifeToDatabase(playerInfo, knifeKey, teamsToCheck));
+				_ = ObserveAsync(async () => await WeaponSync.SyncKnifeToDatabase(playerInfo, knifeKey, teamsToCheck));
 		};
 		foreach (var knifePair in knivesOnly)
 		{
@@ -489,7 +489,7 @@ public partial class WeaponPaints
 
 					try
 					{
-						_ = Task.Run(async () => await WeaponSync.SyncWeaponPaintsToDatabase(playerInfo));
+						_ = ObserveAsync(async () => await WeaponSync.SyncWeaponPaintsToDatabase(playerInfo));
 					}
 					catch (Exception ex)
 					{
@@ -631,7 +631,7 @@ public partial class WeaponPaints
 
 			if (WeaponSync == null) return;
 
-			_ = Task.Run(async () =>
+			_ = ObserveAsync(async () =>
 			{
 				// Update the in-memory skin rows first, then persist each batch once.
 				foreach (var team in teamsToCheck)
@@ -650,8 +650,9 @@ public partial class WeaponPaints
 
 				}
 
-				await WeaponSync.SyncGloveToDatabase(playerInfo, (ushort)weaponDefindex, teamsToCheck);
-				await WeaponSync.SyncWeaponPaintsToDatabase(playerInfo);
+				var paintsWrite = WeaponSync.SyncWeaponPaintsToDatabase(playerInfo);
+                await WeaponSync.SyncGloveToDatabase(playerInfo, (ushort)weaponDefindex, teamsToCheck);
+                await paintsWrite;
 			});
 				
 			AddTimer(0.1f, () => GivePlayerGloves(player));
@@ -743,7 +744,7 @@ public partial class WeaponPaints
 
 				if (WeaponSync != null)
 				{
-					_ = Task.Run(async () =>
+					_ = ObserveAsync(async () =>
 					{
 						await WeaponSync.SyncAgentToDatabase(playerInfo);
 					});
@@ -864,7 +865,7 @@ public partial class WeaponPaints
 
 				if (WeaponSync != null)
 				{
-					_ = Task.Run(async () =>
+					_ = ObserveAsync(async () =>
 					{
 						await WeaponSync.SyncMusicToDatabase(playerInfo, (ushort)paint, teamsToCheck);
 					});
@@ -896,7 +897,7 @@ public partial class WeaponPaints
 
 				if (WeaponSync != null)
 				{
-					_ = Task.Run(async () =>
+					_ = ObserveAsync(async () =>
 					{
 						await WeaponSync.SyncMusicToDatabase(playerInfo, 0, teamsToCheck);
 					});
@@ -998,7 +999,7 @@ public partial class WeaponPaints
 				
 				if (WeaponSync != null)
 				{
-					_ = Task.Run(async () =>
+					_ = ObserveAsync(async () =>
 					{
 						await WeaponSync.SyncPinToDatabase(playerInfo, (ushort)paint, teamsToCheck);
 					});
@@ -1030,7 +1031,7 @@ public partial class WeaponPaints
 
 				if (WeaponSync != null)
 				{
-					_ = Task.Run(async () =>
+					_ = ObserveAsync(async () =>
 					{
 						await WeaponSync.SyncPinToDatabase(playerInfo, 0, teamsToCheck);
 					});

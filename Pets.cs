@@ -24,6 +24,7 @@ public partial class WeaponPaints
     private readonly PetWorkVersions _petLoadVersions = new();
     private readonly PetWorkVersions _petSpawnVersions = new();
     private readonly Dictionary<int, LivePet> _livePets = new();
+    private readonly HashSet<uint> _chickenHandles = new();
     private readonly PetWorkVersions _petEmoteVersions = new();
     private readonly Dictionary<int, DateTime> _petEmoteCooldowns = new();
     private readonly Dictionary<int, PetTimer> _petExpiryTimers = new();
@@ -70,7 +71,11 @@ public partial class WeaponPaints
         {
             if (recoveryVersion != _petRecoveryVersion || !Config.Additional.PetsEnabled) return;
             foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
-                if (chicken.IsValid && chicken.Entity?.Name == PetEntityName) KillPetEntity(chicken);
+                {
+                if (!chicken.IsValid) continue;
+                if (chicken.Entity?.Name == PetEntityName) KillPetEntity(chicken);
+                else _chickenHandles.Add(chicken.EntityHandle.Raw);
+                }
             foreach (var prop in Utilities.FindAllEntitiesByDesignerName<CDynamicProp>("prop_dynamic"))
                 if (prop.IsValid && prop.Entity?.Name == PetHatEntityName) KillPetEntity(prop);
         });
@@ -260,6 +265,7 @@ public partial class WeaponPaints
     {
         if (!Config.Additional.PetsEnabled || entity.DesignerName != "chicken" || _ownerOffset <= 0) return;
         var handle = entity.EntityHandle.Raw;
+        _chickenHandles.Add(handle);
         AddPetTimer(.15f, () =>
         {
             var chicken = new CHandle<CChicken>(handle).Value;
@@ -284,8 +290,9 @@ public partial class WeaponPaints
 
     private void OnPetEntityDeleted(CEntityInstance entity)
     {
-        if (_livePets.Count == 0 || entity.DesignerName is not ("chicken" or "prop_dynamic")) return;
         var handle = entity.EntityHandle.Raw;
+        _chickenHandles.Remove(handle);
+        if (_livePets.Count == 0 || entity.DesignerName is not ("chicken" or "prop_dynamic")) return;
         foreach (var (slot, live) in _livePets.ToArray())
         {
             if (live.Handle == handle)
@@ -302,6 +309,7 @@ public partial class WeaponPaints
     private void ClearAllPets()
     {
         ++_petRecoveryVersion;
+        _chickenHandles.Clear();
         foreach (var timer in _petTimers.ToArray()) StopPetTimer(timer);
         _petExpiryTimers.Clear();
         _petEmoteTimers.Clear();
@@ -339,10 +347,10 @@ public partial class WeaponPaints
     {
         var found = new List<CChicken>();
         if (_ownerOffset <= 0) return found;
-        var owned = _livePets.Values.Select(x => x.Handle).ToHashSet();
-        foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
+        foreach (var handle in _chickenHandles)
         {
-            if (!chicken.IsValid || chicken.Entity?.Name == PetEntityName || owned.Contains(chicken.EntityHandle.Raw)) continue;
+            var chicken = new CHandle<CChicken>(handle).Value;
+            if (chicken == null || !chicken.IsValid || chicken.Entity?.Name == PetEntityName) continue;
             if (chicken.Owner.Raw == player.EntityHandle.Raw) found.Add(chicken);
         }
         return found;

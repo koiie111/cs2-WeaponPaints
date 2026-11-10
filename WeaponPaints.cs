@@ -21,9 +21,15 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db6";
+	public override string ModuleVersion => "3.3a-db6-perf.1";
 
 	internal static long DataGeneration;
+
+    private static async Task ObserveAsync(Func<Task> action)
+    {
+        try { await action(); }
+        catch (Exception ex) { Instance.Logger.LogError(ex, "WeaponPaints asynchronous operation failed"); }
+    }
 
 	public override void Load(bool hotReload)
 	{
@@ -62,7 +68,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 				var loadId = NextPlayerDataLoadId();
                 var generation = DataGeneration;
                 PlayerDataLoading[playerInfo.Slot] = loadId;
-				_ = Task.Run(async () =>
+				_ = ObserveAsync(async () =>
 				{
 					if (WeaponSync == null || !await WeaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
                     Server.NextFrame(() =>
@@ -141,7 +147,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 
 		Utility.Config = config;
 		Utility.ShowAd(ModuleVersion);
-		Task.Run(async () => await Utility.CheckVersion(ModuleVersion, Logger));
+		_ = ObserveAsync(async () => await Utility.CheckVersion(ModuleVersion, Logger));
 	}
 
 	public override void OnAllPluginsLoaded(bool hotReload)

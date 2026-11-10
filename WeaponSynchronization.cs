@@ -494,9 +494,8 @@ internal class WeaponSynchronization
 		                     """;
 		try
 		{
-			await using var connection = await _database.GetConnectionAsync();
-
-			if (!WeaponPaints.GPlayersAgent.TryGetValue(player.Slot, out var agents)) return;
+            if (!WeaponPaints.GPlayersAgent.TryGetValue(player.Slot, out var agents)) return;
+            await using var connection = await _database.GetConnectionAsync();
             await connection.ExecuteAsync(query, new { steamid = player.SteamId, agent_ct = AgentModel.ForTeam(agents.CT, 3), agent_t = AgentModel.ForTeam(agents.T, 2) });
 		}
 		catch (Exception e)
@@ -585,11 +584,6 @@ internal class WeaponSynchronization
 	{
 		if (string.IsNullOrEmpty(player.SteamId)) return;
 
-		var playerLock = GetPlayerSkinWriteLock(player.SteamId);
-		await playerLock.WaitAsync();
-
-		try
-		{
 			var teamWeaponInfos = detachedWeapons;
 			if (teamWeaponInfos == null &&
 				!WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out teamWeaponInfos)) return;
@@ -609,6 +603,10 @@ internal class WeaponSynchronization
 				.ThenBy(row => row.DefIndex)
 				.ToArray();
 
+        var playerLock = GetPlayerSkinWriteLock(player.SteamId);
+        await playerLock.WaitAsync();
+        try
+        {
 			if (rows.Length == 0) return;
 
 			var (query, parameters) = BuildPlayerSkinUpsert(player.SteamId, rows, updateStatTrakOnly);
