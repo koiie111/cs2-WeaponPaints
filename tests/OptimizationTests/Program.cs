@@ -45,3 +45,11 @@ async Task Run(int i) { using var turn=await operations.EnterAsync("reconnect");
 try { using var turn=await operations.EnterAsync("failed"); throw new InvalidOperationException(); } catch(InvalidOperationException) {}
 using(await operations.EnterAsync("failed")) {} Check(operations.PendingKeys==0);
 Console.WriteLine("PASS: FIFO writes/read-after-write, independent SteamIDs, failure release, idle-key cleanup");
+
+var stamp=new PlayerWorkStamp(2,123,65,500,10);
+Check(stamp.Matches(2,123,65,500,10));
+Check(!stamp.Matches(2,456,65,500,10)); // reused slot, different account
+Check(!stamp.Matches(2,123,129,500,10)); // same account reconnect/controller serial
+Check(!stamp.Matches(2,123,65,501,10)); // respawn
+Check(!stamp.Matches(2,123,65,500,11)); // map/unload
+Console.WriteLine("PASS: deferred identity account, controller serial, pawn and lifecycle invalidation");

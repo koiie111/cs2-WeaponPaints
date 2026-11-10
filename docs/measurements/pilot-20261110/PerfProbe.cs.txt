@@ -1,0 +1,21 @@
+using System.Diagnostics;
+using System.Text.Json;
+namespace WeaponPaints;
+public partial class WeaponPaints {
+ private static readonly Dictionary<string,List<double>> Perf = new();
+ private static readonly Dictionary<string,long> Bytes = new();
+ private sealed class Probe : IDisposable {
+  readonly string name; readonly long start = Stopwatch.GetTimestamp(); readonly long bytes=GC.GetAllocatedBytesForCurrentThread();
+  internal Probe(string key) { name=key; }
+  public void Dispose() {
+   var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+   if (!Perf.TryGetValue(name,out var samples)) Perf[name]=samples=new();
+   if(samples.Count<100000) samples.Add(elapsed);
+   Bytes[name]=Bytes.GetValueOrDefault(name)+GC.GetAllocatedBytesForCurrentThread()-bytes;
+  }
+ }
+ private static string ExportPerf() {
+  var result=Perf.ToDictionary(x=>x.Key,x=>{var a=x.Value.Order().ToArray();return (object)new {calls=a.Length,mean_ms=a.Average(),p95_ms=a[(int)Math.Ceiling(a.Length*.95)-1],p99_ms=a[(int)Math.Ceiling(a.Length*.99)-1],max_ms=a[^1],total_ms=a.Sum(),bytes=Bytes.GetValueOrDefault(x.Key)};});
+  Perf.Clear(); Bytes.Clear(); return JsonSerializer.Serialize(result);
+ }
+}

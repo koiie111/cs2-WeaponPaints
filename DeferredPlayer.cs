@@ -9,7 +9,7 @@ internal readonly record struct DeferredPlayer(int Slot, ulong SteamId, uint Con
         player = null!;
         if (Generation != WeaponPaints.DataGeneration) return false;
         var current = Utilities.GetPlayerFromSlot(Slot);
-        if (current == null || !current.IsValid || current.SteamID != SteamId || current.EntityHandle.Raw != Controller || current.PlayerPawn.Raw != Pawn) return false;
+        if (current == null || !current.IsValid || !new PlayerWorkStamp(Slot, SteamId, Controller, Pawn, Generation).Matches(current.Slot, current.SteamID, current.EntityHandle.Raw, current.PlayerPawn.Raw, WeaponPaints.DataGeneration)) return false;
         player = current;
         return true;
     }
