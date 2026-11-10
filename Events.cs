@@ -339,6 +339,14 @@ namespace WeaponPaints
 		private void RegisterListeners()
 		{
 			RegisterListener<Listeners.OnMapStart>(OnMapStart);
+            RegisterListener<Listeners.OnMapEnd>(() =>
+            {
+                Interlocked.Increment(ref DataGeneration);
+                PlayerDataLoading.Clear();
+                _previews.Entries.Clear();
+                InvalidateKnifePaint();
+                ClearDeferredTimers();
+            });
 
 			RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
 			RegisterEventHandler<EventRoundStart>(OnRoundStart);

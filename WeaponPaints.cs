@@ -99,6 +99,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 	{
 		Interlocked.Increment(ref DataGeneration);
         PlayerDataLoading.Clear();
+        ClearDeferredTimers();
         ClearAllPets();
         _previews.Entries.Clear();
 		InvalidateKnifePaint();
