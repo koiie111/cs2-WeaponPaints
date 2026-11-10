@@ -124,7 +124,7 @@ namespace WeaponPaints
 			
 			_temporaryPlayerWeaponWear.TryRemove(player.Slot, out _);
 			CommandsCooldown.Remove(player.Slot);
-            _previews.Entries.Remove(player.Slot);
+            RemoveSkinPreview(player.Slot);
 			Players.Remove(player);
 
 			return HookResult.Continue;
@@ -132,7 +132,7 @@ namespace WeaponPaints
 
 		private void OnMapStart(string mapName)
 		{
-            _previews.Entries.Clear();
+            ClearSkinPreviews();
             Interlocked.Increment(ref DataGeneration);
             PlayerDataLoading.Clear();
 			InvalidateKnifePaint();
@@ -261,27 +261,6 @@ namespace WeaponPaints
 			}
 		}
 
-		private readonly List<int> _expiredPreviews = new();
-		private void OnTick()
-		{
-			if (!Config.Additional.ShowSkinImage) return;
-
-            if (_previews.Entries.Count == 0) return;
-            var now = Server.EngineTime;
-            foreach (var (slot, preview) in _previews.Entries)
-            {
-                var player = preview.Recipient;
-                if (player == null || !player.IsValid || !_previews.IsCurrent(slot, player.SteamID, now, player.EntityHandle.Raw))
-                {
-                    _expiredPreviews.Add(slot);
-                    continue;
-                }
-                player.PrintToCenterHtml(preview.Html);
-            }
-            foreach (var slot in _expiredPreviews) _previews.Entries.Remove(slot);
-            _expiredPreviews.Clear();
-		}
-		
 		[GameEventHandler]
 		public HookResult OnItemPickup(EventItemPickup @event, GameEventInfo _)
 		{
@@ -347,7 +326,7 @@ namespace WeaponPaints
             {
                 Interlocked.Increment(ref DataGeneration);
                 PlayerDataLoading.Clear();
-                _previews.Entries.Clear();
+                ClearSkinPreviews();
                 InvalidateKnifePaint();
                 ClearDeferredTimers();
                 ClearWeaponRefreshes();
@@ -362,8 +341,7 @@ namespace WeaponPaints
 			RegisterListener<Listeners.OnEntitySpawned>(OnEntityCreated);
 			RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
 
-			if (Config.Additional.ShowSkinImage)
-				RegisterListener<Listeners.OnTick>(OnTick);
+			RegisterSkinPreviews();
 
 			VirtualFunctions.GiveNamedItemFunc.Hook(OnGiveNamedItemPost, HookMode.Post);
 			_giveNamedItemHooked = true;

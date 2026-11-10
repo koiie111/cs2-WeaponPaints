@@ -1,4 +1,8 @@
 # WeaponPaints optimization audit
+Latest review: implementation and offline review complete, including 47 linked production
+preview callback checks and independent recomputation of 33 pooled distributions.
+See reviews/O5-WeaponPaints.md for the current decision; earlier Draft/no-merge notes
+below describe previous checkpoints. Whole-frame real-client acceptance remains open.
 Baseline: ba00df35cf0cf307474cbacfaa12e68a1408c651. Status: functional_accepted; synthetic_verified; full_tick_awaiting_live.
 
 ## Confirmed findings

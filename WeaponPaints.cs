@@ -105,7 +105,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
         ClearDeferredTimers();
         ClearWeaponRefreshes();
         ClearAllPets();
-        _previews.Entries.Clear();
+        ClearSkinPreviews();
 		InvalidateKnifePaint();
 		// Native hook outlives the plugin's AssemblyLoadContext; without this, css_plugins reload
 		// leaves the old OnGiveNamedItemPost delegate registered and the next GiveNamedItem crashes the server.

@@ -1,5 +1,75 @@
 # O5 — WeaponPaints
 
+## Повторное ревью по полному плану — 10.11.2026
+
+Проверен head `e42b219` и полный пакет `4ill.ru/main` на `de808a8e`:
+README, STAGES, VERIFICATION, MEASUREMENTS, SOURCES, PROMPTS, PROGRESS,
+оба source-lock, FLEET-AUDIT/COVERAGE/STAGES и все опубликованные reviews.
+Прочитаны исторические отчёты 20.10 и план 28.10; архив повторно проверен:
+9 профилей, 154758 вызовов, max 4.790674 мс. Текущий diff сравнивается с
+`ba00df35`, а не с историческими db3/db5. Равенство деревьев `72815ac` и
+`ba00df35` (`d070870689ff81a005489704e19659aff71c42c2`) проверено через Git.
+
+Результат: кодовое требование O5 выполнено. Feature gate сохранён, готовый HTML
+строится при выборе, OnTick обходит только активные превью, cadence и двухсекундный
+срок сохраняются; новая картинка заменяет старую без гонки старого таймера.
+Disconnect/map/unload очищают состояние. Изменений конфигурации, схемы, сайта,
+gamedata, shared API и package versions относительно baseline нет.
+
+PR шире исходного узкого задания ShowSkinImage: включает асинхронные снимки/FIFO,
+каталоги, питомцев и перевыдачу оружия. Последняя особенно рискованна и не нужна
+для кэширования HTML; она исправляет отдельно обнаруженный дефект видимого paint
+и уже прошла записанную владельцем игровую приёмку. Эти изменения не объявляются
+необходимыми условиями O5 и не маскируются процентом OnTick. При повторном ревью
+проверены serial/pawn/generation guards, ограниченные повторы, сохранение
+патронов/режимов/слотов, cleanup и неизменность SQL-контрактов. Нового блокирующего
+дефекта не обнаружено.
+
+Закрыты два пробела проверки:
+
+- Старые portable preview tests не вызывали production OnTick. Он без изменения
+  поведения выделен в `SkinPreviews.cs` вместе с gate/cleanup; новая suite напрямую
+  компилирует этот partial и `PreviewState.cs`. 47 проверок: gate, 0/1/8/32 active,
+  sends/reference reuse, alive/dead, replacement/expiry, empty image, SteamID/serial,
+  disconnect/same-slot replacement, cleanup, managed allocations. Внешняя граница
+  CSS заменена адаптерами; это не повторная native/визуальная приёмка.
+- Проверка evidence теперь независимо пересчитывает все 33 pooled distributions
+  и три парных interval unions/эффекта из raw calls. SHA256 78 файлов и 9 lossless
+  Speedscope exports (62617 calls) также проверены; старые raw/evidence не изменены.
+
+Повторно пройдены .NET SDK 10.0.400, Release `--no-restore -warnaserror` (0 warnings),
+22 pet checks, optimization suite с 28 реальными каталогами/57876 строками и
+103 assertions на отдельной localhost MySQL 8.4.13. Случайная тестовая schema
+удалена в finally, только созданный для ревью контейнер удалён. Baseline собран
+тем же SDK; fresh restore сообщает прежний NU1902 MySqlConnector 2.5.0 и поэтому
+не проходит `-warnaserror`, обычная Release build проходит с этим предупреждением.
+Уязвимость не скрыта, dependencies не обновлялись в perf-патче.
+
+Команды: `dotnet build WeaponPaints.csproj -c Release --no-restore -warnaserror`;
+`dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release --no-restore`;
+`dotnet run --project tests/OptimizationTests/OptimizationTests.csproj -c Release --no-restore -- --catalog-directory website/data`;
+`dotnet run --project tests/PreviewRuntimeTests/PreviewRuntimeTests.csproj -c Release`;
+`WP_TEST_CONNECTION=<isolated localhost> dotnet run --project tests/MySqlIntegration/MySqlIntegration.csproj -c Release --no-restore`;
+`python tests/verify_measurements.py docs/measurements/active-20261110`;
+`git diff --check`. Новая suite и расширенный verifier включены в CI.
+
+Числа ниже воспроизведены из сохранённых raw. OnTick allocations 1600 → 512
+bytes/call (−68%); время OnTick практически прежнее. Paint и NativePets быстрее
+в контролируемой bot-нагрузке, но её interval union включает fixture driver.
+Изменение SimpleAdmin data/admins.json и отсутствие full-frame/реальных клиентов
+исключают общий CPU/FPS causal claim. Цель O5 для WeaponPaints — устранить
+повторную подготовку строки — доказана. O9 full-tick/performance acceptance и
+причина 150 мс остаются открытыми.
+
+Решение: реализация и доступное ревью завершены; после успешного CI PR можно
+слить по текущему прямому поручению владельца. Серверные действия при этом ревью
+не выполнялись. Последний refactor проверен offline; прежние native measurements
+относятся к perf.12 до выделения partial. Новый пакет/манифест ревью описывается
+отдельно от старой DLL, проверенной на #7. Статус выпуска — `awaiting_live` для
+canary точного артефакта и full-tick под реальными клиентами.
+
+## Исходный отчёт и серверная история
+
 Дата:2026-11-10. Функции: accepted (владелец); проверки кода/SQL/native: passed; полный тик под реальными клиентами: awaiting_live. Готовность PR означает готовность к ревью, а не подтверждённый общий FPS/CPU-выигрыш.
 
 Repo/PR: [koiie111/cs2-WeaponPaints#3](https://github.com/koiie111/cs2-WeaponPaints/pull/3), codex/weaponpaints-optimization → main. Baseline ba00df35; исходная DLL metadata72815ac, деревья идентичны d070870689ff81a005489704e19659aff71c42c2. Финальный runtime3220421; CI/test workflow46576b6. Release metadata46576b655b1035349f247536e992c7b8c6a0768e, SHA256cceeee922f1209a9a9d77c813a54ada3203c2a640fbf3337246197f1484f10af. Mapping: mapped.
