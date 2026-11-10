@@ -530,7 +530,7 @@ namespace WeaponPaints
 			
 			econItemView.ItemID = itemId;
 			econItemView.ItemIDLow = (uint)itemId & 0xFFFFFFFF;
-			econItemView.ItemIDHigh = (uint)itemId >> 32;
+			econItemView.ItemIDHigh = ItemIdentity.High(itemId);
 		}
 
 		private static CCSPlayerController? GetPlayerFromItemServices(CCSPlayer_ItemServices itemServices)
