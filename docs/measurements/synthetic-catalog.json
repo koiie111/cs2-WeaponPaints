@@ -1,0 +1,14 @@
+{
+  "classification": "synthetic",
+  "rows": 10000,
+  "iterations": 1000,
+  "baseline": {
+    "elapsed_ms": 1077.2563,
+    "allocated_bytes": 480136040
+  },
+  "candidate": {
+    "elapsed_ms": 0.058,
+    "allocated_bytes": 40
+  },
+  "note": "Single warmed managed harness run, excludes CSS/native overhead. Stopwatch allocation included. Not live speedup evidence."
+}

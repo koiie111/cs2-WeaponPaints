@@ -14,3 +14,17 @@ var catalog = new SkinCatalog(skins);
 Check(!catalog.IsLegacy(7,1)); Check(catalog.IsLegacy(7,2)); Check(catalog.IsLegacy(8,1)); Check(catalog.RandomPaint(8)==0);
 for(var i=0;i<1000;i++) Check(catalog.RandomPaint(7) is 1 or 2);
 Console.WriteLine("PASS: item ID boundaries, preview 0/1/8/32 replacement/expiry/identity, catalog fallback/duplicate/random");
+
+if (args.Contains("--benchmark")) {
+ var rows=Enumerable.Range(0,10000).Select(i=>new JObject { ["weapon_defindex"]=7, ["paint"]=i, ["legacy_model"]=i%2==0 }).ToList();
+ var indexed=new SkinCatalog(rows);
+ bool Baseline()=>rows.Where(w=>w["weapon_defindex"]?.ToObject<int>()==7 && w["paint"]?.ToObject<int>()==9999).ToList()[0].Value<bool>("legacy_model");
+ bool Candidate()=>indexed.IsLegacy(7,9999);
+ foreach(var operation in new Func<bool>[] {Baseline,Candidate}) {
+  for(var i=0;i<100;i++) operation();
+  var allocated=GC.GetAllocatedBytesForCurrentThread(); var clock=System.Diagnostics.Stopwatch.StartNew(); var checksum=0;
+  for(var i=0;i<1000;i++) if(operation()) checksum++;
+  clock.Stop(); allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+  Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { scenario="synthetic_catalog_lookup_10000_rows", path=operation== (Func<bool>)Baseline ? "baseline" : "candidate", iterations=1000,elapsed_ms=clock.Elapsed.TotalMilliseconds,allocated_bytes=allocated,checksum }));
+ }
+}
