@@ -472,7 +472,7 @@ public partial class WeaponPaints
 
 					if (!_gBCommandsAllowed || (LifeState_t)p.LifeState != LifeState_t.LIFE_ALIVE ||
 					    WeaponSync == null) return;
-					RefreshWeapons(player);
+					RefreshWeapons(p);
 
 					try
 					{

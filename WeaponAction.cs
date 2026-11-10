@@ -102,6 +102,11 @@ namespace WeaponPaints
 			
 			weapon.FallbackWear = weaponInfo.Wear;
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weapon.FallbackPaintKit);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture seed", weapon.FallbackSeed);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture wear", weapon.FallbackWear);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture prefab", weapon.FallbackPaintKit);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture seed", weapon.FallbackSeed);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture wear", weapon.FallbackWear);
 
 			if (weaponInfo.StatTrak)
 			{			
@@ -274,6 +279,14 @@ namespace WeaponPaints
 					// from a delayed callback can dereference stale native entities and crash CS2.
 					GivePlayerWeaponSkin(player, weaponEntity);
 					IncrementWearForWeaponWithStickers(player, weaponEntity);
+                    // Schema writes do not automatically dirty their owning network fields.
+                    // The new econ identity and fallback values must reach the client so an
+                    // already-owned item's cached paint can be invalidated without re-giving it.
+                    weaponEntity.AttributeManager.Item.Initialized = true;
+                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_AttributeManager");
+                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_nFallbackPaintKit");
+                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_nFallbackSeed");
+                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_flFallbackWear");
 				}
 				catch (Exception ex)
 				{
