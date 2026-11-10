@@ -70,6 +70,49 @@ canary точного артефакта и full-tick под реальными 
 
 ## Исходный отчёт и серверная история
 
+### Проверка перед merge по новому поручению владельца
+
+После повторного ревью владелец отдельно поручил проверить функциональность на
+пустом сервере и слить PR при успехе. Проверена **точная новая DLL** из code commit
+`e0c1b889d7bb32b8714662e9ef7dd3af270191a8`, SHA256
+`e075ea052367cf8decb444d07c9c2f4d050a44e292e50cbde4796d66fc4578ac`.
+Публичный #7, LinuxGSM `cs2_7`, `109.195.19.84:27075`, de_mirage_fps,
+CSS 1.0.378; перед изменениями и после завершения 0 humans / 0 bots.
+Другие экземпляры не менялись; профилирование не запускалось.
+
+Два предварительных запуска остановились до сценариев из-за слишком раннего
+опроса `status` при запуске. Неизвестный ответ не принимался за пустой сервер.
+После второго прекращённого запуска исходник был восстановлен: 712 равных
+хешей и 0 WP warnings/errors. Исправлен readiness collector: неизвестный статус
+теперь ожидается, а обнаруженный человек по-прежнему запрещает restart.
+Итоговый прогон выполнен через LinuxGSM stop → замена DLL на остановленном
+экземпляре → start, без hot reload старой native-hook сборки.
+
+Новая DLL загружена и сверена по SHA256. Прошли:
+
+- стабильные 16 регистраций после повторного OnAllPluginsLoaded и четыре schema offsets;
+- удаление native-шапки за два кадра после прямого вызова production post-damage
+  handler с нулевым здоровьем курицы (это не новый ballistic/visual test);
+- два paint на приобретённом ботом АК, патроны/reserve/attack timing/active slot,
+  удаление старых serial и ровно один world AK после 100 запросов;
+- четыре типа ножа 507/515/526/42, по 150 немедленных/перемежённых запросов:
+  один нож, правильный definition/active, старый serial удалён, очередь пуста;
+  сохранность serial/патронов основной пушки, knife-only и отмена после смерти;
+- cached preview, неверный serial, disconnect/reconnect, expiry и empty image;
+  движок выделил slot 1 → 2, поэтому forced same-slot native reuse не заявляется;
+- перед cleanup все refresh/retiring/holster/deferred/knife-paint/DB queues равны 0.
+
+После тестов helper-модули и боты удалены, исходная 3.3a-db6 восстановлена с
+SHA256 `640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610`.
+Config/runtime возвращены, exact LOADED и 0/0 подтверждены. **Все 712 хешей**
+DLL/shared/config/gamedata/JSON совпадают с исходными; новых WP warnings/errors 0.
+Новый пакет находится в `C:/Users/koiie/.codex/tasks/wp-review-live-20261110/WeaponPaints.zip`.
+[Логи, fixtures, манифесты и release SHA256](../docs/measurements/review-20261110/result.json).
+Новых функциональных регрессий в проверенных сценариях нет. Клиентский рендер
+снова не тестировался; прежняя приёмка владельца сохранена. Условие владельца для
+merge выполнено; full-tick/реальный активный онлайн и массовая выкладка остаются
+отдельными действиями.
+
 Дата:2026-11-10. Функции: accepted (владелец); проверки кода/SQL/native: passed; полный тик под реальными клиентами: awaiting_live. Готовность PR означает готовность к ревью, а не подтверждённый общий FPS/CPU-выигрыш.
 
 Repo/PR: [koiie111/cs2-WeaponPaints#3](https://github.com/koiie111/cs2-WeaponPaints/pull/3), codex/weaponpaints-optimization → main. Baseline ba00df35; исходная DLL metadata72815ac, деревья идентичны d070870689ff81a005489704e19659aff71c42c2. Финальный runtime3220421; CI/test workflow46576b6. Release metadata46576b655b1035349f247536e992c7b8c6a0768e, SHA256cceeee922f1209a9a9d77c813a54ada3203c2a640fbf3337246197f1484f10af. Mapping: mapped.

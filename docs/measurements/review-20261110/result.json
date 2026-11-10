@@ -1,0 +1,44 @@
+{
+  "server": 7,
+  "started_utc": "2026-11-10T13:49:31.737725+00:00",
+  "candidate_source": "e0c1b88",
+  "candidate_sha256": "e075ea052367cf8decb444d07c9c2f4d050a44e292e50cbde4796d66fc4578ac",
+  "checks": {
+    "candidate_cold_load": true,
+    "weapon_knife_pet_native": true,
+    "preview_native": true
+  },
+  "original_sha256": "640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610",
+  "config_sha256": "f3c25c1acee8c08b797d6d2559a83b725cad7a0d1b3b13c653fc9f06935ed1c6",
+  "queues_before_cleanup": {
+    "version": "3.3a-db6-perf.12",
+    "_weaponRefreshes": 0,
+    "_retiringWeapons": 0,
+    "_holsteredKnives": 0,
+    "_deferredTimers": 0,
+    "_pendingKnifePaint": 0,
+    "_chickenHandles": 0,
+    "_livePets": 0,
+    "_petTimers": 0,
+    "_petExpiryTimers": 0,
+    "_petEmoteTimers": 0,
+    "GPlayerWeaponsInfo": 0,
+    "Players": 0,
+    "db_pending_keys": 0,
+    "world_ak47": 0,
+    "owned_ak47": 0
+  },
+  "all_checks_passed": true,
+  "restored": true,
+  "manifest_changes": {},
+  "wp_warning_error_count": 0,
+  "finished_utc": "2026-11-10T13:52:10.895637+00:00",
+  "final_occupancy": {
+    "humans": 0,
+    "bots": 0
+  },
+  "final_weaponpaints_version": "3.3a-db6",
+  "diagnostics_absent": true,
+  "hash_count": 712,
+  "prior_aborted_attempts": "Two pre-check attempts stopped before the native scenarios because status was unavailable during startup. Original DLL loaded/hash verified afterward. Second attempt restored with 712 equal hashes and no WeaponPaints warnings/errors. Readiness collector corrected to wait on unknown status; no occupied restart authorized."
+}

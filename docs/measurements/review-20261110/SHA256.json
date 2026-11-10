@@ -1,0 +1,12 @@
+{
+  "manifest-after.json": "ca33146a4c9c1a6f05d8ea7853fe1d7a092c5d26b91f8e32e71c0e8f642772b7",
+  "manifest-before.json": "ca33146a4c9c1a6f05d8ea7853fe1d7a092c5d26b91f8e32e71c0e8f642772b7",
+  "native-checks.txt": "17801b3b1e11093def7c1dedc07fccdcc3c6c7e430eba94321da4fca0d404bf0",
+  "native-fixture.cs.txt": "d1dfad23da34c2f0a630e5e3bccfc5d7d6315e770d68b9cf03966c53aba68f34",
+  "package-SHA256.json": "f154b56560b1c4c4e85619d7ee74afaad472df4a7d747c7b297de10f027d2a23",
+  "preview-checks.txt": "6facff1f5caa83bfada3adff1a6ea16c32523c8b2ec0248c88a4f9b91858a224",
+  "preview-fixture.cs.txt": "e9c40c44b265a5d8f3ffbdbd3084c48ca175082035f46ad20e7b8c5ade6c7851",
+  "release-SHA256.json": "595ead7ed0b7dd8ef94eb19c5d762d7aae6d69c1912579d5847123742e14c491",
+  "result.json": "48daa9478073ebb6b3b8dc80b363db21230092f504c193668ad6666ed566541a",
+  "run.py.txt": "ba978520e0ad4efce5212e9f745c99b328148f63d36fa837ffeee0f69da059e1"
+}
