@@ -63,6 +63,7 @@ public partial class WeaponPaints
         RegisterListener<Listeners.OnServerPrecacheResources>(PrecachePets);
         RegisterListener<Listeners.OnEntitySpawned>(OnChickenSpawned);
         RegisterListener<Listeners.OnEntityDeleted>(OnPetEntityDeleted);
+        RegisterListener<Listeners.OnEntityTakeDamagePost>(OnPetDamagePost);
         AddCommand("css_petemote", "Play a chicken emote: trick, squat, sleep, feed, shoulder, panic, idle", OnPetEmote);
         // Load runs before the entity system exists on a cold start. Recover old
         // plugin entities once a world is available, without a recurring sweep.
@@ -286,6 +287,25 @@ public partial class WeaponPaints
                 break;
             }
         });
+    }
+
+    private void OnPetDamagePost(CBaseEntity entity, CTakeDamageInfo info, CTakeDamageResult result)
+    {
+        // Chicken death effects precede entity deletion by several seconds. Remove
+        // its cosmetic at lethal damage, rather than waiting for OnEntityDeleted.
+        if (_livePets.Count == 0 || !entity.IsValid || entity.DesignerName != "chicken" || entity.Health > 0) return;
+        var handle = entity.EntityHandle.Raw;
+        foreach (var (slot, live) in _livePets)
+        {
+            if (live.Handle != handle) continue;
+            CancelPetEmote(slot);
+            if (live.HatHandle != 0)
+            {
+                KillPetEntity(new CHandle<CDynamicProp>(live.HatHandle).Value);
+                _livePets[slot] = live with { HatHandle = 0 };
+            }
+            break;
+        }
     }
 
     private void OnPetEntityDeleted(CEntityInstance entity)

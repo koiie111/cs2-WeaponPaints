@@ -21,7 +21,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db6-perf.2";
+	public override string ModuleVersion => "3.3a-db6-perf.3";
 
 	internal static long DataGeneration;
 
@@ -151,8 +151,13 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 		_ = ObserveAsync(async () => await Utility.CheckVersion(ModuleVersion, Logger));
 	}
 
+	private bool _menusAndCommandsRegistered;
+
 	public override void OnAllPluginsLoaded(bool hotReload)
 	{
+        // Multiple queued file-watcher reload notifications can call this on the
+        // same loaded instance. Re-registering adds duplicate chat callbacks.
+        if (_menusAndCommandsRegistered) return;
 		try
 		{
 			MenuApi = MenuCapability.Get();
@@ -171,6 +176,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 				SetupPinsMenu();
 		
 			RegisterCommands();
+            _menusAndCommandsRegistered = true;
 		}
 		catch (Exception)
 		{
