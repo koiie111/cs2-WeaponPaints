@@ -1,0 +1,10 @@
+{
+  "started_utc": 1794315337.637788,
+  "candidate_sha256": "cceeee922f1209a9a9d77c813a54ada3203c2a640fbf3337246197f1484f10af",
+  "original_sha256": "640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610",
+  "config_sha256": "f3c25c1acee8c08b797d6d2559a83b725cad7a0d1b3b13c653fc9f06935ed1c6",
+  "candidate_cold_start": true,
+  "native_preview_pass": true,
+  "restored_task_original": true,
+  "finished_utc": 1794315429.2958288
+}

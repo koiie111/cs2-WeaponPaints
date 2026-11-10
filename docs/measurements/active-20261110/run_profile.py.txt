@@ -1,0 +1,130 @@
+from access import *
+import subprocess,shlex,threading,datetime
+remote=x['css_root']+'/plugins/WeaponPaints/WeaponPaints.dll';original=(base/'before.dll').read_bytes()
+assert hashlib.sha256(original).hexdigest()=='a8f2240687e792282cfeb39dc8fbe647d1814d6f761bbd4a4112dbaa70590cad'
+config=x['css_root']+'/configs/plugins/WeaponPaints/WeaponPaints.json';config_hash=hashlib.sha256(s.open(config,'rb').read()).hexdigest()
+original_values={}
+for cmd in ['bot_stop','bot_dont_shoot','mp_autoteambalance','mp_limitteams','mp_ignore_round_win_conditions','bot_quota']:
+ out=q(cmd);m=re.search(r'=\s*([^\s]+)',out);assert m,(cmd,out);original_values[cmd]=m[1]
+(base/'runtime-original.json').write_text(json.dumps(original_values,indent=2))
+result={'server':7,'started_utc':time.time(),'before_sha256':hashlib.sha256(original).hexdigest(),'config_hash':config_hash,'windows':[],'stages':[]}
+telemetry_code=r'''
+import os,time,json,subprocess
+pids=subprocess.check_output(['pgrep','-u','cs2_7','-x','cs2'],text=True).split();assert len(pids)==1
+pid=pids[0]
+for n in range(800):
+ try:
+  fields=open('/proc/'+pid+'/stat').read().split(') ',1)[1].split()
+  cpu=list(map(int,open('/proc/stat').readline().split()[1:]));status=open('/proc/'+pid+'/status').read().splitlines()
+  mem={v.split(':')[0]:v.split(':')[1].strip() for v in status if v.startswith(('VmRSS:','VmSize:','Threads:'))}
+  print(json.dumps({'utc':time.time(),'pid':int(pid),'utime':int(fields[11]),'stime':int(fields[12]),'cpu':cpu,'load':open('/proc/loadavg').read().split()[:3],'mem':mem,'clock_ticks':os.sysconf('SC_CLK_TCK')}),flush=True)
+  time.sleep(2)
+ except (OSError,BrokenPipeError):break
+'''
+def monitor(name):
+ channel=c.get_transport().open_session();channel.exec_command('python3 -u - <<\'PY\'\n'+telemetry_code+'\nPY')
+ out=channel.makefile('r');path=base/(name+'-telemetry.jsonl')
+ def collect():
+  with path.open('w') as f:
+   try:
+    for line in out:f.write(line);f.flush()
+   except Exception:pass
+ t=threading.Thread(target=collect,daemon=True);t.start();return channel,t
+
+def check(humans=0,bots=None):
+ st=q('status');m=re.search(r'players\s*:\s*(\d+) humans, (\d+) bots',st)
+ if not m or int(m[1])!=humans or (bots is not None and int(m[2])!=bots):raise RuntimeError('Unexpected occupancy '+(m[0] if m else 'unknown'))
+ return st
+
+def cleanup_fixture():
+ # Diagnostic command only affects fixture-owned slot/serial state.
+ q('css_wp_load_stop');q('bot_kick');time.sleep(1);check(bots=0)
+ for cmd,value in original_values.items():q(cmd+' '+value)
+
+def restart(version):
+ check(bots=0)
+ _,o,e=c.exec_command("su - cs2_7 -c './cs2server restart'",timeout=120);o.read();e.read()
+ for _ in range(60):
+  time.sleep(2)
+  try:
+   plugins=q('css_plugins list')
+   if re.search(r'(?m)^\s*\[#\d+:LOADED\]: "WeaponPaints" \('+re.escape(version)+r'\)',plugins):check(bots=0);return
+  except Exception:pass
+ raise RuntimeError('Cold start did not return '+version)
+
+def install(data,version):
+ check(bots=0);q('css_plugins unload WeaponPaints')
+ with s.open(remote,'wb') as f:f.write(data)
+ restart(version)
+ assert hashlib.sha256(s.open(remote,'rb').read()).hexdigest()==hashlib.sha256(data).hexdigest()
+
+def setup():
+ check(bots=0)
+ for cmd,value in {'bot_stop':1,'bot_dont_shoot':1,'mp_autoteambalance':0,'mp_limitteams':0,'mp_ignore_round_win_conditions':1}.items():q(cmd+' '+str(value))
+ for n in range(8):q('bot_add_t' if n%2==0 else 'bot_add_ct')
+ time.sleep(10);check(bots=8)
+ prepared=q('css_wp_load_prepare')
+ if 'WPLOAD prepared 8' not in prepared:raise RuntimeError('Prepare failed '+prepared)
+ time.sleep(5)
+ load=q('css_wp_load_status');assert '"errors":0' in load and '"chickens":32' in load and '"active":true' in load,load
+ return prepared
+
+def capture(name,record=True,duration=30):
+ check(bots=8);before=json.loads(q('css_wp_load_status').split('WPLOAD ',1)[1]);started=time.time()
+ if record:q('css_wp_load_record')
+ deadline=time.monotonic()+duration;occupancy=[]
+ while time.monotonic()<deadline:
+  time.sleep(min(5,max(0,deadline-time.monotonic())))
+  st=check(bots=8);occupancy.append({'utc':time.time(),'humans':0,'bots':8})
+  state=json.loads(q('css_wp_load_status').split('WPLOAD ',1)[1]);assert state['active'] and state['errors']==0 and state['chickens']==32 and state['previews']==8,state
+ after=json.loads(q('css_wp_load_status').split('WPLOAD ',1)[1]);assert after['sends']>before['sends']+8000,(before,after)
+ entry={'name':name,'started_utc':started,'ended_utc':time.time(),'before':before,'after':after,'occupancy':occupancy,'instrumented':record}
+ if record:
+  exported=q('css_wp_load_export');path=exported.split('WPLOADFILE ',1)[1].strip();raw=s.open(path,'rb').read();target=base/(name+'-raw.json');target.write_bytes(raw)
+  entry['raw_file']=target.name;entry['raw_sha256']=hashlib.sha256(raw).hexdigest();entry['remote_raw']=path
+ result['windows'].append(entry);(base/'result.json').write_text(json.dumps(result,indent=2))
+ print(name+' captured; errors='+str(after['errors'])+' cycles='+str(after['cycles']-before['cycles']),flush=True)
+
+changed=False
+try:
+ check(bots=0)
+ # Independent manifest hashes; never print/config-copy their secret contents.
+ manifest_code="""import pathlib,hashlib,json,platform,os
+r=pathlib.Path('/mnt/ssd/cs2_7/serverfiles/game/csgo/addons/counterstrikesharp')
+files={str(p.relative_to(r)):hashlib.sha256(p.read_bytes()).hexdigest() for group in ['plugins','shared','gamedata','configs','bin'] for p in (r/group).rglob('*') if p.is_file() and (p.suffix in ['.dll','.so','.json'])}
+cpu=[line.split(':',1)[1].strip() for line in open('/proc/cpuinfo') if line.startswith('model name')][0]
+print(json.dumps({'files':files,'cpu':cpu,'platform':platform.platform(),'host':platform.node(),'governor':pathlib.Path('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor').read_text().strip() if pathlib.Path('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor').exists() else None,'cgroup':pathlib.Path('/proc/self/cgroup').read_text(),'cpu_max':pathlib.Path('/sys/fs/cgroup/cpu.max').read_text() if pathlib.Path('/sys/fs/cgroup/cpu.max').exists() else None}))"""
+ _,o,e=c.exec_command("python3 - <<'PY'\n"+manifest_code+"\nPY");manifest=json.loads(o.read().decode());(base/'manifest-before.json').write_text(json.dumps(manifest,indent=2));print('manifest collected',flush=True)
+ for stage,label in enumerate(['baseline','candidate','baseline']):
+  data=(base/(label+'-build')/'WeaponPaints.dll').read_bytes();changed=True;install(data,'3.3a-load-'+label)
+  channel,thread=monitor('stage'+str(stage)+'-'+label)
+  try:
+   setup();cal=q('css_wp_load_calibrate');q('css_wp_load_mode mixed 8');time.sleep(5)
+   stage_info={'stage':stage,'label':label,'sha256':hashlib.sha256(data).hexdigest(),'calibration':cal,'engine_before':q('engine_frametime_print_report')}
+   for window in range(3):capture('stage'+str(stage)+'-'+label+'-window'+str(window))
+   stage_info['engine_after']=q('engine_frametime_print_report');result['stages'].append(stage_info)
+  finally:channel.close();thread.join(timeout=3);cleanup_fixture()
+ # Candidate control + realistic refresh cost + bounded-queue long observation.
+ data=(base/'candidate-build/WeaponPaints.dll').read_bytes();install(data,'3.3a-load-candidate');channel,thread=monitor('candidate-extra')
+ try:
+  setup();q('css_wp_load_mode mixed 8');time.sleep(5)
+  for window in range(3):capture('control-no-record-window'+str(window),False)
+  q('css_wp_load_mode refresh 8')
+  for window in range(3):capture('candidate-refresh-window'+str(window))
+  for window in range(20):capture('candidate-soak-part'+str(window),False)
+  result['candidate_extra_engine']=q('engine_frametime_print_report')
+ finally:channel.close();thread.join(timeout=3);cleanup_fixture()
+ result['completed']=True
+finally:
+ try:
+  print('Restoring accepted perf11 and runtime values',flush=True)
+  cleanup_fixture()
+  if changed:install(original,'3.3a-db6-perf.11')
+  for cmd,value in original_values.items():q(cmd+' '+value)
+  result['final_status']=check(bots=0)
+  result['restored_sha256']=hashlib.sha256(s.open(remote,'rb').read()).hexdigest();assert result['restored_sha256']==hashlib.sha256(original).hexdigest()
+  assert hashlib.sha256(s.open(config,'rb').read()).hexdigest()==config_hash
+  result['restored']=True;result['final_plugins']=q('css_plugins list');result['finished_utc']=time.time()
+  print('RESTORED accepted perf11, config/runtime verified, 0 humans/0 bots',flush=True)
+ finally:
+  (base/'result.json').write_text(json.dumps(result,indent=2));s.close();c.close()

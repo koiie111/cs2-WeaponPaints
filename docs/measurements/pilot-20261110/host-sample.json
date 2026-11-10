@@ -1,0 +1,11 @@
+{
+  "captured_utc": 1794304932.5264173,
+  "server": 7,
+  "hashes": {
+    "api/CounterStrikeSharp.API.dll": "6030fb03bd6655ebece823e98deb0b35d39f6ab7bd958e687627136150bbc3db",
+    "configs/plugins/WeaponPaints/WeaponPaints.json": "f3c25c1acee8c08b797d6d2559a83b725cad7a0d1b3b13c653fc9f06935ed1c6",
+    "gamedata/weaponpaints.json": "c44dc031435bae35b3dd8e598ee73ba4e0b53ceed1792b025c2e2c928368ba7a",
+    "plugins/WeaponPaints/WeaponPaints.dll": "39f3ef6a4b3a599ffb57afe0ace5d0e14b24dcf73dcb1ed285035b5704c09457"
+  },
+  "host_sample": " Intel(R) Xeon(R) CPU E5-2670 v3 @ 2.30GHz\n2.35 1.98 1.61 1/1866 3609168\nusage_usec 8615282824000\nuser_usec 7671806824000\nsystem_usec 943476000000\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nschedutil\n"
+}

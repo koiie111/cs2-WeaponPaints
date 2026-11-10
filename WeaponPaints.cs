@@ -21,11 +21,23 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db6";
+	public override string ModuleVersion => "3.3a-db6-perf.12";
+
+	internal static long DataGeneration;
+
+    private static async Task ObserveAsync(Func<Task> action)
+    {
+        try { await action(); }
+        catch (Exception ex) { Instance.Logger.LogError(ex, "WeaponPaints asynchronous operation failed"); }
+    }
 
 	public override void Load(bool hotReload)
 	{
 		Instance = this;
+        foreach (var field in new[] { "m_AttributeManager", "m_nFallbackPaintKit", "m_nFallbackSeed", "m_flFallbackWear" })
+            if (Schema.GetSchemaOffset(nameof(CEconEntity), field) <= 0)
+                throw new InvalidOperationException("Missing econ refresh network field: " + field);
+        Interlocked.Increment(ref DataGeneration);
 
 		if (hotReload)
 		{
@@ -56,9 +68,22 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 				};
 				if (Config.Additional.PetsEnabled && player != null) LoadPetFor(player);
 
-				_ = Task.Run(async () =>
+				var loadId = NextPlayerDataLoadId();
+                var generation = DataGeneration;
+                PlayerDataLoading[playerInfo.Slot] = loadId;
+				_ = ObserveAsync(async () =>
 				{
-					if (WeaponSync != null) await WeaponSync.GetPlayerData(playerInfo);
+					if (WeaponSync == null || !await WeaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
+                    Server.NextFrame(() =>
+                    {
+                        if (generation != DataGeneration || !PlayerDataLoading.TryGetValue(playerInfo.Slot, out var current) || current != loadId) return;
+                        PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+                        var currentPlayer = Utilities.GetPlayerFromSlot(playerInfo.Slot);
+                        if (currentPlayer == null || !Utility.IsPlayerValid(currentPlayer) || currentPlayer.SteamID.ToString() != playerInfo.SteamId) return;
+                        if (!Players.Contains(currentPlayer)) Players.Add(currentPlayer);
+                        GivePlayerMusicKit(currentPlayer); GivePlayerAgent(currentPlayer); GivePlayerGloves(currentPlayer); GivePlayerPin(currentPlayer);
+                        if (currentPlayer.PawnIsAlive) RefreshWeapons(currentPlayer);
+                    });
 				});
 			}
 		}
@@ -75,7 +100,12 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 
 	public override void Unload(bool hotReload)
 	{
-		ClearAllPets();
+		Interlocked.Increment(ref DataGeneration);
+        PlayerDataLoading.Clear();
+        ClearDeferredTimers();
+        ClearWeaponRefreshes();
+        ClearAllPets();
+        ClearSkinPreviews();
 		InvalidateKnifePaint();
 		// Native hook outlives the plugin's AssemblyLoadContext; without this, css_plugins reload
 		// leaves the old OnGiveNamedItemPost delegate registered and the next GiveNamedItem crashes the server.
@@ -122,11 +152,16 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 
 		Utility.Config = config;
 		Utility.ShowAd(ModuleVersion);
-		Task.Run(async () => await Utility.CheckVersion(ModuleVersion, Logger));
+		_ = ObserveAsync(async () => await Utility.CheckVersion(ModuleVersion, Logger));
 	}
+
+	private bool _menusAndCommandsRegistered;
 
 	public override void OnAllPluginsLoaded(bool hotReload)
 	{
+        // Multiple queued file-watcher reload notifications can call this on the
+        // same loaded instance. Re-registering adds duplicate chat callbacks.
+        if (_menusAndCommandsRegistered) return;
 		try
 		{
 			MenuApi = MenuCapability.Get();
@@ -145,6 +180,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 				SetupPinsMenu();
 		
 			RegisterCommands();
+            _menusAndCommandsRegistered = true;
 		}
 		catch (Exception)
 		{

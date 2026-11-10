@@ -1,0 +1,81 @@
+using CounterStrikeSharp.API.Modules.Utils;
+using CounterStrikeSharp.API.Modules.Memory;
+using System.Reflection;
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using Microsoft.Extensions.Logging;
+namespace WPDiag2;
+public class Diag:BasePlugin {
+ public override string ModuleName=>"WPDiag5";public override string ModuleVersion=>"1";
+ public override void Load(bool hotReload) { AddCommand("css_wp_diag","Console investigation",(player,cmd)=>{
+  Logger.LogInformation("CHECK A command entry");
+  if(player!=null)return;
+  if(Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsHLTV&&!p.IsBot)){Logger.LogInformation("CHECK occupied");return;}
+  Logger.LogInformation("CHECK B player enumeration complete");
+  var bindings=BindingFlags.Static|BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic;
+  var assemblies=AppDomain.CurrentDomain.GetAssemblies().Where(a=>a.GetName().Name=="WeaponPaints").ToArray();
+  Logger.LogInformation("CHECK C assemblies={Count}",assemblies.Length);
+  BasePlugin? selected=null;
+  for(var i=0;i<assemblies.Length;i++) {
+   Logger.LogInformation("CHECK D{Index} before static Instance",i);
+   var loadedType=assemblies[i].GetType("WeaponPaints.WeaponPaints");
+   var wp=loadedType?.GetProperty("Instance",bindings)?.GetValue(null) as BasePlugin;
+   Logger.LogInformation("CHECK E{Index} after static Instance version={Version}",i,wp?.ModuleVersion);
+   if(wp?.ModuleVersion=="3.3a-db6-perf.4")selected=wp;
+  }
+  Logger.LogInformation("CHECK F reflection complete selected={Selected}",selected!=null);
+  if(selected!=null){selected.OnAllPluginsLoaded(true);Logger.LogInformation("CHECK G idempotent callback complete");}
+
+  var type=selected!.GetType();
+  var definitions=(System.Collections.IList)typeof(BasePlugin).GetField("CommandDefinitions",bindings)!.GetValue(selected)!;
+  var count=definitions.Count;
+  selected.OnAllPluginsLoaded(true);selected.OnAllPluginsLoaded(true);
+  Logger.LogInformation("CHECK registrations stable={Stable} count={Count}",definitions.Count==count,count);
+  foreach(var field in new[]{"m_AttributeManager","m_nFallbackPaintKit","m_nFallbackSeed","m_flFallbackWear"}) Logger.LogInformation("CHECK schema {Field} offset={Offset}",field,CounterStrikeSharp.API.Modules.Memory.Schema.GetSchemaOffset(nameof(CEconEntity),field));
+  var chicken=Utilities.CreateEntityByName<CChicken>("chicken")!;
+  var keys=new CEntityKeyValues();keys.SetString("targetname","wp_isolated_fixture");keys.SetVector("origin",0,0,100);
+  Logger.LogInformation("CHECK before chicken keyvalue spawn");chicken.DispatchSpawn(keys);Logger.LogInformation("CHECK chicken spawned");
+  var hat=(uint)type.GetMethod("SpawnPetHat",bindings)!.Invoke(selected,new object?[]{chicken,"wizard_hat",1})!;
+  if(hat==0)throw new Exception("Hat fixture did not spawn");
+  Logger.LogInformation("CHECK production hat spawned={Handle}",hat);
+  var choiceType=type.Assembly.GetType("WeaponPaints.PetChoice")!;
+  var choice=Activator.CreateInstance(choiceType,bindings,null,new object?[]{true,true,true,3,1,0,(uint)0,null,"wizard_hat"},null)!;
+  var liveType=type.GetNestedType("LivePet",bindings)!;
+  var live=Activator.CreateInstance(liveType,bindings,null,new object[]{chicken.EntityHandle.Raw,hat,choice},null)!;
+  var pets=(System.Collections.IDictionary)type.GetField("_livePets",bindings)!.GetValue(selected)!;pets.Add(1000,live);
+  chicken.Health=0;type.GetMethod("OnPetDamagePost",bindings)!.Invoke(selected,new object?[]{chicken,null,null});
+  var updated=pets[1000]!;
+  Logger.LogInformation("CHECK hat cleared immediately={Cleared}",(uint)liveType.GetProperty("HatHandle")!.GetValue(updated)! == 0);
+  Server.NextFrame(()=>Server.NextFrame(()=>{
+   var remaining=new CounterStrikeSharp.API.Modules.Utils.CHandle<CDynamicProp>(hat).Value;
+   Logger.LogInformation("CHECK native hat removed within two frames={Removed}",remaining==null||!remaining.IsValid);
+   type.GetMethod("RemovePetEntity",bindings)!.Invoke(selected,new object[]{1000});
+  }));
+  var bot=Utilities.GetPlayers().FirstOrDefault(p=>p.IsValid && p.IsBot && p.PawnIsAlive);
+  if(bot!=null) {
+   Logger.LogInformation("CHECK before GiveNamedItem");
+   var raw=bot.GiveNamedItem("weapon_ak47");var gun=new CBasePlayerWeapon(raw);
+   Logger.LogInformation("CHECK item-services gun valid={Valid}",gun.IsValid);
+   foreach(var field in new[]{"m_AttributeManager","m_nFallbackPaintKit","m_nFallbackSeed","m_flFallbackWear"})Utilities.SetStateChanged(gun,nameof(CEconEntity),field);
+   Logger.LogInformation("CHECK item-services gun fields dirtied");
+   var root=(System.Collections.IDictionary)type.GetField("GPlayerWeaponsInfo",bindings)!.GetValue(null)!;
+   var teamsType=root.GetType().GetGenericArguments()[1];
+   var teams=(System.Collections.IDictionary)Activator.CreateInstance(teamsType)!;
+   var weapons=(System.Collections.IDictionary)Activator.CreateInstance(teamsType.GetGenericArguments()[1])!;
+   var infoType=type.Assembly.GetType("WeaponPaints.WeaponInfo")!;var info=Activator.CreateInstance(infoType)!;
+   infoType.GetProperty("Paint")!.SetValue(info,44);infoType.GetProperty("Wear")!.SetValue(info,.01f);
+   weapons[7]=info;teams[bot.Team]=weapons;root[bot.Slot]=teams;
+   try {
+    var handle=gun.EntityHandle.Raw;var ammo=gun.Clip1;var id=gun.AttributeManager.Item.ItemID;
+    type.GetMethod("RefreshWeapons",bindings)!.Invoke(selected,new object[]{bot});
+    Logger.LogInformation("CHECK first paint applied={Applied}",gun.FallbackPaintKit==44);
+    infoType.GetProperty("Paint")!.SetValue(info,180);
+    type.GetMethod("RefreshWeapons",bindings)!.Invoke(selected,new object[]{bot});
+    Logger.LogInformation("CHECK second paint applied={Applied}",gun.FallbackPaintKit==180);
+    Logger.LogInformation("CHECK same entity ammo preserved new identity={Stable}",gun.EntityHandle.Raw==handle && gun.Clip1==ammo && gun.AttributeManager.Item.ItemID!=id);
+   } finally { root.Remove(bot.Slot); }
+
+  } else Logger.LogInformation("CHECK no alive bot: held-weapon exercise unavailable");
+
+ }); }
+}

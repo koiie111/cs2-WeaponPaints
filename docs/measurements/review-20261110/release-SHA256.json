@@ -1,0 +1,11 @@
+{
+  "source_commit": "e0c1b889d7bb32b8714662e9ef7dd3af270191a8",
+  "files": {
+    "WeaponPaints.zip": "b20916fa403950b749851cc82a7c941243e9bc49354966bf68b9547d8b1f8441",
+    "package-SHA256.json": "f154b56560b1c4c4e85619d7ee74afaad472df4a7d747c7b297de10f027d2a23",
+    "README.txt": "c99d1b21465c672d2f290fc0a7ee01e28b95f4380abea2d8c02f1fc7c1410df5",
+    "WeaponPaints.dll": "e075ea052367cf8decb444d07c9c2f4d050a44e292e50cbde4796d66fc4578ac",
+    "WeaponPaints.pdb": "92464ab9a6ac0a029db54f28348b039e24df3f1fd2bcb52dfb0b4b8673826b2d",
+    "WeaponPaints.deps.json": "7e5ebae8356600b2ef1683cde219099a40624f07ef156c17e2158010c94597e8"
+  }
+}

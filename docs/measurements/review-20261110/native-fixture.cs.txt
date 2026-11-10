@@ -1,0 +1,145 @@
+using CounterStrikeSharp.API.Modules.Utils;
+using CounterStrikeSharp.API.Modules.Memory;
+using System.Reflection;
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using Microsoft.Extensions.Logging;
+namespace WPDiag2;
+public class Diag:BasePlugin {
+ public override string ModuleName=>"WPReviewNative";public override string ModuleVersion=>"1";
+ public override void Load(bool hotReload) { AddCommand("css_wp_review_native","Console investigation",(player,cmd)=>{
+  Logger.LogInformation("CHECK A command entry");
+  if(player!=null)return;
+  if(Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsHLTV&&!p.IsBot)){Logger.LogInformation("CHECK occupied");return;}
+  Logger.LogInformation("CHECK B player enumeration complete");
+  var bindings=BindingFlags.Static|BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic;
+  var assemblies=AppDomain.CurrentDomain.GetAssemblies().Where(a=>a.GetName().Name=="WeaponPaints").ToArray();
+  Logger.LogInformation("CHECK C assemblies={Count}",assemblies.Length);
+  BasePlugin? selected=null;
+  for(var i=0;i<assemblies.Length;i++) {
+   Logger.LogInformation("CHECK D{Index} before static Instance",i);
+   var loadedType=assemblies[i].GetType("WeaponPaints.WeaponPaints");
+   var wp=loadedType?.GetProperty("Instance",bindings)?.GetValue(null) as BasePlugin;
+   Logger.LogInformation("CHECK E{Index} after static Instance version={Version}",i,wp?.ModuleVersion);
+   if(wp?.ModuleVersion=="3.3a-db6-perf.12")selected=wp;
+  }
+  Logger.LogInformation("CHECK F reflection complete selected={Selected}",selected!=null);
+  if(selected!=null){selected.OnAllPluginsLoaded(true);Logger.LogInformation("CHECK G idempotent callback complete");}
+
+  var type=selected!.GetType();
+  var definitions=(System.Collections.IList)typeof(BasePlugin).GetField("CommandDefinitions",bindings)!.GetValue(selected)!;
+  var count=definitions.Count;
+  selected.OnAllPluginsLoaded(true);selected.OnAllPluginsLoaded(true);
+  Logger.LogInformation("CHECK registrations stable={Stable} count={Count}",definitions.Count==count,count);
+  foreach(var field in new[]{"m_AttributeManager","m_nFallbackPaintKit","m_nFallbackSeed","m_flFallbackWear"}) Logger.LogInformation("CHECK schema {Field} offset={Offset}",field,CounterStrikeSharp.API.Modules.Memory.Schema.GetSchemaOffset(nameof(CEconEntity),field));
+  var chicken=Utilities.CreateEntityByName<CChicken>("chicken")!;
+  var keys=new CEntityKeyValues();keys.SetString("targetname","wp_isolated_fixture");keys.SetVector("origin",0,0,100);
+  Logger.LogInformation("CHECK before chicken keyvalue spawn");chicken.DispatchSpawn(keys);Logger.LogInformation("CHECK chicken spawned");
+  var hat=(uint)type.GetMethod("SpawnPetHat",bindings)!.Invoke(selected,new object?[]{chicken,"wizard_hat",1})!;
+  if(hat==0)throw new Exception("Hat fixture did not spawn");
+  Logger.LogInformation("CHECK production hat spawned={Handle}",hat);
+  var choiceType=type.Assembly.GetType("WeaponPaints.PetChoice")!;
+  var choice=Activator.CreateInstance(choiceType,bindings,null,new object?[]{true,true,true,3,1,0,(uint)0,null,"wizard_hat"},null)!;
+  var liveType=type.GetNestedType("LivePet",bindings)!;
+  var live=Activator.CreateInstance(liveType,bindings,null,new object[]{chicken.EntityHandle.Raw,hat,choice},null)!;
+  var pets=(System.Collections.IDictionary)type.GetField("_livePets",bindings)!.GetValue(selected)!;pets.Add(1000,live);
+  chicken.Health=0;type.GetMethod("OnPetDamagePost",bindings)!.Invoke(selected,new object?[]{chicken,null,null});
+  var updated=pets[1000]!;
+  Logger.LogInformation("CHECK hat cleared immediately={Cleared}",(uint)liveType.GetProperty("HatHandle")!.GetValue(updated)! == 0);
+  Server.NextFrame(()=>Server.NextFrame(()=>{
+   var remaining=new CounterStrikeSharp.API.Modules.Utils.CHandle<CDynamicProp>(hat).Value;
+   Logger.LogInformation("CHECK native hat removed within two frames={Removed}",remaining==null||!remaining.IsValid);
+   type.GetMethod("RemovePetEntity",bindings)!.Invoke(selected,new object[]{1000});
+  }));
+  var bot=Utilities.GetPlayers().FirstOrDefault(p=>p.IsValid && p.IsBot && p.PawnIsAlive);
+  if(bot!=null) {
+   bot.RemoveWeapons();
+   Server.NextFrame(()=>Server.NextFrame(()=>{
+   Logger.LogInformation("CHECK before GiveNamedItem");
+   var raw=bot.GiveNamedItem("weapon_ak47");var gun=new CBasePlayerWeapon(raw);
+   Logger.LogInformation("CHECK item-services gun valid={Valid} owned={Owned} allowed={Allowed}",gun.IsValid,gun.OwnerEntity.Raw==bot.PlayerPawn.Raw,type.GetField("_gBCommandsAllowed",bindings)!.GetValue(null));
+   if(gun.OwnerEntity.Raw!=bot.PlayerPawn.Raw)throw new Exception("Fixture AK not acquired");
+   foreach(var field in new[]{"m_AttributeManager","m_nFallbackPaintKit","m_nFallbackSeed","m_flFallbackWear"})Utilities.SetStateChanged(gun,nameof(CEconEntity),field);
+   Logger.LogInformation("CHECK item-services gun fields dirtied");
+   var root=(System.Collections.IDictionary)type.GetField("GPlayerWeaponsInfo",bindings)!.GetValue(null)!;
+   var teamsType=root.GetType().GetGenericArguments()[1];
+   var teams=(System.Collections.IDictionary)Activator.CreateInstance(teamsType)!;
+   var weapons=(System.Collections.IDictionary)Activator.CreateInstance(teamsType.GetGenericArguments()[1])!;
+   var infoType=type.Assembly.GetType("WeaponPaints.WeaponInfo")!;var info=Activator.CreateInstance(infoType)!;
+   infoType.GetProperty("Paint")!.SetValue(info,44);infoType.GetProperty("Wear")!.SetValue(info,.01f);
+   weapons[7]=info;teams[bot.Team]=weapons;root[bot.Slot]=teams;
+   var handle=gun.EntityHandle.Raw;
+   var weaponServices=bot.PlayerPawn.Value!.WeaponServices!;var selectedBefore=weaponServices.ActiveWeapon.Raw;
+   gun.Clip1=7;gun.ReserveAmmo[0]=11;var attack=Server.TickCount+1024;gun.NextPrimaryAttackTick=attack;
+   var refresh=type.GetMethod("RefreshWeapons",bindings)!;
+   var knives=(System.Collections.IDictionary)type.GetField("GPlayersKnife",bindings)!.GetValue(null)!;
+   var choices=(System.Collections.IDictionary)Activator.CreateInstance(knives.GetType().GetGenericArguments()[1])!;
+   knives[bot.Slot]=choices;
+   void TestKnives(){
+    var rifle=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true}&&w.AttributeManager.Item.ItemDefinitionIndex==7)!;
+    var rifleHandle=rifle.EntityHandle.Raw;
+    var firstKnife=new CBasePlayerWeapon(bot.GiveNamedItem("weapon_knife"));
+    bot.PlayerPawn.Value!.WeaponServices!.ActiveWeapon.Raw=firstKnife.EntityHandle.Raw;
+    bot.PlayerPawn.Value!.WeaponServices!.LastWeapon.Raw=rifleHandle;
+    var previous=firstKnife.EntityHandle.Raw;
+    var step=0;
+    void Run(){
+     var target=new[]{507,515,526,42}[step];choices[bot.Team]=new[]{"weapon_knife_karambit","weapon_knife_butterfly","weapon_knife_kukri","weapon_knife"}[step];
+     for(var i=0;i<100;i++)refresh.Invoke(selected,new object?[]{bot,42});
+     AddTimer(.05f,()=>{for(var i=0;i<50;i++)refresh.Invoke(selected,new object?[]{bot,42});});
+     AddTimer(.3f,()=>{
+      try {
+       var svc=bot.PlayerPawn.Value!.WeaponServices!;
+       var inventory=svc.MyWeapons.Select(h=>h.Value).Where(w=>w is {IsValid:true}&&w.OwnerEntity.Raw==bot.PlayerPawn.Raw).ToArray();
+       var blade=inventory.Single(w=>w!.As<CCSWeaponBase>().VData?.GearSlot==gear_slot_t.GEAR_SLOT_KNIFE)!;
+       var jobs=((System.Collections.IDictionary)type.GetField("_weaponRefreshes",bindings)!.GetValue(selected)!).Count;
+       var good=blade.AttributeManager.Item.ItemDefinitionIndex==target && svc.ActiveWeapon.Raw==blade.EntityHandle.Raw && new CHandle<CBasePlayerWeapon>(previous).Value is not {IsValid:true} && jobs==0;
+       Logger.LogInformation("CHECK knife type={Type} spam150 interleaved oneKnife={Count} active={Active} oldGone={Gone} queue={Jobs} PASS={Pass}",target,inventory.Count(w=>w!.As<CCSWeaponBase>().VData?.GearSlot==gear_slot_t.GEAR_SLOT_KNIFE),svc.ActiveWeapon.Raw==blade.EntityHandle.Raw,new CHandle<CBasePlayerWeapon>(previous).Value is not {IsValid:true},jobs,good);
+       if(!good)throw new Exception("Knife replacement invariant failed");
+       if(step==0)Logger.LogInformation("CHECK knife-only refresh preserves rifle serial/ammo={Good}",new CHandle<CBasePlayerWeapon>(rifleHandle).Value is {IsValid:true} kept && kept.Clip1==7 && kept.ReserveAmmo[0]==11);
+       previous=blade.EntityHandle.Raw;step++;
+       if(step==2){rifle.Remove();Server.NextFrame(()=>Server.NextFrame(Run));}
+       else if(step<4)Run();
+       else {
+        choices[bot.Team]="weapon_bayonet";refresh.Invoke(selected,new object?[]{bot,42});
+        Server.NextFrame(()=>Server.NextFrame(()=>Server.NextFrame(()=>{bot.CommitSuicide(false,false);AddTimer(.3f,()=>{
+         Logger.LogInformation("CHECK death cancels knife redeploy={Good}",((System.Collections.IDictionary)type.GetField("_weaponRefreshes",bindings)!.GetValue(selected)!).Count==0);root.Remove(bot.Slot);knives.Remove(bot.Slot);Logger.LogInformation("REVIEW NATIVE COMPLETE");
+        });})));
+       }
+      }catch(Exception ex){root.Remove(bot.Slot);knives.Remove(bot.Slot);Logger.LogError(ex,"CHECK knife phase failed");}
+     });
+    }
+    Run();
+   }
+
+   for(var i=0;i<50;i++) refresh.Invoke(selected,new object?[]{bot,null});
+   Server.NextFrame(()=>Server.NextFrame(()=>{
+    try {
+     var inventory=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Where(w=>w is {IsValid:true}).ToArray();
+     var copies=inventory.Where(w=>w!.AttributeManager.Item.ItemDefinitionIndex==7).ToArray();
+     Logger.LogInformation("CHECK spam50 first replacement count={Count} oldGone={Gone}",copies.Length,new CHandle<CBasePlayerWeapon>(handle).Value is not {IsValid:true});
+     var current=copies.Single()!;
+     Logger.LogInformation("CHECK first paint44 and ammo preserved={Good}",current.FallbackPaintKit==44 && current.Clip1==7 && current.ReserveAmmo[0]==11);
+     var handle2=current.EntityHandle.Raw;
+     infoType.GetProperty("Paint")!.SetValue(info,180);
+     for(var i=0;i<50;i++) refresh.Invoke(selected,new object?[]{bot,7});
+     Server.NextFrame(()=>Server.NextFrame(()=>{
+      try {
+       var next=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Where(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==7).ToArray();
+       Logger.LogInformation("CHECK spam50 second replacement count={Count} oldGone={Gone}",next.Length,new CHandle<CBasePlayerWeapon>(handle2).Value is not {IsValid:true});
+       var replaced=next.Single()!;
+       Logger.LogInformation("CHECK second paint180 and ammo preserved={Good}",replaced.FallbackPaintKit==180 && replaced.Clip1==7 && replaced.ReserveAmmo[0]==11 && replaced.NextPrimaryAttackTick==attack);
+       Logger.LogInformation("CHECK active slot preserved={Preserved}",selectedBefore==handle ? weaponServices.ActiveWeapon.Raw==replaced.EntityHandle.Raw : weaponServices.ActiveWeapon.Raw==selectedBefore);
+       Logger.LogInformation("CHECK surviving world AK count={Count}",Utilities.FindAllEntitiesByDesignerName<CBasePlayerWeapon>("weapon_ak47").Count(w=>w.IsValid));
+       TestKnives();
+       
+      } catch(Exception ex) {root.Remove(bot.Slot);Logger.LogError(ex,"CHECK second phase failed");}
+     }));
+    } catch(Exception e) {root.Remove(bot.Slot);Logger.LogError(e,"CHECK fixture failed");}
+   }));
+
+  }));
+  } else Logger.LogInformation("CHECK no alive bot: held-weapon exercise unavailable");
+
+ }); }
+}

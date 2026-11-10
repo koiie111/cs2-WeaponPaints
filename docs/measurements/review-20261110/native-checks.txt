@@ -1,0 +1,33 @@
+2026-11-10 16:50:42.235 +03:00 [INFO] plugin:WPReviewNative CHECK A command entry
+2026-11-10 16:50:42.248 +03:00 [INFO] plugin:WPReviewNative CHECK B player enumeration complete
+2026-11-10 16:50:42.250 +03:00 [INFO] plugin:WPReviewNative CHECK C assemblies=1
+2026-11-10 16:50:42.251 +03:00 [INFO] plugin:WPReviewNative CHECK D0 before static Instance
+2026-11-10 16:50:42.251 +03:00 [INFO] plugin:WPReviewNative CHECK E0 after static Instance version=3.3a-db6-perf.12
+2026-11-10 16:50:42.252 +03:00 [INFO] plugin:WPReviewNative CHECK F reflection complete selected=true
+2026-11-10 16:50:42.252 +03:00 [INFO] plugin:WPReviewNative CHECK G idempotent callback complete
+2026-11-10 16:50:42.253 +03:00 [INFO] plugin:WPReviewNative CHECK registrations stable=true count=16
+2026-11-10 16:50:42.253 +03:00 [INFO] plugin:WPReviewNative CHECK schema m_AttributeManager offset=3384
+2026-11-10 16:50:42.254 +03:00 [INFO] plugin:WPReviewNative CHECK schema m_nFallbackPaintKit offset=4472
+2026-11-10 16:50:42.254 +03:00 [INFO] plugin:WPReviewNative CHECK schema m_nFallbackSeed offset=4476
+2026-11-10 16:50:42.254 +03:00 [INFO] plugin:WPReviewNative CHECK schema m_flFallbackWear offset=4480
+2026-11-10 16:50:42.257 +03:00 [INFO] plugin:WPReviewNative CHECK before chicken keyvalue spawn
+2026-11-10 16:50:42.261 +03:00 [INFO] plugin:WPReviewNative CHECK chicken spawned
+2026-11-10 16:50:42.272 +03:00 [INFO] plugin:WPReviewNative CHECK production hat spawned=1416396976
+2026-11-10 16:50:42.277 +03:00 [INFO] plugin:WPReviewNative CHECK hat cleared immediately=true
+2026-11-10 16:50:42.288 +03:00 [INFO] plugin:WPReviewNative CHECK native hat removed within two frames=true
+2026-11-10 16:50:42.295 +03:00 [INFO] plugin:WPReviewNative CHECK before GiveNamedItem
+2026-11-10 16:50:42.299 +03:00 [INFO] plugin:WPReviewNative CHECK item-services gun valid=true owned=true allowed=true
+2026-11-10 16:50:42.300 +03:00 [INFO] plugin:WPReviewNative CHECK item-services gun fields dirtied
+2026-11-10 16:50:42.371 +03:00 [INFO] plugin:WPReviewNative CHECK spam50 first replacement count=1 oldGone=true
+2026-11-10 16:50:42.371 +03:00 [INFO] plugin:WPReviewNative CHECK first paint44 and ammo preserved=true
+2026-11-10 16:50:42.383 +03:00 [INFO] plugin:WPReviewNative CHECK spam50 second replacement count=1 oldGone=true
+2026-11-10 16:50:42.383 +03:00 [INFO] plugin:WPReviewNative CHECK second paint180 and ammo preserved=true
+2026-11-10 16:50:42.383 +03:00 [INFO] plugin:WPReviewNative CHECK active slot preserved=true
+2026-11-10 16:50:42.385 +03:00 [INFO] plugin:WPReviewNative CHECK surviving world AK count=1
+2026-11-10 16:50:42.614 +03:00 [INFO] plugin:WPReviewNative CHECK knife type=507 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 16:50:42.615 +03:00 [INFO] plugin:WPReviewNative CHECK knife-only refresh preserves rifle serial/ammo=true
+2026-11-10 16:50:42.918 +03:00 [INFO] plugin:WPReviewNative CHECK knife type=515 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 16:50:43.246 +03:00 [INFO] plugin:WPReviewNative CHECK knife type=526 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 16:50:43.558 +03:00 [INFO] plugin:WPReviewNative CHECK knife type=42 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 16:50:43.902 +03:00 [INFO] plugin:WPReviewNative CHECK death cancels knife redeploy=true
+2026-11-10 16:50:43.902 +03:00 [INFO] plugin:WPReviewNative REVIEW NATIVE COMPLETE

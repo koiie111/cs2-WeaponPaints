@@ -1,0 +1,2688 @@
+{
+  "server": 7,
+  "started_utc": 1794313151.1432617,
+  "before_sha256": "a8f2240687e792282cfeb39dc8fbe647d1814d6f761bbd4a4112dbaa70590cad",
+  "config_hash": "f3c25c1acee8c08b797d6d2559a83b725cad7a0d1b3b13c653fc9f06935ed1c6",
+  "windows": [
+    {
+      "name": "stage0-baseline-window0",
+      "started_utc": 1794313223.7182214,
+      "ended_utc": 1794313256.2151396,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 6256,
+        "mode": "mixed",
+        "cycles": 13,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 104,
+        "gives": 32,
+        "pet_matches": 416,
+        "timers": 2,
+        "allocated": 492112312,
+        "heap": 117280032,
+        "collections": [
+          23,
+          13,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 22872,
+        "mode": "mixed",
+        "cycles": 45,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 360,
+        "gives": 96,
+        "pet_matches": 1440,
+        "timers": 2,
+        "allocated": 657124056,
+        "heap": 117439296,
+        "collections": [
+          33,
+          15,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313230.1397157,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313236.4873376,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313242.6357474,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313248.8924756,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313254.8405166,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage0-baseline-window0-raw.json",
+      "raw_sha256": "05024e35dac711cf8742347991f8ac44cfece67dae3f0b172286d2b7dec059c3"
+    },
+    {
+      "name": "stage0-baseline-window1",
+      "started_utc": 1794313262.3502285,
+      "ended_utc": 1794313294.048236,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 26024,
+        "mode": "mixed",
+        "cycles": 51,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 408,
+        "gives": 104,
+        "pet_matches": 1632,
+        "timers": 2,
+        "allocated": 688658840,
+        "heap": 117542696,
+        "collections": [
+          35,
+          15,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 42264,
+        "mode": "mixed",
+        "cycles": 83,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 664,
+        "gives": 168,
+        "pet_matches": 2656,
+        "timers": 2,
+        "allocated": 850073000,
+        "heap": 117511160,
+        "collections": [
+          45,
+          16,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313268.5360932,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313274.687126,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313280.765956,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313286.8615887,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313292.955189,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage0-baseline-window1-raw.json",
+      "raw_sha256": "7674f7651eae667366e4dbfbcfc1efe57ef35e46c778757b43b4aa5ffdda1ff0"
+    },
+    {
+      "name": "stage0-baseline-window2",
+      "started_utc": 1794313298.64687,
+      "ended_utc": 1794313330.1358638,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 44624,
+        "mode": "mixed",
+        "cycles": 88,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 704,
+        "gives": 184,
+        "pet_matches": 2816,
+        "timers": 2,
+        "allocated": 874819720,
+        "heap": 117541576,
+        "collections": [
+          47,
+          16,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 60744,
+        "mode": "mixed",
+        "cycles": 119,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 952,
+        "gives": 240,
+        "pet_matches": 3808,
+        "timers": 2,
+        "allocated": 1036064472,
+        "heap": 117709888,
+        "collections": [
+          57,
+          17,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313304.7338111,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313310.7995968,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313316.8882477,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313322.978004,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313329.0451455,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage0-baseline-window2-raw.json",
+      "raw_sha256": "ebc1a14aeb0a60f7231be15b81bbfd241f980f163f2bee2905bf3fa00648febf"
+    },
+    {
+      "name": "stage1-candidate-window0",
+      "started_utc": 1794313409.82761,
+      "ended_utc": 1794313441.3538816,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 6272,
+        "mode": "mixed",
+        "cycles": 13,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 104,
+        "gives": 32,
+        "pet_matches": 416,
+        "timers": 2,
+        "allocated": 477411784,
+        "heap": 117601376,
+        "collections": [
+          21,
+          12,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 22408,
+        "mode": "mixed",
+        "cycles": 44,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 352,
+        "gives": 96,
+        "pet_matches": 1408,
+        "timers": 2,
+        "allocated": 597073336,
+        "heap": 117837696,
+        "collections": [
+          28,
+          12,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313415.922535,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313421.986759,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313428.0635285,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313434.1594932,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313440.25955,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage1-candidate-window0-raw.json",
+      "raw_sha256": "a710a5ad333d1773f5186e24b596948bf96aff9bb1656f034cace8611d7c4bb5"
+    },
+    {
+      "name": "stage1-candidate-window1",
+      "started_utc": 1794313446.0497382,
+      "ended_utc": 1794313477.5952055,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 24816,
+        "mode": "mixed",
+        "cycles": 49,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 392,
+        "gives": 104,
+        "pet_matches": 1568,
+        "timers": 2,
+        "allocated": 615611080,
+        "heap": 117831496,
+        "collections": [
+          29,
+          13,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 40968,
+        "mode": "mixed",
+        "cycles": 81,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 648,
+        "gives": 168,
+        "pet_matches": 2592,
+        "timers": 2,
+        "allocated": 734845936,
+        "heap": 117909032,
+        "collections": [
+          37,
+          14,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313452.1762822,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313458.2410665,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313464.3293793,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313470.4104276,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313476.5022697,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage1-candidate-window1-raw.json",
+      "raw_sha256": "132bfbb1a06b94b50fb0514c54f4638414acb7f85daced34be43ee9e23443e54"
+    },
+    {
+      "name": "stage1-candidate-window2",
+      "started_utc": 1794313482.242693,
+      "ended_utc": 1794313513.7212572,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 43344,
+        "mode": "mixed",
+        "cycles": 85,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 680,
+        "gives": 176,
+        "pet_matches": 2720,
+        "timers": 2,
+        "allocated": 752866920,
+        "heap": 117916360,
+        "collections": [
+          38,
+          14,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 59464,
+        "mode": "mixed",
+        "cycles": 117,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 936,
+        "gives": 240,
+        "pet_matches": 3744,
+        "timers": 2,
+        "allocated": 874108976,
+        "heap": 114301344,
+        "collections": [
+          47,
+          16,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313488.3147924,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313494.4113798,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313500.47023,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313506.563619,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313512.6611872,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage1-candidate-window2-raw.json",
+      "raw_sha256": "85b563b3763936f7f3d35819467cf63cd0633eae229cb3517f811ddaa516daec"
+    },
+    {
+      "name": "stage2-baseline-window0",
+      "started_utc": 1794313593.3326697,
+      "ended_utc": 1794313624.9242618,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 6376,
+        "mode": "mixed",
+        "cycles": 13,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 104,
+        "gives": 32,
+        "pet_matches": 416,
+        "timers": 2,
+        "allocated": 492786608,
+        "heap": 120904856,
+        "collections": [
+          22,
+          11,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 22552,
+        "mode": "mixed",
+        "cycles": 45,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 360,
+        "gives": 96,
+        "pet_matches": 1440,
+        "timers": 2,
+        "allocated": 654629608,
+        "heap": 117930824,
+        "collections": [
+          32,
+          13,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313599.4760108,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313605.6173186,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313611.7002637,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313617.799746,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313623.8629272,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage2-baseline-window0-raw.json",
+      "raw_sha256": "efbbd87e22817010f99b7f528bd7bdd8ec64bad858887ffec943d147db2cb9d4"
+    },
+    {
+      "name": "stage2-baseline-window1",
+      "started_utc": 1794313629.4111896,
+      "ended_utc": 1794313660.955188,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 24848,
+        "mode": "mixed",
+        "cycles": 49,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 392,
+        "gives": 104,
+        "pet_matches": 1568,
+        "timers": 2,
+        "allocated": 677361008,
+        "heap": 118030736,
+        "collections": [
+          33,
+          13,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 40984,
+        "mode": "mixed",
+        "cycles": 81,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 648,
+        "gives": 168,
+        "pet_matches": 2592,
+        "timers": 2,
+        "allocated": 837973760,
+        "heap": 118002008,
+        "collections": [
+          44,
+          14,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313635.4908016,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313641.571054,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313647.6325097,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313653.7122855,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313659.8040063,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage2-baseline-window1-raw.json",
+      "raw_sha256": "cf682f96c37884f2c246141aa1b948c7b3495c7ebd347235ae43060464d282f7"
+    },
+    {
+      "name": "stage2-baseline-window2",
+      "started_utc": 1794313665.8149667,
+      "ended_utc": 1794313697.5498002,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 43472,
+        "mode": "mixed",
+        "cycles": 85,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 680,
+        "gives": 176,
+        "pet_matches": 2720,
+        "timers": 2,
+        "allocated": 862035032,
+        "heap": 118020224,
+        "collections": [
+          45,
+          14,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 59736,
+        "mode": "mixed",
+        "cycles": 117,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 936,
+        "gives": 240,
+        "pet_matches": 3744,
+        "timers": 2,
+        "allocated": 1025865568,
+        "heap": 118197616,
+        "collections": [
+          56,
+          15,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313671.9246879,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313678.0517497,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313684.148434,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313690.2393775,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313696.4797916,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "stage2-baseline-window2-raw.json",
+      "raw_sha256": "735e4596a5b3e96d319934b669035aed6e4b0c8f4477fd8e5dbe9d7eec1bcc79"
+    },
+    {
+      "name": "control-no-record-window0",
+      "started_utc": 1794313781.2182968,
+      "ended_utc": 1794313812.1923263,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 5696,
+        "mode": "mixed",
+        "cycles": 12,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 96,
+        "gives": 32,
+        "pet_matches": 384,
+        "timers": 2,
+        "allocated": 473469168,
+        "heap": 117737488,
+        "collections": [
+          20,
+          11,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 21552,
+        "mode": "mixed",
+        "cycles": 43,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 344,
+        "gives": 88,
+        "pet_matches": 1376,
+        "timers": 2,
+        "allocated": 590993416,
+        "heap": 118037128,
+        "collections": [
+          28,
+          11,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313786.7672894,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313792.861046,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313798.9422925,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313805.0181277,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313811.0971596,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "control-no-record-window1",
+      "started_utc": 1794313813.2852845,
+      "ended_utc": 1794313844.628985,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 22112,
+        "mode": "mixed",
+        "cycles": 44,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 352,
+        "gives": 96,
+        "pet_matches": 1408,
+        "timers": 2,
+        "allocated": 595322376,
+        "heap": 118037128,
+        "collections": [
+          28,
+          11,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 38160,
+        "mode": "mixed",
+        "cycles": 75,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 600,
+        "gives": 152,
+        "pet_matches": 2400,
+        "timers": 2,
+        "allocated": 713593392,
+        "heap": 118008488,
+        "collections": [
+          36,
+          13,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313818.8164787,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313824.9108782,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313830.9737957,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313837.0818365,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313843.5551925,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "control-no-record-window2",
+      "started_utc": 1794313846.0857723,
+      "ended_utc": 1794313877.0340111,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 38728,
+        "mode": "mixed",
+        "cycles": 76,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 608,
+        "gives": 160,
+        "pet_matches": 2432,
+        "timers": 2,
+        "allocated": 717883024,
+        "heap": 118008488,
+        "collections": [
+          36,
+          13,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 54752,
+        "mode": "mixed",
+        "cycles": 107,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 856,
+        "gives": 216,
+        "pet_matches": 3424,
+        "timers": 2,
+        "allocated": 838227248,
+        "heap": 121341504,
+        "collections": [
+          44,
+          14,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313851.6299467,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313857.7074893,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313863.803355,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313869.8661225,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313875.9567122,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-refresh-window0",
+      "started_utc": 1794313878.6332705,
+      "ended_utc": 1794313910.121028,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 55568,
+        "mode": "refresh",
+        "cycles": 109,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 872,
+        "gives": 224,
+        "pet_matches": 3488,
+        "timers": 2,
+        "allocated": 844802616,
+        "heap": 121341504,
+        "collections": [
+          44,
+          14,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 71688,
+        "mode": "refresh",
+        "cycles": 141,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 1128,
+        "gives": 224,
+        "pet_matches": 4512,
+        "timers": 2,
+        "allocated": 972250208,
+        "heap": 118228928,
+        "collections": [
+          52,
+          15,
+          5
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313884.7163458,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313890.7904866,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313896.8523612,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313902.9513347,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313909.0293822,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "candidate-refresh-window0-raw.json",
+      "raw_sha256": "c9e84cf53c3fc54dc6067bc00d38355d97ded4383b4050f69d1d940356473cdc"
+    },
+    {
+      "name": "candidate-refresh-window1",
+      "started_utc": 1794313915.4434416,
+      "ended_utc": 1794313946.9288695,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 74416,
+        "mode": "refresh",
+        "cycles": 146,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 1168,
+        "gives": 224,
+        "pet_matches": 4672,
+        "timers": 2,
+        "allocated": 994751072,
+        "heap": 118311800,
+        "collections": [
+          54,
+          15,
+          5
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 90536,
+        "mode": "refresh",
+        "cycles": 177,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 1416,
+        "gives": 224,
+        "pet_matches": 5664,
+        "timers": 2,
+        "allocated": 1123677064,
+        "heap": 114134568,
+        "collections": [
+          63,
+          17,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313921.5268857,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313927.59955,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313933.6775918,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313939.754613,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313945.8401031,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "candidate-refresh-window1-raw.json",
+      "raw_sha256": "53ffa8b607e2eaf620482eecf4996de1caed92ad97778b04e886175576aeba71"
+    },
+    {
+      "name": "candidate-refresh-window2",
+      "started_utc": 1794313952.3053496,
+      "ended_utc": 1794313983.851645,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 93288,
+        "mode": "refresh",
+        "cycles": 183,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 1464,
+        "gives": 224,
+        "pet_matches": 5856,
+        "timers": 2,
+        "allocated": 1146627064,
+        "heap": 114141608,
+        "collections": [
+          64,
+          17,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 109440,
+        "mode": "refresh",
+        "cycles": 214,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 1712,
+        "gives": 224,
+        "pet_matches": 6848,
+        "timers": 2,
+        "allocated": 1276254680,
+        "heap": 114120872,
+        "collections": [
+          73,
+          18,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313958.381918,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313964.4578853,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313970.5651114,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313976.6629694,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794313982.7759907,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": true,
+      "raw_file": "candidate-refresh-window2-raw.json",
+      "raw_sha256": "9fadbbdb75a129d49fa6e22d15042f54259ffd5ed633f6fdcabf6faadd077e9e"
+    },
+    {
+      "name": "candidate-soak-part0",
+      "started_utc": 1794313989.1982863,
+      "ended_utc": 1794314020.132378,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 112176,
+        "mode": "refresh",
+        "cycles": 220,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 1760,
+        "gives": 224,
+        "pet_matches": 7040,
+        "timers": 2,
+        "allocated": 1301547912,
+        "heap": 114371624,
+        "collections": [
+          74,
+          18,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 128016,
+        "mode": "refresh",
+        "cycles": 251,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2008,
+        "gives": 224,
+        "pet_matches": 8032,
+        "timers": 2,
+        "allocated": 1430309432,
+        "heap": 114163416,
+        "collections": [
+          82,
+          19,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794313994.7411873,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314000.8175797,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314006.895993,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314012.9608269,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314019.038743,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part1",
+      "started_utc": 1794314021.2092733,
+      "ended_utc": 1794314052.8188252,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 128568,
+        "mode": "refresh",
+        "cycles": 252,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2016,
+        "gives": 224,
+        "pet_matches": 8064,
+        "timers": 2,
+        "allocated": 1434794368,
+        "heap": 114170632,
+        "collections": [
+          83,
+          19,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 144752,
+        "mode": "refresh",
+        "cycles": 283,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2264,
+        "gives": 224,
+        "pet_matches": 9056,
+        "timers": 2,
+        "allocated": 1567929080,
+        "heap": 114203224,
+        "collections": [
+          91,
+          20,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314026.7580838,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314032.8536274,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314038.9148676,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314045.0091338,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314051.7437735,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part2",
+      "started_utc": 1794314053.8823123,
+      "ended_utc": 1794314084.8537793,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 145296,
+        "mode": "refresh",
+        "cycles": 284,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2272,
+        "gives": 224,
+        "pet_matches": 9088,
+        "timers": 2,
+        "allocated": 1572299648,
+        "heap": 114203224,
+        "collections": [
+          91,
+          20,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 161152,
+        "mode": "refresh",
+        "cycles": 315,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2520,
+        "gives": 224,
+        "pet_matches": 10080,
+        "timers": 2,
+        "allocated": 1703149112,
+        "heap": 114163632,
+        "collections": [
+          100,
+          21,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314059.415974,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314065.513228,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314071.587216,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314077.684729,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314083.775979,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part3",
+      "started_utc": 1794314085.9345894,
+      "ended_utc": 1794314116.951744,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 161704,
+        "mode": "refresh",
+        "cycles": 316,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2528,
+        "gives": 224,
+        "pet_matches": 10112,
+        "timers": 2,
+        "allocated": 1707609592,
+        "heap": 114163632,
+        "collections": [
+          100,
+          21,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 177584,
+        "mode": "refresh",
+        "cycles": 347,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2776,
+        "gives": 224,
+        "pet_matches": 11104,
+        "timers": 2,
+        "allocated": 1841812168,
+        "heap": 114075848,
+        "collections": [
+          109,
+          23,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314091.4791384,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314097.5602872,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314103.6527877,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314109.7605574,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314115.8529134,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part4",
+      "started_utc": 1794314118.0776918,
+      "ended_utc": 1794314149.024502,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 178152,
+        "mode": "refresh",
+        "cycles": 348,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 2784,
+        "gives": 224,
+        "pet_matches": 11136,
+        "timers": 2,
+        "allocated": 1846445016,
+        "heap": 114075848,
+        "collections": [
+          109,
+          23,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 194008,
+        "mode": "refresh",
+        "cycles": 379,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3032,
+        "gives": 224,
+        "pet_matches": 12128,
+        "timers": 2,
+        "allocated": 1979394888,
+        "heap": 114237680,
+        "collections": [
+          117,
+          23,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314123.6186657,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314129.6817422,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314135.7435622,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314141.840725,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314147.9352767,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part5",
+      "started_utc": 1794314150.1023982,
+      "ended_utc": 1794314181.1196048,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 194560,
+        "mode": "refresh",
+        "cycles": 380,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3040,
+        "gives": 224,
+        "pet_matches": 12160,
+        "timers": 2,
+        "allocated": 1983907312,
+        "heap": 114241512,
+        "collections": [
+          118,
+          23,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 210440,
+        "mode": "refresh",
+        "cycles": 412,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3296,
+        "gives": 224,
+        "pet_matches": 13184,
+        "timers": 2,
+        "allocated": 2118894400,
+        "heap": 114135264,
+        "collections": [
+          126,
+          25,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314155.6548727,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314161.7276125,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314167.8404539,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314173.9479196,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314180.0438411,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part6",
+      "started_utc": 1794314182.1961684,
+      "ended_utc": 1794314213.2116601,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 210992,
+        "mode": "refresh",
+        "cycles": 413,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3304,
+        "gives": 224,
+        "pet_matches": 13216,
+        "timers": 2,
+        "allocated": 2123652408,
+        "heap": 114143712,
+        "collections": [
+          127,
+          25,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 226872,
+        "mode": "refresh",
+        "cycles": 444,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3552,
+        "gives": 224,
+        "pet_matches": 14208,
+        "timers": 2,
+        "allocated": 2258463072,
+        "heap": 114185808,
+        "collections": [
+          135,
+          25,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314187.727514,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314193.820726,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314199.900942,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314206.0095794,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314212.0867648,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part7",
+      "started_utc": 1794314214.3241413,
+      "ended_utc": 1794314245.2763677,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 227432,
+        "mode": "refresh",
+        "cycles": 445,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3560,
+        "gives": 224,
+        "pet_matches": 14240,
+        "timers": 2,
+        "allocated": 2263220344,
+        "heap": 114191832,
+        "collections": [
+          136,
+          25,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 243296,
+        "mode": "refresh",
+        "cycles": 476,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3808,
+        "gives": 224,
+        "pet_matches": 15232,
+        "timers": 2,
+        "allocated": 2401194112,
+        "heap": 114124400,
+        "collections": [
+          144,
+          27,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314219.867185,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314225.9451778,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314232.0249329,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314238.0911145,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314244.1672041,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part8",
+      "started_utc": 1794314246.3595555,
+      "ended_utc": 1794314277.6529307,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 243848,
+        "mode": "refresh",
+        "cycles": 477,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 3816,
+        "gives": 224,
+        "pet_matches": 15264,
+        "timers": 2,
+        "allocated": 2405817504,
+        "heap": 114131352,
+        "collections": [
+          145,
+          27,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 259872,
+        "mode": "refresh",
+        "cycles": 508,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4064,
+        "gives": 224,
+        "pet_matches": 16256,
+        "timers": 2,
+        "allocated": 2543852376,
+        "heap": 114299592,
+        "collections": [
+          153,
+          27,
+          6
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314251.9028108,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314257.9838219,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314264.411812,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314270.4959939,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314276.5785046,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part9",
+      "started_utc": 1794314278.7307425,
+      "ended_utc": 1794314309.6622581,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 260424,
+        "mode": "refresh",
+        "cycles": 509,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4072,
+        "gives": 224,
+        "pet_matches": 16288,
+        "timers": 2,
+        "allocated": 2548623248,
+        "heap": 114203768,
+        "collections": [
+          154,
+          28,
+          6
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 276256,
+        "mode": "refresh",
+        "cycles": 540,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4320,
+        "gives": 224,
+        "pet_matches": 17280,
+        "timers": 2,
+        "allocated": 2686639744,
+        "heap": 114067200,
+        "collections": [
+          164,
+          30,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314284.261834,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314290.3255544,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314296.4024267,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314302.5085876,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314308.5818012,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part10",
+      "started_utc": 1794314310.7716138,
+      "ended_utc": 1794314341.759417,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 276816,
+        "mode": "refresh",
+        "cycles": 541,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4328,
+        "gives": 224,
+        "pet_matches": 17312,
+        "timers": 2,
+        "allocated": 2691493760,
+        "heap": 114067200,
+        "collections": [
+          164,
+          30,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 292688,
+        "mode": "refresh",
+        "cycles": 572,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4576,
+        "gives": 224,
+        "pet_matches": 18304,
+        "timers": 2,
+        "allocated": 2830254048,
+        "heap": 114029616,
+        "collections": [
+          173,
+          31,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314316.3162434,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314322.409924,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314328.51942,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314334.5838482,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314340.6617236,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part11",
+      "started_utc": 1794314342.8420906,
+      "ended_utc": 1794314373.7998154,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 293240,
+        "mode": "refresh",
+        "cycles": 573,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4584,
+        "gives": 224,
+        "pet_matches": 18336,
+        "timers": 2,
+        "allocated": 2835078488,
+        "heap": 114029616,
+        "collections": [
+          173,
+          31,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 309096,
+        "mode": "refresh",
+        "cycles": 604,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4832,
+        "gives": 224,
+        "pet_matches": 19328,
+        "timers": 2,
+        "allocated": 2983481784,
+        "heap": 114067024,
+        "collections": [
+          182,
+          33,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314348.3944774,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314354.4722667,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314360.5770133,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314366.6520727,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314372.7170343,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part12",
+      "started_utc": 1794314374.8884945,
+      "ended_utc": 1794314406.3114872,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 309656,
+        "mode": "refresh",
+        "cycles": 605,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 4840,
+        "gives": 224,
+        "pet_matches": 19360,
+        "timers": 2,
+        "allocated": 2988364912,
+        "heap": 114073904,
+        "collections": [
+          183,
+          33,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 325744,
+        "mode": "refresh",
+        "cycles": 637,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5096,
+        "gives": 224,
+        "pet_matches": 20384,
+        "timers": 2,
+        "allocated": 3131499224,
+        "heap": 114113608,
+        "collections": [
+          192,
+          34,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314380.4350698,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314386.514022,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314392.6253424,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314398.7184398,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314405.227509,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part13",
+      "started_utc": 1794314407.389948,
+      "ended_utc": 1794314439.0034149,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 326296,
+        "mode": "refresh",
+        "cycles": 638,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5104,
+        "gives": 224,
+        "pet_matches": 20416,
+        "timers": 2,
+        "allocated": 3136981272,
+        "heap": 114113608,
+        "collections": [
+          192,
+          34,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 342480,
+        "mode": "refresh",
+        "cycles": 669,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5352,
+        "gives": 224,
+        "pet_matches": 21408,
+        "timers": 2,
+        "allocated": 3280856608,
+        "heap": 117253760,
+        "collections": [
+          201,
+          35,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314413.0093641,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314420.1286256,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314426.2250397,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314432.3164926,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314437.9221807,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part14",
+      "started_utc": 1794314440.0939143,
+      "ended_utc": 1794314471.7373834,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 343040,
+        "mode": "refresh",
+        "cycles": 670,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5360,
+        "gives": 224,
+        "pet_matches": 21440,
+        "timers": 2,
+        "allocated": 3285848832,
+        "heap": 114117384,
+        "collections": [
+          202,
+          35,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 359240,
+        "mode": "refresh",
+        "cycles": 702,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5616,
+        "gives": 224,
+        "pet_matches": 22464,
+        "timers": 2,
+        "allocated": 3433920088,
+        "heap": 115639760,
+        "collections": [
+          211,
+          36,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314445.6316726,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314451.7059093,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314457.7850723,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314464.8953364,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314470.6459746,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part15",
+      "started_utc": 1794314472.819652,
+      "ended_utc": 1794314504.5831726,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 359792,
+        "mode": "refresh",
+        "cycles": 703,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5624,
+        "gives": 224,
+        "pet_matches": 22496,
+        "timers": 2,
+        "allocated": 3439016160,
+        "heap": 115639760,
+        "collections": [
+          211,
+          36,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 375848,
+        "mode": "refresh",
+        "cycles": 735,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5880,
+        "gives": 224,
+        "pet_matches": 23520,
+        "timers": 2,
+        "allocated": 3585196312,
+        "heap": 114245152,
+        "collections": [
+          221,
+          37,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314478.3809826,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314484.4445348,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314490.527663,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314496.9823139,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314503.0648859,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part16",
+      "started_utc": 1794314505.690941,
+      "ended_utc": 1794314536.7254782,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 376624,
+        "mode": "refresh",
+        "cycles": 736,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 5888,
+        "gives": 224,
+        "pet_matches": 23552,
+        "timers": 2,
+        "allocated": 3591706992,
+        "heap": 114245152,
+        "collections": [
+          221,
+          37,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 392512,
+        "mode": "refresh",
+        "cycles": 767,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 6136,
+        "gives": 224,
+        "pet_matches": 24544,
+        "timers": 2,
+        "allocated": 3736926048,
+        "heap": 114021632,
+        "collections": [
+          230,
+          39,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314511.2385588,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314517.36427,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314523.4493344,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314529.5202484,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314535.6320488,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part17",
+      "started_utc": 1794314537.788292,
+      "ended_utc": 1794314568.806956,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 393056,
+        "mode": "refresh",
+        "cycles": 768,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 6144,
+        "gives": 224,
+        "pet_matches": 24576,
+        "timers": 2,
+        "allocated": 3741925112,
+        "heap": 114051136,
+        "collections": [
+          231,
+          39,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 408944,
+        "mode": "refresh",
+        "cycles": 799,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 6392,
+        "gives": 224,
+        "pet_matches": 25568,
+        "timers": 2,
+        "allocated": 3893597416,
+        "heap": 114119000,
+        "collections": [
+          240,
+          40,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314543.342607,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314549.458507,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314555.5371573,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314561.633156,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314567.6971216,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part18",
+      "started_utc": 1794314569.8879497,
+      "ended_utc": 1794314600.8565202,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 409496,
+        "mode": "refresh",
+        "cycles": 800,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 6400,
+        "gives": 224,
+        "pet_matches": 25600,
+        "timers": 2,
+        "allocated": 3898524840,
+        "heap": 114124120,
+        "collections": [
+          241,
+          40,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 425352,
+        "mode": "refresh",
+        "cycles": 831,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 6648,
+        "gives": 224,
+        "pet_matches": 26592,
+        "timers": 2,
+        "allocated": 4047489088,
+        "heap": 114055192,
+        "collections": [
+          250,
+          42,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314575.4270718,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314581.5112233,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314587.6268454,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314593.7036805,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314599.791036,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    },
+    {
+      "name": "candidate-soak-part19",
+      "started_utc": 1794314601.9330273,
+      "ended_utc": 1794314632.859762,
+      "before": {
+        "active": true,
+        "previews": 8,
+        "sends": 425904,
+        "mode": "refresh",
+        "cycles": 832,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 6656,
+        "gives": 224,
+        "pet_matches": 26624,
+        "timers": 2,
+        "allocated": 4052481880,
+        "heap": 114055192,
+        "collections": [
+          250,
+          42,
+          7
+        ]
+      },
+      "after": {
+        "active": true,
+        "previews": 8,
+        "sends": 441736,
+        "mode": "refresh",
+        "cycles": 863,
+        "errors": 0,
+        "chickens": 32,
+        "slots": 8,
+        "paints": 6904,
+        "gives": 224,
+        "pet_matches": 27616,
+        "timers": 2,
+        "allocated": 4201553936,
+        "heap": 117146216,
+        "collections": [
+          260,
+          43,
+          7
+        ]
+      },
+      "occupancy": [
+        {
+          "utc": 1794314607.4791062,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314613.5062697,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314619.591309,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314625.697365,
+          "humans": 0,
+          "bots": 8
+        },
+        {
+          "utc": 1794314631.7787428,
+          "humans": 0,
+          "bots": 8
+        }
+      ],
+      "instrumented": false
+    }
+  ],
+  "stages": [
+    {
+      "stage": 0,
+      "label": "baseline",
+      "sha256": "be19c563119250cd62b438227702d43d8d46b33ecd7a891811a90111909864b0",
+      "calibration": "WPCAL {\"iterations\":100000,\"elapsed_ms\":13.5177,\"allocated\":40}\n",
+      "engine_before": "No vprof lite data recorded\n",
+      "engine_after": "No vprof lite data recorded\n"
+    },
+    {
+      "stage": 1,
+      "label": "candidate",
+      "sha256": "f8931c09b36c51eb2859d4e243a6cb533194d573a37e379de6c5a5828743a7ac",
+      "calibration": "WPCAL {\"iterations\":100000,\"elapsed_ms\":24.4459,\"allocated\":40}\n",
+      "engine_before": "No vprof lite data recorded\n",
+      "engine_after": "No vprof lite data recorded\n"
+    },
+    {
+      "stage": 2,
+      "label": "baseline",
+      "sha256": "be19c563119250cd62b438227702d43d8d46b33ecd7a891811a90111909864b0",
+      "calibration": "WPCAL {\"iterations\":100000,\"elapsed_ms\":13.0674,\"allocated\":40}\n",
+      "engine_before": "No vprof lite data recorded\n",
+      "engine_after": "No vprof lite data recorded\n"
+    }
+  ],
+  "candidate_extra_engine": "No vprof lite data recorded\n",
+  "completed": true,
+  "restored_sha256": "a8f2240687e792282cfeb39dc8fbe647d1814d6f761bbd4a4112dbaa70590cad",
+  "restored": true,
+  "finished_utc": 1794314691.0426614
+}

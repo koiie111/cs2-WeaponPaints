@@ -1,0 +1,88 @@
+diff --git a/Events.cs b/Events.cs
+index 16cb188..556eb1e 100644
+--- a/Events.cs
++++ b/Events.cs
+@@ -136,6 +136,7 @@ namespace WeaponPaints
+ 
+ 		private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
+ 		{
++ using var measure = new Probe("OnPlayerSpawn");
+ 			CCSPlayerController? player = @event.Userid;
+ 
+ 			if (player is null || !player.IsValid || Config.Additional is { KnifeEnabled: false, GloveEnabled: false })
+@@ -189,6 +190,7 @@ namespace WeaponPaints
+ 
+ 		private HookResult OnGiveNamedItemPost(DynamicHook hook)
+ 		{
++ using var measure = new Probe("OnGiveNamedItemPost");
+ 			try
+ 			{
+ 				var itemServices = hook.GetParam<CCSPlayer_ItemServices>(0);
+@@ -210,6 +212,7 @@ namespace WeaponPaints
+ 
+ 		private void OnEntityCreated(CEntityInstance entity)
+ 		{
++ using var measure = new Probe("OnEntityCreated");
+ 			var designerName = entity.DesignerName;
+ 
+ 			if (designerName != null && designerName.Contains("weapon"))
+@@ -257,6 +260,7 @@ namespace WeaponPaints
+ 
+ 		private void OnTick()
+ 		{
++ using var measure = new Probe("OnTick");
+ 			if (!Config.Additional.ShowSkinImage) return;
+ 
+ 			foreach (var player in Players)
+@@ -291,6 +295,7 @@ namespace WeaponPaints
+ 
+ 		private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
+ 		{
++ using var measure = new Probe("OnPlayerDeath");
+ 			CCSPlayerController? player = @event.Attacker;
+ 			CCSPlayerController? victim = @event.Userid;
+ 
+diff --git a/Pets.cs b/Pets.cs
+index 4f3df16..de40b07 100644
+--- a/Pets.cs
++++ b/Pets.cs
+@@ -239,6 +239,7 @@ public partial class WeaponPaints
+ 
+     private HookResult OnPetRoundStart(EventRoundStart e, GameEventInfo info)
+     {
++ using var measure = new Probe("OnPetRoundStart");
+         if (!Config.Additional.PetsEnabled) return HookResult.Continue;
+         _petSpawnVersions.InvalidateAll();
+         foreach (var slot in _petEmoteTimers.Keys.ToArray()) CancelPetEmote(slot);
+@@ -337,6 +338,7 @@ public partial class WeaponPaints
+     // Called only on spawn/connect/round. A native pet is identified by its owner; map chickens are untouched.
+     private List<CChicken> NativePets(CCSPlayerController player)
+     {
++ using var measure = new Probe("NativePets");
+         var found = new List<CChicken>();
+         if (_ownerOffset <= 0) return found;
+         var owned = _livePets.Values.Select(x => x.Handle).ToHashSet();
+diff --git a/WeaponAction.cs b/WeaponAction.cs
+index d98171c..527f7c8 100644
+--- a/WeaponAction.cs
++++ b/WeaponAction.cs
+@@ -14,6 +14,7 @@ namespace WeaponPaints
+ 	{
+ 		private void GivePlayerWeaponSkin(CCSPlayerController player, CBasePlayerWeapon weapon)
+ 		{
++ using var measure = new Probe("GivePlayerWeaponSkin");
+ 			if (!Config.Additional.SkinEnabled) return;
+ 			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out _)) return;
+ 			
+diff --git a/WeaponPaints.cs b/WeaponPaints.cs
+index 6e0eb2c..7ac2519 100644
+--- a/WeaponPaints.cs
++++ b/WeaponPaints.cs
+@@ -26,6 +26,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
+ 	public override void Load(bool hotReload)
+ 	{
+ 		Instance = this;
++        AddCommand("css_wp_perf", "Export/reset temporary counters", (player, command) => command.ReplyToCommand("WPPERF " + ExportPerf()));
+ 
+ 		if (hotReload)
+ 		{

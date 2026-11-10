@@ -1,0 +1,32 @@
+{
+  "commit": "3d704e6",
+  "files": {
+    "3rd_party/MenuManagerApi.dll": "1a4c89023fc7c1c158fde2517efab98a1ddbd4f83dfde2a61b064d2788b5c7e0",
+    "AgentModel.cs": "6d6e7ad13615fbb59c48fdc10444311681d18e25042d39fa92fb90a762c94806",
+    "Commands.cs": "67d11d0a4f7c005789402d1d86ea90309fd47e7a3778126d23c64c07a942a30a",
+    "Config.cs": "ae155a898cea22e3c65dbd635ca318d9cc16a45026af1745014a3ca86bfdbcc6",
+    "Database.cs": "81061af1dcf30796f56b83bf28b32bb5164df8e554441abbd5b64a8a789d913e",
+    "DeferredPlayer.cs": "d771749593e56a385cb6b87d252094b8dd2fd8a02639784582311d0cfa0a9666",
+    "DeferredWork.cs": "113a3a568f54eda5a939a31f91ef1e3217f58d273e826d57d8b09743f8390923",
+    "Events.cs": "3a5847533cf1580f0e56ca7e26523f09e0ab009a754029030d8813530cb6f1b8",
+    "ItemIdentity.cs": "ada8d4f5ce0e36e50a958cdb1412d54cb3282c32dc51c27d583851ec12775022",
+    "ItemName.cs": "5f8de04cacd78de1d9fc191efd877ffda8b15d273aec0e53cf5f57dd4f02e182",
+    "OrderedOperations.cs": "4c4c386ec575052e5e800e9a78545d1ec556a042d4b26ed6fcc5f5925b61a83f",
+    "PetState.cs": "651476f846fb99402eaa46604ec0a67964a14e27e2f9383c5c342541396f94d5",
+    "Pets.cs": "75082d09f4de8f18768fb7670400270e2ff374716ef607de2253c5b2473e49dc",
+    "PlayerDataSnapshot.cs": "bd97a944e138231d18cd68b32c584984fa8b412b6bb0ff042fd31790b5e0166b",
+    "PlayerExtensions.cs": "feb7313d163b20907920dd027a16843c48142b3168f8e10266753e68e78b9ca3",
+    "PlayerInfo.cs": "9d233caa3b78d0113e2f8aac87729adf52c84bbe61eeaa76afdc387b91c8ebc9",
+    "PlayerWorkStamp.cs": "5ee28d5b21c4fb478d6fdd11a23368c05bc9506d594267ccad71e9838c9e0c90",
+    "PreviewState.cs": "4535513f8ac5e33be01140b03487486b80aaa8cec16643caae0944df8a340400",
+    "SkinCatalog.cs": "41857e77e1a11b61c1ed1123f35b125ce8c711925f5c4a3830730f9ff1feb0c3",
+    "Utility.cs": "b13e8458e862f698b741f1a7aaee9ff4c24c4d4bf6522cbacf29857893f6d51d",
+    "Variables.cs": "3bcedc62c17850a0c92603f5ea0e9c7a9f977bf8dd43bc95f5527e67e980f108",
+    "WeaponAction.cs": "3866d39af308e271e634cad41a9f24de42e88a839a6061b4717935aaab2233b7",
+    "WeaponInfo.cs": "82be391c85115bfac1bec4579b204d33bf3548acdb9a6eddc8f78f5ac8f7bdf5",
+    "WeaponPaints.cs": "87ca54c70880ae212616b8e1375d4740d47f6ee81125e675296d731e17b56729",
+    "WeaponPaints.csproj": "cff01e8d86e4084099518c838aa0ebfa2dc4029f4282a77b98a3a298bd9f579c",
+    "WeaponRefresh.cs": "f4b606e0f083caf82ce095ceca64fab4ea2e4d6e5a6e27616ac2dcb19431fab9",
+    "WeaponSynchronization.cs": "cc04f83401c66a38ffd1ef7cae362c79dd300f138abd204b84ca09d2857c4604"
+  }
+}

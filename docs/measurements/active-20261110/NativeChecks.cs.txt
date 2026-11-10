@@ -1,0 +1,72 @@
+using System.Reflection;
+using System.Collections;
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using Microsoft.Extensions.Logging;
+public class Check:BasePlugin {
+ public override string ModuleName=>"WPCacheCheck"; public override string ModuleVersion=>"1";
+ public override void Load(bool hotReload){
+ AddCommand("css_wp_queue_check","Console-only managed state bounds",(caller,command)=>{
+  if(caller!=null||Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsBot&&!p.IsHLTV))return;
+  var flags=BindingFlags.Static|BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public;
+  var wp=AppDomain.CurrentDomain.GetAssemblies().Where(a=>a.GetName().Name=="WeaponPaints").Select(a=>a.GetType("WeaponPaints.WeaponPaints")?.GetProperty("Instance",flags)?.GetValue(null)).OfType<BasePlugin>().Last();
+  var counts=new Dictionary<string,object>{{"version",wp.ModuleVersion}};
+  foreach(var name in new[]{"_weaponRefreshes","_retiringWeapons","_holsteredKnives","_deferredTimers","_pendingKnifePaint","_chickenHandles","_livePets","_petTimers","_petExpiryTimers","_petEmoteTimers","GPlayerWeaponsInfo","Players"}){
+   var value=wp.GetType().GetField(name,flags)?.GetValue(wp);var count=value?.GetType().GetProperty("Count")?.GetValue(value);if(count!=null)counts[name]=count;
+  }
+  var sync=wp.GetType().Assembly.GetType("WeaponPaints.WeaponSynchronization");var operations=sync?.GetField("Operations",flags)?.GetValue(null);var pending=operations?.GetType().GetProperty("PendingKeys",flags)?.GetValue(operations);if(pending!=null)counts["db_pending_keys"]=pending;
+  var world=Utilities.FindAllEntitiesByDesignerName<CBasePlayerWeapon>("weapon_ak47").Where(w=>w.IsValid).ToArray();
+  counts["world_ak47"]=world.Length;counts["owned_ak47"]=world.Count(w=>w.OwnerEntity.IsValid);
+  var serialized=System.Text.Json.JsonSerializer.Serialize(counts);Logger.LogInformation("QUEUE SNAPSHOT {Data}",serialized);command.ReplyToCommand("WPQUEUES "+serialized);
+ });
+ AddCommand("css_wp_cache_check","Console-only cached-recipient lifecycle fixture",(caller,command)=>{
+  if(caller!=null||Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsBot&&!p.IsHLTV))return;
+  var flags=BindingFlags.Static|BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public;
+  var wp=AppDomain.CurrentDomain.GetAssemblies().Where(a=>a.GetName().Name=="WeaponPaints").Select(a=>a.GetType("WeaponPaints.WeaponPaints")?.GetProperty("Instance",flags)?.GetValue(null)).OfType<BasePlugin>().Last(p=>p.ModuleVersion=="3.3a-db6-perf.12");
+  var state=wp.GetType().GetField("_previews",flags)!.GetValue(wp)!;
+  var entries=(IDictionary)state.GetType().GetField("Entries",flags)!.GetValue(state)!;
+  var show=state.GetType().GetMethod("Show",flags)!;
+  var old=Utilities.GetPlayers().Single(p=>p.IsValid&&p.IsBot);
+  var oldSlot=old.Slot;var oldSerial=old.EntityHandle.Raw;var oldSteam=old.SteamID;
+  void Display(int slot,CCSPlayerController recipient,uint serial,string image="https://4ill.ru/static/images/skins/180.png")=>show.Invoke(state,new object[]{slot,recipient.SteamID,image,Server.EngineTime,recipient,serial});
+  void Assert(bool condition,string label){Logger.LogInformation("CHECK {Label} PASS={Pass}",label,condition);if(!condition)throw new Exception(label);}
+  Display(oldSlot,old,oldSerial);
+  AddTimer(.1f,()=>{
+   Assert(entries.Contains(oldSlot),"live cached recipient retains preview");
+   Display(oldSlot,old,oldSerial+1);
+   Server.NextFrame(()=>Server.NextFrame(()=>{
+    Assert(!entries.Contains(oldSlot),"mismatched controller serial rejected");
+    Display(oldSlot,old,oldSerial);
+    // Only the dedicated fixture bot exists; no human can reach this action.
+    Server.ExecuteCommand("bot_kick");
+    AddTimer(.2f,()=>{
+     Assert(!old.IsValid&&!entries.Contains(oldSlot),"disconnect invalidates cached serial and clears preview");
+     Server.ExecuteCommand("bot_add_t");
+     AddTimer(1.2f,()=>{
+      var replacement=Utilities.GetPlayers().Single(p=>p.IsValid&&p.IsBot);
+      var slot=replacement.Slot;var serial=replacement.EntityHandle.Raw;
+      Logger.LogInformation("CHECK reconnect geometry oldSlot={OldSlot} newSlot={NewSlot} oldRaw={OldRaw} newRaw={NewRaw} oldValid={OldValid}",oldSlot,slot,oldSerial,serial,old.IsValid);
+      Assert(!entries.Contains(oldSlot),"old preview remains cleared after reconnect");
+      // The account is 0 for both bots. Inject a deliberately stale controller
+      // without dereferencing its invalid native properties.
+      if(!old.IsValid || oldSerial!=serial)show.Invoke(state,new object[]{slot,oldSteam,"https://4ill.ru/static/images/skins/180.png",Server.EngineTime,old,oldSerial});
+      else Logger.LogInformation("CHECK stable controller reused; no artificial stale-wrapper claim");
+      Server.NextFrame(()=>Server.NextFrame(()=>{
+       Assert(!entries.Contains(slot),"disconnect/reconnect cannot inherit old preview");
+       Display(slot,replacement,serial);
+       AddTimer(.1f,()=>{
+        Assert(entries.Contains(slot),"replacement controller receives its own preview");
+        AddTimer(2.05f,()=>{
+         Assert(!entries.Contains(slot),"preview expires at original duration");
+         Display(slot,replacement,serial);Display(slot,replacement,serial,"");
+         Assert(!entries.Contains(slot),"empty image clears cached recipient");
+         Logger.LogInformation("CHECK COMPLETE");
+        });
+       });
+      }));
+     });
+    });
+   }));
+  });
+ });}
+}

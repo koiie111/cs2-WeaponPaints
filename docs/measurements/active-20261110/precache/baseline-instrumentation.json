@@ -1,0 +1,16 @@
+{
+  "OnTick": 1,
+  "OnPlayerSpawn": 1,
+  "OnPlayerDeath": 1,
+  "OnItemPickup": 1,
+  "OnClientFullConnect": 1,
+  "OnPlayerDisconnect": 1,
+  "OnGiveNamedItemPost": 1,
+  "OnEntityCreated": 1,
+  "NativePets": 1,
+  "OnPetRoundStart": 1,
+  "OnPetSpawn": 1,
+  "OnPetEntityDeleted": 1,
+  "GivePlayerWeaponSkin": 1,
+  "RefreshWeapons": 1
+}

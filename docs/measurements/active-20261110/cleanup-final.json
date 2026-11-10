@@ -1,0 +1,37 @@
+{
+  "verified_utc": 1794315911.9345546,
+  "server": 7,
+  "endpoint": [
+    "109.195.19.84",
+    27075
+  ],
+  "version": "3.3a-db6",
+  "humans": 0,
+  "bots": 0,
+  "css_version": "  CounterStrikeSharp was created and is maintained by Michael \"roflmuffin\" Wilson.\n  Counter-Strike Sharp uses code borrowed from SourceMod, Source.Python, FiveM, Saul Rennison, source2gen and CS2Fixes.\n  See ACKNOWLEDGEMENTS.md for more information.\n  Current API Version: v378 (1.0.378+Branch.main.Sha.d9efaf83b951c74b988ed0a358d03db79c0a4205.d9efaf8)\n",
+  "sha256": "640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610",
+  "diagnostics_absent": true,
+  "runtime_restored": {
+    "bot_stop": "0",
+    "bot_dont_shoot": "false",
+    "mp_autoteambalance": "true",
+    "mp_limitteams": "2",
+    "mp_ignore_round_win_conditions": "false",
+    "bot_quota": "0"
+  },
+  "raw_exports_checked_absent": 24,
+  "removed_raw_exports_this_attempt": 0,
+  "manifest_changes": {
+    "plugins/CS2-SimpleAdmin/data/admins.json": {
+      "before": "079b0cc3b378d6b11340cc5760e2e7957cf75dde54afea8b1a0170f0558eed51",
+      "after": "085b34fbba4a5761bc354924b600859f1c564978d54de5b03bc659b519b4e6d0"
+    },
+    "plugins/WeaponPaints/WeaponPaints.dll": {
+      "before": "a8f2240687e792282cfeb39dc8fbe647d1814d6f761bbd4a4112dbaa70590cad",
+      "after": "640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610"
+    }
+  },
+  "other_binary_shared_configs_gamedata_unchanged": true,
+  "external_data_change_note": "SimpleAdmin data/admins.json hash changed; test never writes it. Contents/timing not captured; treat as a confound for whole-process claims, preserve current data.",
+  "wp_warn_error_count": 0
+}

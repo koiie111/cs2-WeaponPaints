@@ -1,0 +1,115 @@
+MySQL 8.4.13
+PASS: six-table load and publication
+PASS: fallback team and override
+PASS: music pin glove mapping
+PASS: agent tuple mapping
+PASS: skin overrides and UTF8
+PASS: uint32 cosmetics parser
+PASS: malformed cosmetics fallback
+PASS: feature flags mask 0
+PASS: feature flags mask 1
+PASS: feature flags mask 2
+PASS: feature flags mask 3
+PASS: feature flags mask 4
+PASS: feature flags mask 5
+PASS: feature flags mask 6
+PASS: feature flags mask 7
+PASS: feature flags mask 8
+PASS: feature flags mask 9
+PASS: feature flags mask 10
+PASS: feature flags mask 11
+PASS: feature flags mask 12
+PASS: feature flags mask 13
+PASS: feature flags mask 14
+PASS: feature flags mask 15
+PASS: feature flags mask 16
+PASS: feature flags mask 17
+PASS: feature flags mask 18
+PASS: feature flags mask 19
+PASS: feature flags mask 20
+PASS: feature flags mask 21
+PASS: feature flags mask 22
+PASS: feature flags mask 23
+PASS: feature flags mask 24
+PASS: feature flags mask 25
+PASS: feature flags mask 26
+PASS: feature flags mask 27
+PASS: feature flags mask 28
+PASS: feature flags mask 29
+PASS: feature flags mask 30
+PASS: feature flags mask 31
+PASS: feature flags mask 32
+PASS: feature flags mask 33
+PASS: feature flags mask 34
+PASS: feature flags mask 35
+PASS: feature flags mask 36
+PASS: feature flags mask 37
+PASS: feature flags mask 38
+PASS: feature flags mask 39
+PASS: feature flags mask 40
+PASS: feature flags mask 41
+PASS: feature flags mask 42
+PASS: feature flags mask 43
+PASS: feature flags mask 44
+PASS: feature flags mask 45
+PASS: feature flags mask 46
+PASS: feature flags mask 47
+PASS: feature flags mask 48
+PASS: feature flags mask 49
+PASS: feature flags mask 50
+PASS: feature flags mask 51
+PASS: feature flags mask 52
+PASS: feature flags mask 53
+PASS: feature flags mask 54
+PASS: feature flags mask 55
+PASS: feature flags mask 56
+PASS: feature flags mask 57
+PASS: feature flags mask 58
+PASS: feature flags mask 59
+PASS: feature flags mask 60
+PASS: feature flags mask 61
+PASS: feature flags mask 62
+PASS: feature flags mask 63
+PASS: restore full feature snapshot
+PASS: knife upsert
+PASS: glove upsert
+PASS: music upsert
+PASS: pin upsert
+PASS: agent upsert
+PASS: batch insert
+PASS: batch update preserves cosmetics
+PASS: disconnect StatTrak snapshot
+PASS: immutable save before wait
+PASS: real read-after-write
+PASS: late SQL rejected: slot reuse
+PASS: late SQL rejected: newer request
+PASS: late SQL rejected: map change
+PASS: late SQL rejected: unload
+An error occurred: Connect Timeout expired.
+PASS: connection refusal clears current marker
+An error occurred in GetPinsFromDatabase: Table 'wp_test_14be8529dd704af38ae5f8cd771fa475.wp_player_pins' doesn't exist
+An error occurred: Table 'wp_test_14be8529dd704af38ae5f8cd771fa475.wp_player_pins' doesn't exist
+PASS: SQL failure preserves snapshot and clears marker
+PASS: SQL recovery
+Retrying player skin batch for 76561198000000001 after attempt 1: Timed out waiting for MySQL lock 'wp_player_skins:76561198000000001'.
+PASS: real lock timeout and retry recovery
+Retrying player skin batch for 76561198000000001 after attempt 1: Timed out waiting for MySQL lock 'wp_player_skins:76561198000000001'.
+Retrying player skin batch for 76561198000000001 after attempt 2: Timed out waiting for MySQL lock 'wp_player_skins:76561198000000001'.
+Retrying player skin batch for 76561198000000001 after attempt 3: Timed out waiting for MySQL lock 'wp_player_skins:76561198000000001'.
+Error syncing stattrak to database: Timed out waiting for MySQL lock 'wp_player_skins:76561198000000001'.
+PASS: four-attempt retry bound
+PASS: locks and queue released after failure
+Retrying player skin batch for 76561198000000001 after attempt 1: Lock wait timeout exceeded; try restarting transaction
+PASS: real InnoDB error 1205 retries and saves successfully
+PASS: parallel independent accounts persist without mixing identities
+PASS: invalid early sticker does not shift slot four
+PASS: empty account clears old values
+PASS: pet query located in production source
+PASS: real pet SQL uint seed hat and UTC conversion
+PASS: pet collation-safe join retains primary-key lookup
+PASS: production round batch pet query
+PASS: default persistence does not overwrite disabled preference
+PASS: active subscription with no pet preference LEFT JOIN
+PASS: inactive subscription has no pet row
+PASS: 103 MySQL assertions; engine dispatch adapter; linked production SQL source
+CLEANUP: isolated schema removed

@@ -1,0 +1,38 @@
+2026-11-10 14:37:35.913 +03:00 [INFO] plugin:WPDiag14 CHECK A command entry
+2026-11-10 14:37:35.925 +03:00 [INFO] plugin:WPDiag14 CHECK B player enumeration complete
+2026-11-10 14:37:35.927 +03:00 [INFO] plugin:WPDiag14 CHECK C assemblies=4
+2026-11-10 14:37:35.927 +03:00 [INFO] plugin:WPDiag14 CHECK D0 before static Instance
+2026-11-10 14:37:35.927 +03:00 [INFO] plugin:WPDiag14 CHECK E0 after static Instance version=3.3a-db6-perf.8
+2026-11-10 14:37:35.927 +03:00 [INFO] plugin:WPDiag14 CHECK D1 before static Instance
+2026-11-10 14:37:35.927 +03:00 [INFO] plugin:WPDiag14 CHECK E1 after static Instance version=3.3a-db6-perf.9
+2026-11-10 14:37:35.928 +03:00 [INFO] plugin:WPDiag14 CHECK D2 before static Instance
+2026-11-10 14:37:35.928 +03:00 [INFO] plugin:WPDiag14 CHECK E2 after static Instance version=3.3a-db6-perf.10
+2026-11-10 14:37:35.928 +03:00 [INFO] plugin:WPDiag14 CHECK D3 before static Instance
+2026-11-10 14:37:35.929 +03:00 [INFO] plugin:WPDiag14 CHECK E3 after static Instance version=3.3a-db6-perf.11
+2026-11-10 14:37:35.929 +03:00 [INFO] plugin:WPDiag14 CHECK F reflection complete selected=true
+2026-11-10 14:37:35.929 +03:00 [INFO] plugin:WPDiag14 CHECK G idempotent callback complete
+2026-11-10 14:37:35.929 +03:00 [INFO] plugin:WPDiag14 CHECK registrations stable=true count=16
+2026-11-10 14:37:35.929 +03:00 [INFO] plugin:WPDiag14 CHECK schema m_AttributeManager offset=3384
+2026-11-10 14:37:35.930 +03:00 [INFO] plugin:WPDiag14 CHECK schema m_nFallbackPaintKit offset=4472
+2026-11-10 14:37:35.930 +03:00 [INFO] plugin:WPDiag14 CHECK schema m_nFallbackSeed offset=4476
+2026-11-10 14:37:35.930 +03:00 [INFO] plugin:WPDiag14 CHECK schema m_flFallbackWear offset=4480
+2026-11-10 14:37:35.930 +03:00 [INFO] plugin:WPDiag14 CHECK before chicken keyvalue spawn
+2026-11-10 14:37:35.932 +03:00 [INFO] plugin:WPDiag14 CHECK chicken spawned
+2026-11-10 14:37:35.938 +03:00 [INFO] plugin:WPDiag14 CHECK production hat spawned=1254785068
+2026-11-10 14:37:35.943 +03:00 [INFO] plugin:WPDiag14 CHECK hat cleared immediately=true
+2026-11-10 14:37:35.956 +03:00 [INFO] plugin:WPDiag14 CHECK native hat removed within two frames=true
+2026-11-10 14:37:35.963 +03:00 [INFO] plugin:WPDiag14 CHECK before GiveNamedItem
+2026-11-10 14:37:35.964 +03:00 [INFO] plugin:WPDiag14 CHECK item-services gun valid=true owned=true allowed=true
+2026-11-10 14:37:35.965 +03:00 [INFO] plugin:WPDiag14 CHECK item-services gun fields dirtied
+2026-11-10 14:37:36.013 +03:00 [INFO] plugin:WPDiag14 CHECK spam50 first replacement count=1 oldGone=true
+2026-11-10 14:37:36.013 +03:00 [INFO] plugin:WPDiag14 CHECK first paint44 and ammo preserved=true
+2026-11-10 14:37:36.024 +03:00 [INFO] plugin:WPDiag14 CHECK spam50 second replacement count=1 oldGone=true
+2026-11-10 14:37:36.024 +03:00 [INFO] plugin:WPDiag14 CHECK second paint180 and ammo preserved=true
+2026-11-10 14:37:36.024 +03:00 [INFO] plugin:WPDiag14 CHECK active slot preserved=true
+2026-11-10 14:37:36.026 +03:00 [INFO] plugin:WPDiag14 CHECK surviving world AK count=1
+2026-11-10 14:37:36.309 +03:00 [INFO] plugin:WPDiag14 CHECK knife type=507 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 14:37:36.309 +03:00 [INFO] plugin:WPDiag14 CHECK knife-only refresh preserves rifle serial/ammo=true
+2026-11-10 14:37:36.612 +03:00 [INFO] plugin:WPDiag14 CHECK knife type=515 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 14:37:36.940 +03:00 [INFO] plugin:WPDiag14 CHECK knife type=526 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 14:37:37.253 +03:00 [INFO] plugin:WPDiag14 CHECK knife type=42 spam150 interleaved oneKnife=1 active=true oldGone=true queue=0 PASS=true
+2026-11-10 14:37:37.604 +03:00 [INFO] plugin:WPDiag14 CHECK death cancels knife redeploy=true

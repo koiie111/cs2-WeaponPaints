@@ -1,0 +1,28 @@
+2026-11-10 14:09:29.493 +03:00 [INFO] plugin:WPDiag8 CHECK A command entry
+2026-11-10 14:09:29.506 +03:00 [INFO] plugin:WPDiag8 CHECK B player enumeration complete
+2026-11-10 14:09:29.508 +03:00 [INFO] plugin:WPDiag8 CHECK C assemblies=2
+2026-11-10 14:09:29.508 +03:00 [INFO] plugin:WPDiag8 CHECK D0 before static Instance
+2026-11-10 14:09:29.509 +03:00 [INFO] plugin:WPDiag8 CHECK E0 after static Instance version=3.3a-db6-perf.6
+2026-11-10 14:09:29.509 +03:00 [INFO] plugin:WPDiag8 CHECK D1 before static Instance
+2026-11-10 14:09:29.509 +03:00 [INFO] plugin:WPDiag8 CHECK E1 after static Instance version=3.3a-db6-perf.7
+2026-11-10 14:09:29.510 +03:00 [INFO] plugin:WPDiag8 CHECK F reflection complete selected=true
+2026-11-10 14:09:29.510 +03:00 [INFO] plugin:WPDiag8 CHECK G idempotent callback complete
+2026-11-10 14:09:29.510 +03:00 [INFO] plugin:WPDiag8 CHECK registrations stable=true count=16
+2026-11-10 14:09:29.510 +03:00 [INFO] plugin:WPDiag8 CHECK schema m_AttributeManager offset=3384
+2026-11-10 14:09:29.510 +03:00 [INFO] plugin:WPDiag8 CHECK schema m_nFallbackPaintKit offset=4472
+2026-11-10 14:09:29.510 +03:00 [INFO] plugin:WPDiag8 CHECK schema m_nFallbackSeed offset=4476
+2026-11-10 14:09:29.511 +03:00 [INFO] plugin:WPDiag8 CHECK schema m_flFallbackWear offset=4480
+2026-11-10 14:09:29.511 +03:00 [INFO] plugin:WPDiag8 CHECK before chicken keyvalue spawn
+2026-11-10 14:09:29.513 +03:00 [INFO] plugin:WPDiag8 CHECK chicken spawned
+2026-11-10 14:09:29.518 +03:00 [INFO] plugin:WPDiag8 CHECK production hat spawned=85131449
+2026-11-10 14:09:29.523 +03:00 [INFO] plugin:WPDiag8 CHECK hat cleared immediately=true
+2026-11-10 14:09:29.524 +03:00 [INFO] plugin:WPDiag8 CHECK before GiveNamedItem
+2026-11-10 14:09:29.525 +03:00 [INFO] plugin:WPDiag8 CHECK item-services gun valid=true
+2026-11-10 14:09:29.526 +03:00 [INFO] plugin:WPDiag8 CHECK item-services gun fields dirtied
+2026-11-10 14:09:29.554 +03:00 [INFO] plugin:WPDiag8 CHECK native hat removed within two frames=true
+2026-11-10 14:09:29.585 +03:00 [INFO] plugin:WPDiag8 CHECK spam50 first replacement count=1 oldGone=true
+2026-11-10 14:09:29.585 +03:00 [INFO] plugin:WPDiag8 CHECK first paint44 and ammo preserved=true
+2026-11-10 14:09:29.596 +03:00 [INFO] plugin:WPDiag8 CHECK spam50 second replacement count=1 oldGone=true
+2026-11-10 14:09:29.596 +03:00 [INFO] plugin:WPDiag8 CHECK second paint180 and ammo preserved=true
+2026-11-10 14:09:29.598 +03:00 [INFO] plugin:WPDiag8 CHECK surviving world AK count=1
+2026-11-10 14:09:29.647 +03:00 [INFO] plugin:WPDiag8 CHECK death invalidates queued request=true

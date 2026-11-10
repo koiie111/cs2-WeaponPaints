@@ -24,6 +24,7 @@ public partial class WeaponPaints
     private readonly PetWorkVersions _petLoadVersions = new();
     private readonly PetWorkVersions _petSpawnVersions = new();
     private readonly Dictionary<int, LivePet> _livePets = new();
+    private readonly HashSet<uint> _chickenHandles = new();
     private readonly PetWorkVersions _petEmoteVersions = new();
     private readonly Dictionary<int, DateTime> _petEmoteCooldowns = new();
     private readonly Dictionary<int, PetTimer> _petExpiryTimers = new();
@@ -62,6 +63,7 @@ public partial class WeaponPaints
         RegisterListener<Listeners.OnServerPrecacheResources>(PrecachePets);
         RegisterListener<Listeners.OnEntitySpawned>(OnChickenSpawned);
         RegisterListener<Listeners.OnEntityDeleted>(OnPetEntityDeleted);
+        RegisterListener<Listeners.OnEntityTakeDamagePost>(OnPetDamagePost);
         AddCommand("css_petemote", "Play a chicken emote: trick, squat, sleep, feed, shoulder, panic, idle", OnPetEmote);
         // Load runs before the entity system exists on a cold start. Recover old
         // plugin entities once a world is available, without a recurring sweep.
@@ -70,7 +72,11 @@ public partial class WeaponPaints
         {
             if (recoveryVersion != _petRecoveryVersion || !Config.Additional.PetsEnabled) return;
             foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
-                if (chicken.IsValid && chicken.Entity?.Name == PetEntityName) KillPetEntity(chicken);
+                {
+                if (!chicken.IsValid) continue;
+                if (chicken.Entity?.Name == PetEntityName) KillPetEntity(chicken);
+                else _chickenHandles.Add(chicken.EntityHandle.Raw);
+                }
             foreach (var prop in Utilities.FindAllEntitiesByDesignerName<CDynamicProp>("prop_dynamic"))
                 if (prop.IsValid && prop.Entity?.Name == PetHatEntityName) KillPetEntity(prop);
         });
@@ -143,7 +149,7 @@ public partial class WeaponPaints
             {
                 if (Database == null) return;
                 await using var connection = await Database.GetConnectionAsync();
-                await using var command = new MySqlCommand("SELECT CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=a.steam_id WHERE a.steam_id=@id LIMIT 1", connection);
+                await using var command = new MySqlCommand("SELECT CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=CONVERT(a.steam_id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE a.steam_id=@id LIMIT 1", connection);
                 command.Parameters.AddWithValue("@id", steamId);
                 await using var reader = await command.ExecuteReaderAsync();
                 var active = await reader.ReadAsync();
@@ -206,7 +212,7 @@ public partial class WeaponPaints
             {
                 await using var connection = await Database.GetConnectionAsync();
                 var parameters = slots.Values.Select((_, i) => "@p" + i).ToArray();
-                await using var command = new MySqlCommand($"SELECT a.steam_id,CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=a.steam_id WHERE a.steam_id IN ({string.Join(',', parameters)})", connection);
+                await using var command = new MySqlCommand($"SELECT a.steam_id,CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=CONVERT(a.steam_id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE a.steam_id IN ({string.Join(',', parameters)})", connection);
                 var i = 0; foreach (var id in slots.Values) command.Parameters.AddWithValue(parameters[i++], id);
                 var loaded = new Dictionary<string, (DateTime ExpiresAt, PetChoice Choice)>(StringComparer.Ordinal);
                 await using (var reader = await command.ExecuteReaderAsync())
@@ -260,6 +266,7 @@ public partial class WeaponPaints
     {
         if (!Config.Additional.PetsEnabled || entity.DesignerName != "chicken" || _ownerOffset <= 0) return;
         var handle = entity.EntityHandle.Raw;
+        _chickenHandles.Add(handle);
         AddPetTimer(.15f, () =>
         {
             var chicken = new CHandle<CChicken>(handle).Value;
@@ -282,10 +289,30 @@ public partial class WeaponPaints
         });
     }
 
+    private void OnPetDamagePost(CBaseEntity entity, CTakeDamageInfo info, CTakeDamageResult result)
+    {
+        // Chicken death effects precede entity deletion by several seconds. Remove
+        // its cosmetic at lethal damage, rather than waiting for OnEntityDeleted.
+        if (_livePets.Count == 0 || !entity.IsValid || entity.DesignerName != "chicken" || entity.Health > 0) return;
+        var handle = entity.EntityHandle.Raw;
+        foreach (var (slot, live) in _livePets)
+        {
+            if (live.Handle != handle) continue;
+            CancelPetEmote(slot);
+            if (live.HatHandle != 0)
+            {
+                KillPetEntity(new CHandle<CDynamicProp>(live.HatHandle).Value);
+                _livePets[slot] = live with { HatHandle = 0 };
+            }
+            break;
+        }
+    }
+
     private void OnPetEntityDeleted(CEntityInstance entity)
     {
-        if (_livePets.Count == 0 || entity.DesignerName is not ("chicken" or "prop_dynamic")) return;
         var handle = entity.EntityHandle.Raw;
+        _chickenHandles.Remove(handle);
+        if (_livePets.Count == 0 || entity.DesignerName is not ("chicken" or "prop_dynamic")) return;
         foreach (var (slot, live) in _livePets.ToArray())
         {
             if (live.Handle == handle)
@@ -302,6 +329,7 @@ public partial class WeaponPaints
     private void ClearAllPets()
     {
         ++_petRecoveryVersion;
+        _chickenHandles.Clear();
         foreach (var timer in _petTimers.ToArray()) StopPetTimer(timer);
         _petExpiryTimers.Clear();
         _petEmoteTimers.Clear();
@@ -339,10 +367,10 @@ public partial class WeaponPaints
     {
         var found = new List<CChicken>();
         if (_ownerOffset <= 0) return found;
-        var owned = _livePets.Values.Select(x => x.Handle).ToHashSet();
-        foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
+        foreach (var handle in _chickenHandles)
         {
-            if (!chicken.IsValid || chicken.Entity?.Name == PetEntityName || owned.Contains(chicken.EntityHandle.Raw)) continue;
+            var chicken = new CHandle<CChicken>(handle).Value;
+            if (chicken == null || !chicken.IsValid || chicken.Entity?.Name == PetEntityName) continue;
             if (chicken.Owner.Raw == player.EntityHandle.Raw) found.Add(chicken);
         }
         return found;

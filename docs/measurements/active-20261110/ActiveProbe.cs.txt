@@ -1,0 +1,83 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Text.Json;
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.Utils;
+using Microsoft.Extensions.Logging;
+namespace WeaponPaints;
+public partial class WeaponPaints {
+ private sealed class ActiveBucket { internal long[] Start=new long[100000],Duration=new long[100000];internal int Count,Dropped;internal long Bytes; }
+ private static readonly Dictionary<string,ActiveBucket> ActiveBuckets=new();
+ private static bool ActiveRecording;
+ private static long ActiveStarted;
+ private readonly struct ActiveScope:IDisposable {
+  private readonly ActiveBucket? bucket;private readonly long start,allocated;
+  internal ActiveScope(string name){
+   if(!ActiveRecording){bucket=null;start=allocated=0;return;}
+   if(!ActiveBuckets.TryGetValue(name,out bucket))ActiveBuckets[name]=bucket=new();
+   start=Stopwatch.GetTimestamp();allocated=GC.GetAllocatedBytesForCurrentThread();
+  }
+  public void Dispose(){if(bucket==null)return;var end=Stopwatch.GetTimestamp();var bytes=GC.GetAllocatedBytesForCurrentThread()-allocated;
+   if(bucket.Count<bucket.Start.Length){var n=bucket.Count++;bucket.Start[n]=start;bucket.Duration[n]=end-start;}else bucket.Dropped++;
+   bucket.Bytes+=bytes;
+  }
+ }
+ private static void ProfNextFrame(Action action)=>Server.NextFrame(()=>{using var measure=new ActiveScope("NextFrame.callback");action();});
+ private static void ProfNextWorldUpdate(Action action)=>Server.NextWorldUpdate(()=>{using var measure=new ActiveScope("NextWorldUpdate.callback");action();});
+ private CounterStrikeSharp.API.Modules.Timers.Timer ProfAddTimer(float interval,Action action,TimerFlags? flags=null)=>base.AddTimer(interval,()=>{using var measure=new ActiveScope("Timer.callback");action();},flags);
+ private bool _activeLoad;
+ private int _loadRevision,_loadCycles,_loadErrors,_loadPetMatches,_loadPaints,_loadGives;
+ private readonly List<uint> _loadChickens=new();
+ private readonly List<int> _loadSlots=new();
+ private long _loadSends;
+ private static void ProfPrintHtml(CCSPlayerController player,string html){Instance._loadSends++;player.PrintToCenterHtml(html);}
+ private int _loadPreviewCount=8;
+ private string _loadMode="mixed";
+ private long _frameStarted,_lastTick;
+ private void RegisterActiveProbe(){
+  foreach(var key in new[]{"OnTick","OnPlayerSpawn","OnPlayerDeath","OnItemPickup","OnClientFullConnect","OnPlayerDisconnect","OnGiveNamedItemPost","OnEntityCreated","GivePlayerWeaponSkin","NativePets","OnPetRoundStart","OnPetSpawn","OnPetEntityDeleted","RefreshWeapons","ApplyWeaponRefresh","NextFrame.callback","NextWorldUpdate.callback","Timer.callback","LoadDriver","EmptyScope","EntityThink.span","TickInterval.wall"})ActiveBuckets[key]=new();
+  RegisterListener<Listeners.OnServerPreEntityThink>(()=>{if(ActiveRecording)_frameStarted=Stopwatch.GetTimestamp();});
+  RegisterListener<Listeners.OnServerPostEntityThink>(()=>{if(ActiveRecording&&_frameStarted!=0)RecordSpan("EntityThink.span",_frameStarted);_frameStarted=0;});
+  RegisterListener<Listeners.OnTick>(()=>{var now=Stopwatch.GetTimestamp();if(ActiveRecording&&_lastTick!=0)RecordSpan("TickInterval.wall",_lastTick);_lastTick=now;});
+  AddCommand("css_wp_load_prepare","prepare owned synthetic fixture",(p,c)=>{if(p!=null)return;try{PrepareLoad();c.ReplyToCommand("WPLOAD prepared "+_loadSlots.Count);}catch(Exception ex){StopLoad();Logger.LogError(ex,"Load prepare failed");c.ReplyToCommand("WPLOAD FAILED");}});
+  AddCommand("css_wp_load_mode","mixed/refresh and preview count",(p,c)=>{if(p!=null)return;_loadMode=c.ArgCount>1?c.GetArg(1):"mixed";_loadPreviewCount=c.ArgCount>2?int.Parse(c.GetArg(2)):8;c.ReplyToCommand("WPLOAD mode="+_loadMode+" preview="+_loadPreviewCount);});
+  AddCommand("css_wp_load_record","reset/start recording",(p,c)=>{if(p!=null)return;ResetActive();ActiveRecording=true;ActiveStarted=Stopwatch.GetTimestamp();c.ReplyToCommand("WPLOAD recording");});
+  AddCommand("css_wp_load_export","stop/export bounded samples",(p,c)=>{if(p!=null)return;ActiveRecording=false;var stopped=Stopwatch.GetTimestamp();var path=Path.Combine(ModuleDirectory,"..","..","logs","WPActiveProbe");Directory.CreateDirectory(path);var file=Path.Combine(path,DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff")+".json");
+   var rows=ActiveBuckets.ToDictionary(k=>k.Key,k=>(object)new{start_ticks=k.Value.Start.Take(k.Value.Count).ToArray(),duration_ticks=k.Value.Duration.Take(k.Value.Count).ToArray(),allocated_bytes=k.Value.Bytes,dropped=k.Value.Dropped});
+   File.WriteAllText(file,JsonSerializer.Serialize(new{version=ModuleVersion,frequency=Stopwatch.Frequency,start=ActiveStarted,stop=stopped,mode=_loadMode,preview=_loadPreviewCount,cycles=_loadCycles,errors=_loadErrors,pet_matches=_loadPetMatches,paints=_loadPaints,gives=_loadGives,humans=Utilities.GetPlayers().Count(p=>p.IsValid&&!p.IsBot&&!p.IsHLTV),bots=Utilities.GetPlayers().Count(p=>p.IsValid&&p.IsBot),gc=new[]{GC.CollectionCount(0),GC.CollectionCount(1),GC.CollectionCount(2)},total_allocated=GC.GetTotalAllocatedBytes(),heap=GC.GetGCMemoryInfo().HeapSizeBytes,pending_timers=Timers.Count,rows}));c.ReplyToCommand("WPLOADFILE "+Path.GetFullPath(file));});
+  AddCommand("css_wp_load_status","counts",(p,c)=>{if(p==null)c.ReplyToCommand("WPLOAD "+JsonSerializer.Serialize(new{active=_activeLoad,previews=PROBE_PREVIEW_COUNT,sends=_loadSends,mode=_loadMode,cycles=_loadCycles,errors=_loadErrors,chickens=_loadChickens.Count(h=>new CHandle<CChicken>(h).Value is {IsValid:true}),slots=_loadSlots.Count,paints=_loadPaints,gives=_loadGives,pet_matches=_loadPetMatches,timers=Timers.Count,allocated=GC.GetTotalAllocatedBytes(),heap=GC.GetGCMemoryInfo().HeapSizeBytes,collections=new[]{GC.CollectionCount(0),GC.CollectionCount(1),GC.CollectionCount(2)}}));});
+  AddCommand("css_wp_load_stop","stop fixture",(p,c)=>{if(p==null){StopLoad();c.ReplyToCommand("WPLOAD stopped");}});
+  AddCommand("css_wp_load_calibrate","empty scope",(p,c)=>{if(p!=null)return;ResetActive();ActiveRecording=true;var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();for(var i=0;i<100000;i++){using var sample=new ActiveScope("EmptyScope");}var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;ActiveRecording=false;c.ReplyToCommand("WPCAL "+JsonSerializer.Serialize(new{iterations=100000,elapsed_ms=elapsed,allocated=GC.GetAllocatedBytesForCurrentThread()-allocated}));ResetActive();});
+ }
+ private static void ResetActive(){ActiveRecording=false;foreach(var b in ActiveBuckets.Values){b.Count=b.Dropped=0;b.Bytes=0;}Instance._frameStarted=Instance._lastTick=0;}
+ private static void RecordSpan(string key,long start){var b=ActiveBuckets[key];if(b.Count==b.Start.Length){b.Dropped++;return;}var n=b.Count++;b.Start[n]=start;b.Duration[n]=Stopwatch.GetTimestamp()-start;}
+ private void PrepareLoad(){
+  if(Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsBot&&!p.IsHLTV))throw new Exception("Human present");
+  if(_activeLoad)throw new Exception("Already prepared");
+  if(!Config.Additional.ShowSkinImage||!Config.Additional.PetsEnabled||!Config.Additional.SkinEnabled)throw new Exception("Required feature disabled");
+  var bots=Utilities.GetPlayers().Where(p=>p.IsValid&&p.IsBot&&p.PawnIsAlive).OrderBy(p=>p.Slot).Take(8).ToArray();if(bots.Length!=8)throw new Exception("Need 8 alive bots");
+  foreach(var p in bots){_loadSlots.Add(p.Slot);if(!Players.Contains(p))Players.Add(p);GPlayerWeaponsInfo[p.Slot]=new();GPlayerWeaponsInfo[p.Slot][p.Team]=new();GPlayerWeaponsInfo[p.Slot][p.Team][7]=new WeaponInfo{Paint=180,Seed=1,Wear=.01f};p.RemoveWeapons();}
+  for(var i=0;i<32;i++){var p=bots[i%bots.Length];var origin=p.PlayerPawn.Value!.AbsOrigin!;var chicken=Utilities.CreateEntityByName<CChicken>("chicken")!;var keys=new CEntityKeyValues();keys.SetString("targetname","wp_synthetic_load");keys.SetVector("origin",origin.X,origin.Y,origin.Z+16);chicken.DispatchSpawn(keys);chicken.Owner.Raw=p.EntityHandle.Raw;_loadChickens.Add(chicken.EntityHandle.Raw);}
+  _activeLoad=true;var revision=++_loadRevision;
+  base.AddTimer(.1f,()=>{if(!_activeLoad||revision!=_loadRevision)return;foreach(var slot in _loadSlots){var p=Utilities.GetPlayerFromSlot(slot)!;GiveLoadGun(p);}base.AddTimer(1f,()=>LoadCycle(revision),TimerFlags.REPEAT|TimerFlags.STOP_ON_MAPCHANGE);},TimerFlags.STOP_ON_MAPCHANGE);
+ }
+ private void GiveLoadGun(CCSPlayerController p){var raw=p.GiveNamedItem("weapon_ak47");if(raw==0)throw new Exception("Null item");var w=new CBasePlayerWeapon(raw);if(w.OwnerEntity.Raw!=p.PlayerPawn.Raw)throw new Exception("Unacquired item");w.Clip1=7;w.ReserveAmmo[0]=11;_loadGives++;}
+ private void LoadCycle(int revision){
+  if(!_activeLoad||revision!=_loadRevision)return;
+  if(Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsBot&&!p.IsHLTV)){StopLoad();return;}
+  using var load=new ActiveScope("LoadDriver");_loadCycles++;
+  try{var n=0;foreach(var slot in _loadSlots){var p=Utilities.GetPlayerFromSlot(slot);if(p==null||!p.IsValid||!p.PawnIsAlive)throw new Exception("Bot/pawn lost");
+   const string image="https://4ill.ru/static/images/skins/weapon_ak47/180.png";
+   if(n++<_loadPreviewCount){PROBE_PREVIEW_UPDATE}else{PROBE_PREVIEW_CLEAR}
+   var owned=NativePets(p);if(owned.Count!=4)throw new Exception("Native pet count "+owned.Count);_loadPetMatches+=owned.Count;
+   var gun=p.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).SingleOrDefault(w=>w is {IsValid:true}&&w.AttributeManager.Item.ItemDefinitionIndex==7);
+   if(gun==null)throw new Exception("Missing/duplicate gun");GivePlayerWeaponSkin(p,gun);_loadPaints++;
+   if(gun.FallbackPaintKit!=180||gun.Clip1!=7||gun.ReserveAmmo[0]!=11)throw new Exception("Paint/ammo mismatch");
+   if(_loadMode=="refresh"){PROBE_REFRESH}
+   else if(_loadMode=="mixed"&&_loadCycles%4==0){var old=gun.EntityHandle.Raw;gun.Remove();Server.NextFrame(()=>Server.NextFrame(()=>{if(!_activeLoad||revision!=_loadRevision||!p.IsValid||!p.PawnIsAlive)return;try{if(new CHandle<CBasePlayerWeapon>(old).Value is {IsValid:true})throw new Exception("Old serial still valid");GiveLoadGun(p);}catch(Exception ex){_loadErrors++;Logger.LogError(ex,"Synthetic give failed");}}));}
+  }}catch(Exception ex){_loadErrors++;StopLoad();Logger.LogError(ex,"Synthetic workload failed");}
+ }
+ private void StopLoad(){ActiveRecording=false;_activeLoad=false;_loadRevision++;foreach(var slot in _loadSlots){var p=Utilities.GetPlayerFromSlot(slot);if(p==null||!p.IsValid||!p.IsBot)continue;PROBE_PREVIEW_CLEAR GPlayerWeaponsInfo.TryRemove(slot,out _);Players.Remove(p);}foreach(var h in _loadChickens){var e=new CHandle<CChicken>(h).Value;if(e is {IsValid:true})e.Remove();}_loadSlots.Clear();_loadChickens.Clear();}
+}

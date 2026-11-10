@@ -27,16 +27,15 @@ namespace WeaponPaints
 				
 				case true:
 				{
-					var newDefIndex = WeaponDefindex.FirstOrDefault(x => x.Value == GPlayersKnife[player.Slot][player.Team]);
-					if (newDefIndex.Key == 0) return;
+					if (!KnifeDefindexes.Value.TryGetValue(GPlayersKnife[player.Slot][player.Team], out var newDefIndex)) return;
 
-					if (weapon.AttributeManager.Item.ItemDefinitionIndex != newDefIndex.Key)
+					if (weapon.AttributeManager.Item.ItemDefinitionIndex != newDefIndex)
 					{
-						SubclassChange(weapon, (ushort)newDefIndex.Key);
+						SubclassChange(weapon, (ushort)newDefIndex);
 						ScheduleKnifePaint(player, weapon);
 					}
 
-					weapon.AttributeManager.Item.ItemDefinitionIndex = (ushort)newDefIndex.Key;
+					weapon.AttributeManager.Item.ItemDefinitionIndex = (ushort)newDefIndex;
 					weapon.AttributeManager.Item.EntityQuality = 3;
 					
 					weapon.AttributeManager.Item.AttributeList.Attributes.RemoveAll();
@@ -55,7 +54,7 @@ namespace WeaponPaints
 			
 			weapon.AttributeManager.Item.AccountID = (uint)player.SteamID;
 			
-			List<JObject> skinInfo;
+			
 			bool isLegacyModel;
 
 			if (_config.Additional.GiveRandomSkin &&
@@ -67,12 +66,12 @@ namespace WeaponPaints
 				weapon.FallbackWear = 0.01f;
 			
 				weapon.AttributeManager.Item.NetworkedDynamicAttributes.Attributes.RemoveAll();
-				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", GetRandomPaint(weaponDefIndex));
+				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weapon.FallbackPaintKit);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture seed", 0);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture wear", 0.01f);
 			
 				weapon.AttributeManager.Item.AttributeList.Attributes.RemoveAll();
-				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture prefab", GetRandomPaint(weaponDefIndex));
+				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture prefab", weapon.FallbackPaintKit);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture seed", 0);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture wear", 0.01f);
 			
@@ -81,13 +80,7 @@ namespace WeaponPaints
 				if (fallbackPaintKit == 0)
 					return;
 			
-				skinInfo = SkinsList
-					.Where(w => 
-						w["weapon_defindex"]?.ToObject<int>() == weaponDefIndex && 
-						w["paint"]?.ToObject<int>() == fallbackPaintKit)
-					.ToList();
-				
-				isLegacyModel = skinInfo.Count <= 0 || skinInfo[0].Value<bool>("legacy_model");
+				isLegacyModel = Catalog.IsLegacy(weaponDefIndex, fallbackPaintKit);
 				UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
 				return;
 			}
@@ -109,6 +102,11 @@ namespace WeaponPaints
 			
 			weapon.FallbackWear = weaponInfo.Wear;
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weapon.FallbackPaintKit);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture seed", weapon.FallbackSeed);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture wear", weapon.FallbackWear);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture prefab", weapon.FallbackPaintKit);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture seed", weapon.FallbackSeed);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture wear", weapon.FallbackWear);
 
 			if (weaponInfo.StatTrak)
 			{			
@@ -129,13 +127,7 @@ namespace WeaponPaints
 			if (weaponInfo.KeyChain != null) SetKeychain(player, weapon);
 			if (weaponInfo.Stickers.Count > 0) SetStickers(player, weapon);
 
-			skinInfo = SkinsList
-				.Where(w => 
-					w["weapon_defindex"]?.ToObject<int>() == weaponDefIndex && 
-					w["paint"]?.ToObject<int>() == fallbackPaintKit)
-				.ToList();
-				
-			isLegacyModel = skinInfo.Count <= 0 || skinInfo[0].Value<bool>("legacy_model");
+			isLegacyModel = Catalog.IsLegacy(weaponDefIndex, fallbackPaintKit);
 			UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
 		}
 		
@@ -256,44 +248,6 @@ namespace WeaponPaints
 			return false;
 		}
 
-		// IMPORTANT: never create or remove weapon entities here (GiveNamedItem / Remove / Kill).
-		// Removal is deferred, so repeated refreshes (css_wp spam, menu selection + !wp) used to
-		// re-give weapons that were not yet gone and duplicate them on the ground.
-		// Only re-apply attributes to the existing entities.
-		private void RefreshWeapons(CCSPlayerController? player)
-		{
-			if (!_gBCommandsAllowed) return;
-			if (player == null || !player.IsValid || player.PlayerPawn.Value == null || (LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE)
-				return;
-			if (player.PlayerPawn.Value.WeaponServices == null || player.PlayerPawn.Value.ItemServices == null)
-				return;
-
-			var weapons = player.PlayerPawn.Value.WeaponServices.MyWeapons.ToArray();
-
-			if (weapons.Length == 0)
-				return;
-			if (player.Team is CsTeam.None or CsTeam.Spectator)
-				return;
-
-			foreach (var weapon in weapons)
-			{
-				try
-				{
-					var weaponEntity = weapon.Value;
-					if (!weapon.IsValid || weaponEntity == null || !weaponEntity.IsValid ||
-						!weaponEntity.DesignerName.Contains("weapon_")) continue;
-
-					// Re-apply fallback attributes in place. Destroying and recreating every weapon
-					// from a delayed callback can dereference stale native entities and crash CS2.
-					GivePlayerWeaponSkin(player, weaponEntity);
-					IncrementWearForWeaponWithStickers(player, weaponEntity);
-				}
-				catch (Exception ex)
-				{
-					Logger.LogWarning("Error refreshing weapon in place: " + ex.Message);
-				}
-			}
-		}
 
 		private void GivePlayerGloves(CCSPlayerController player)
 		{
@@ -302,11 +256,13 @@ namespace WeaponPaints
 
 			//force gloves model refresh to prevent model overlap
 			player.ExecuteClientCommand("lastinv");
-			Instance.AddTimer(0.08f, () =>
+			var identity = DeferredPlayer.Capture(player);
+            Instance.AddOneShot(0.08f, () =>
 			{	
-				try
-				{
-					if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive ||
+                try
+                {
+                    if (!identity.TryResolve(out player)) return;
+                    if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive ||
 						player.SteamID.ToString() != expectedSteamId) return;
 
 					if (!GPlayersGlove.TryGetValue(player.Slot, out var gloveInfo) ||
@@ -338,35 +294,19 @@ namespace WeaponPaints
 					//force gloves model refresh to prevent model overlap
 					player.ExecuteClientCommand("lastinv");
 					SetBodygroup(pawn, "first_or_third_person", 0);
-					AddTimer(0.2f, () =>
+					Instance.AddOneShot(0.2f, () =>
 					{
-						if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
+						if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
 						var currentPawn = player.PlayerPawn.Value;
 						if (currentPawn != null && currentPawn.IsValid)
 							SetBodygroup(currentPawn, "first_or_third_person", 1);
-					}, TimerFlags.STOP_ON_MAPCHANGE);
+					});
 				}
 				catch (Exception) { }
-			}, TimerFlags.STOP_ON_MAPCHANGE);
+			});
 		}
 
-		private static int GetRandomPaint(int defindex)
-		{
-			if (SkinsList.Count == 0)
-				return 0;
-
-			Random rnd = new Random();
-
-			// Filter weapons by the provided defindex
-			var filteredWeapons = SkinsList.Where(w => w["weapon_defindex"]?.ToString() == defindex.ToString()).ToList();
-
-			if (filteredWeapons.Count == 0)
-				return 0;
-
-			var randomWeapon = filteredWeapons[rnd.Next(filteredWeapons.Count)];
-
-			return int.TryParse(randomWeapon["paint"]?.ToString(), out var paintValue) ? paintValue : 0;
-		}
+		private static int GetRandomPaint(int defindex) => Catalog.RandomPaint(defindex);
 
 		//xstage idea on css discord
 		public static void SubclassChange(CBasePlayerWeapon weapon, ushort itemD)
@@ -445,12 +385,13 @@ namespace WeaponPaints
             if (!AgentModel.IsAllowed(model, team)) return;
 
 			var expectedSteamId = player.SteamID.ToString();
+            var identity = DeferredPlayer.Capture(player);
 
 			try
 			{
 				Server.NextFrame(() =>
 				{
-					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
+					if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
 					var pawn = player.PlayerPawn.Value;
 					if (pawn != null && pawn.IsValid)
 						pawn.SetModel($"agents/models/{model}.vmdl");
@@ -530,7 +471,7 @@ namespace WeaponPaints
 			
 			econItemView.ItemID = itemId;
 			econItemView.ItemIDLow = (uint)itemId & 0xFFFFFFFF;
-			econItemView.ItemIDHigh = (uint)itemId >> 32;
+			econItemView.ItemIDHigh = ItemIdentity.High(itemId);
 		}
 
 		private static CCSPlayerController? GetPlayerFromItemServices(CCSPlayer_ItemServices itemServices)

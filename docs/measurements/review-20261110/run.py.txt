@@ -1,0 +1,183 @@
+import sys, re, json, time, hashlib, shlex, secrets
+from pathlib import Path
+from datetime import datetime, timezone
+
+sys.path.insert(0, str(Path.home()/'.codex/tasks/wp-active-profile12-20261110'))
+from access import c, s, q, x
+
+base = Path(__file__).parent
+remote = x['css_root']+'/plugins/WeaponPaints/WeaponPaints.dll'
+config = x['css_root']+'/configs/plugins/WeaponPaints/WeaponPaints.json'
+candidate = (base/'release/WeaponPaints.dll').read_bytes()
+candidate_hash = hashlib.sha256(candidate).hexdigest()
+version = '3.3a-db6-perf.12'
+record = {'server': 7, 'started_utc': datetime.now(timezone.utc).isoformat(), 'candidate_source': 'e0c1b88', 'candidate_sha256': candidate_hash, 'checks': {}}
+changed = False
+installed = []
+values = {}
+password = None
+entry_gate = secrets.token_urlsafe(24)
+log_offsets = {}
+
+def write_record():
+    (base/'result.json').write_text(json.dumps(record, indent=2), encoding='utf-8')
+
+def check_empty(bots=0):
+    status = q('status')
+    occupancy = re.search(r'players\s*:\s*(\d+) humans, (\d+) bots', status)
+    if not occupancy or int(occupancy[1]) != 0 or (bots is not None and int(occupancy[2]) != bots):
+        raise RuntimeError('Unexpected occupancy: '+(occupancy[0] if occupancy else 'status unavailable')+'; no occupied restart authorized')
+    return status
+
+def loaded(wanted):
+    return bool(re.search(r'(?m)^\s*\[#\d+:LOADED\]: "WeaponPaints" \('+re.escape(wanted)+r'\)', q('css_plugins list')))
+
+def cold_install(data, wanted):
+    check_empty()
+    manager = '/mnt/ssd/cs2_7/cs2server'
+    s.stat(manager)
+    def manage(action):
+        _, out, err = c.exec_command('su - '+shlex.quote(x['user'])+' -c '+shlex.quote(manager+' '+action), timeout=120)
+        out.read(); err.read()
+        if out.channel.recv_exit_status() != 0: raise RuntimeError('Scoped manager '+action+' failed')
+    manage('stop')
+    _, out, err = c.exec_command('pgrep -u cs2_7 -x cs2', timeout=15)
+    if out.read().strip(): raise RuntimeError('Instance is still running; refusing file replacement')
+    with s.open(remote, 'wb') as f: f.write(data)
+    manage('start')
+    for attempt in range(60):
+        time.sleep(2)
+        try:
+            check_empty()
+            if loaded(wanted): return
+        except (OSError, EOFError, ConnectionError): pass
+        except RuntimeError as error:
+            if 'status unavailable' not in str(error): raise
+    raise RuntimeError('Expected WeaponPaints did not load after scoped cold start')
+
+def manifest():
+    # Hash contents in the remote process, never return config values or process arguments.
+    code = """import pathlib,hashlib,json
+r=pathlib.Path('/mnt/ssd/cs2_7/serverfiles/game/csgo/addons/counterstrikesharp')
+out={}
+for sub in ['plugins','shared','configs','gamedata']:
+ for p in sorted((r/sub).rglob('*')):
+  if p.is_file() and p.suffix in ['.dll','.json','.so','.vxml','.vcss']:
+   out[str(p.relative_to(r))]=hashlib.sha256(p.read_bytes()).hexdigest()
+print(json.dumps(out))
+"""
+    _, out, err = c.exec_command("python3 - <<'PY'\n"+code+"\nPY", timeout=60)
+    result = out.read().decode(); error = err.read().decode()
+    if error: raise RuntimeError('Remote hash collection failed')
+    return json.loads(result)
+
+def deploy_fixture(folder, source, assembly):
+    target = x['css_root']+'/plugins/'+folder
+    try:
+        s.stat(target)
+    except FileNotFoundError:
+        s.mkdir(target)
+    else:
+        raise RuntimeError('Diagnostic directory already exists')
+    installed.append((target, assembly))
+    for suffix in ['.dll', '.deps.json']:
+        s.put(str(base/source/'build'/(assembly+suffix)), target+'/'+assembly+suffix)
+    q('css_plugins load '+folder)
+
+def read_new_logs(name):
+    result = ''
+    for filename in s.listdir(x['css_root']+'/logs'):
+        if not filename.startswith('log-'+name) or not filename.endswith('.txt'): continue
+        path = x['css_root']+'/logs/'+filename
+        with s.open(path, 'rb') as f:
+            f.seek(log_offsets.get(filename, 0))
+            result += f.read().decode('utf-8', errors='replace')
+    return result
+
+try:
+    assert x['game_number'] == 7 and x['user'] == 'cs2_7' and x['root'] == '/mnt/ssd/cs2_7/serverfiles'
+    check_empty(); time.sleep(1); check_empty()
+    original = s.open(remote, 'rb').read()
+    assert hashlib.sha256(original).hexdigest() == '640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610'
+    assert loaded('3.3a-db6')
+    record['original_sha256'] = hashlib.sha256(original).hexdigest()
+    record['config_sha256'] = hashlib.sha256(s.open(config, 'rb').read()).hexdigest()
+    (base/'original.dll').write_bytes(original)
+    for cmd in ['bot_stop','bot_dont_shoot','mp_autoteambalance','mp_limitteams','mp_ignore_round_win_conditions','bot_quota']:
+        match = re.search(r'=\s*([^\s]+)', q(cmd)); assert match
+        values[cmd] = match[1]
+    # sv_password is kept exclusively in memory; it is never included in evidence.
+    match = re.search(r'=([^\r\n]*)', q('sv_password')); assert match
+    password = match[1].strip().strip('"')
+    for filename in s.listdir(x['css_root']+'/logs'):
+        if filename.endswith('.txt') and filename.startswith(('log-WeaponPaints','log-WPReviewNative','log-WPCacheCheck')): log_offsets[filename] = s.stat(x['css_root']+'/logs/'+filename).st_size
+    before = manifest()
+    (base/'manifest-before.json').write_text(json.dumps(before, indent=2))
+    print('Backed up original DLL; captured '+str(len(before))+' hashes; 0 humans/0 bots', flush=True)
+    q('sv_password "'+entry_gate+'"')
+    check_empty()
+    changed = True
+    cold_install(candidate, version)
+    q('sv_password "'+entry_gate+'"')
+    assert hashlib.sha256(s.open(remote, 'rb').read()).hexdigest() == candidate_hash
+    record['checks']['candidate_cold_load'] = True
+    print('Fresh candidate cold-loaded, DLL hash verified', flush=True)
+    for cmd, value in {'bot_stop':1,'bot_dont_shoot':1,'mp_autoteambalance':0,'mp_limitteams':0,'mp_ignore_round_win_conditions':1}.items(): q(cmd+' '+str(value))
+    q('bot_add_t'); time.sleep(3); check_empty(1)
+    deploy_fixture('WPReviewNative', 'native', 'WPReviewNative')
+    q('css_wp_review_native'); time.sleep(5)
+    native = read_new_logs('WPReviewNative')
+    (base/'native-checks.txt').write_text(native, encoding='utf-8')
+    assert 'REVIEW NATIVE COMPLETE' in native and not re.search(r'\[(EROR|ERROR|WARN|FTAL)\]|=false|PASS=False', native, re.I), 'Native gameplay invariants failed'
+    record['checks']['weapon_knife_pet_native'] = True
+    print('PASS native: command idempotency/schema/hat cleanup, AK paint/ammo/slots, knife507/515/526/42, 700 requests, death cancellation', flush=True)
+    q('bot_kick'); time.sleep(1); check_empty()
+    deploy_fixture('WPCacheCheck', 'cache', 'WPCacheCheck')
+    q('bot_add_t'); time.sleep(2); check_empty(1)
+    q('css_wp_cache_check'); time.sleep(6)
+    cache = read_new_logs('WPCacheCheck')
+    (base/'preview-checks.txt').write_text(cache, encoding='utf-8')
+    assert 'CHECK COMPLETE' in cache and not re.search(r'\[(EROR|ERROR|WARN|FTAL)\]|PASS=false', cache, re.I), 'Native preview invariants failed'
+    record['checks']['preview_native'] = True
+    queues = q('css_wp_queue_check')
+    match = re.search(r'WPQUEUES (\{.*\})', queues); assert match
+    counts = json.loads(match[1]); record['queues_before_cleanup'] = counts
+    for key in ['_weaponRefreshes','_retiringWeapons','_holsteredKnives','_deferredTimers','_pendingKnifePaint','db_pending_keys']:
+        assert counts[key] == 0, (key, counts[key])
+    print('PASS native: cached preview/serial/disconnect/reconnect/expiry/empty image; work queues empty', flush=True)
+    record['all_checks_passed'] = True
+finally:
+    try:
+        if changed:
+            check_empty(bots=None)
+            q('bot_kick'); time.sleep(1); check_empty()
+            for target, assembly in reversed(installed):
+                q('css_plugins unload '+assembly)
+                for suffix in ['.dll','.deps.json']:
+                    s.remove(target+'/'+assembly+suffix)
+                s.rmdir(target)
+            cold_install(original, '3.3a-db6')
+            for cmd, value in values.items(): q(cmd+' '+value)
+            q('sv_password "'+password+'"')
+            assert hashlib.sha256(s.open(remote, 'rb').read()).hexdigest() == record['original_sha256']
+            assert hashlib.sha256(s.open(config, 'rb').read()).hexdigest() == record['config_sha256']
+            check_empty()
+            plugins = q('css_plugins list')
+            assert not re.search(r'\[#\d+:LOADED\]: "(?:WPReviewNative|WPCacheCheck)"', plugins)
+            record['restored'] = True
+            record['final_plugins'] = plugins
+            record['final_status'] = check_empty()
+            after = manifest()
+            (base/'manifest-after.json').write_text(json.dumps(after, indent=2))
+            record['manifest_changes'] = {key:{'before':before.get(key),'after':after.get(key)} for key in set(before)|set(after) if before.get(key) != after.get(key)}
+            wp_logs = read_new_logs('WeaponPaints')
+            errors = [line for line in wp_logs.splitlines() if re.search(r'\[(WARN|EROR|ERROR|FTAL)\]', line)]
+            (base/'wp-errors-private.txt').write_text('\n'.join(errors), encoding='utf-8')
+            record['wp_warning_error_count'] = len(errors)
+            record['finished_utc'] = datetime.now(timezone.utc).isoformat()
+            print('RESTORED original3.3a-db6 and runtime/config; fixtures absent; 0 humans/0 bots; WP errors='+str(len(errors)), flush=True)
+            print('Manifest changes: '+str(len(record['manifest_changes'])), flush=True)
+        elif password is not None:
+            q('sv_password "'+password+'"')
+    finally:
+        write_record(); s.close(); c.close()

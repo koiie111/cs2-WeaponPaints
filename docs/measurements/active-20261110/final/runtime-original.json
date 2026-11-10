@@ -1,0 +1,8 @@
+{
+  "bot_stop": "0",
+  "bot_dont_shoot": "false",
+  "mp_autoteambalance": "true",
+  "mp_limitteams": "2",
+  "mp_ignore_round_win_conditions": "false",
+  "bot_quota": "0"
+}

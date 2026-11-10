@@ -1,0 +1,17 @@
+{
+  "server": 7,
+  "version": "3.3a-db6-perf.11",
+  "sha256": "a8f2240687e792282cfeb39dc8fbe647d1814d6f761bbd4a4112dbaa70590cad",
+  "config_sha256": "f3c25c1acee8c08b797d6d2559a83b725cad7a0d1b3b13c653fc9f06935ed1c6",
+  "config_unchanged": true,
+  "cold_start": true,
+  "diagnostics_absent": true,
+  "wp_warn_error_count_since_deployment": 0,
+  "verified_utc": 1794310751.6080627,
+  "source_commit": "1010d3a",
+  "humans": 0,
+  "bots": 0,
+  "map": "de_mirage_fps",
+  "endpoint": "109.195.19.84:27075",
+  "owner_visual_acceptance": "held knife type change accepted by owner; remaining scenarios in GAME-ACCEPTANCE.md"
+}

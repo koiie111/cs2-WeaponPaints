@@ -1,0 +1,178 @@
+{
+  "original_sha256": "640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610",
+  "windows": [
+    {
+      "series": 0,
+      "label": "baseline",
+      "window": 0,
+      "seconds": 31.072052240371704,
+      "sha256": "39f3ef6a4b3a599ffb57afe0ace5d0e14b24dcf73dcb1ed285035b5704c09457",
+      "metrics": {
+        "OnTick": {
+          "calls": 2022,
+          "mean_ms": 0.0009012858555885321,
+          "p95_ms": 0.0013,
+          "p99_ms": 0.0016,
+          "max_ms": 0.0055,
+          "total_ms": 1.822400000000012,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 0,
+      "label": "baseline",
+      "window": 1,
+      "seconds": 31.06189727783203,
+      "sha256": "39f3ef6a4b3a599ffb57afe0ace5d0e14b24dcf73dcb1ed285035b5704c09457",
+      "metrics": {
+        "OnTick": {
+          "calls": 2023,
+          "mean_ms": 0.0008888779041028188,
+          "p95_ms": 0.0013,
+          "p99_ms": 0.0015,
+          "max_ms": 0.0071,
+          "total_ms": 1.7982000000000025,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 0,
+      "label": "baseline",
+      "window": 2,
+      "seconds": 31.060752153396606,
+      "sha256": "39f3ef6a4b3a599ffb57afe0ace5d0e14b24dcf73dcb1ed285035b5704c09457",
+      "metrics": {
+        "OnTick": {
+          "calls": 2022,
+          "mean_ms": 0.0008742828882294793,
+          "p95_ms": 0.0013,
+          "p99_ms": 0.0015,
+          "max_ms": 0.0086,
+          "total_ms": 1.7678000000000071,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 1,
+      "label": "candidate",
+      "window": 0,
+      "seconds": 31.070492267608643,
+      "sha256": "93121bd31b4e93dc649f37873d1e8b93a511fad7d95aaa53f48004c2e35ba7d4",
+      "metrics": {
+        "OnTick": {
+          "calls": 2024,
+          "mean_ms": 0.0010233695652174296,
+          "p95_ms": 0.0015,
+          "p99_ms": 0.0018,
+          "max_ms": 0.0143,
+          "total_ms": 2.0713000000000776,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 1,
+      "label": "candidate",
+      "window": 1,
+      "seconds": 31.09375834465027,
+      "sha256": "93121bd31b4e93dc649f37873d1e8b93a511fad7d95aaa53f48004c2e35ba7d4",
+      "metrics": {
+        "OnTick": {
+          "calls": 2024,
+          "mean_ms": 0.00108997035573126,
+          "p95_ms": 0.0016,
+          "p99_ms": 0.0019,
+          "max_ms": 0.0431,
+          "total_ms": 2.2061000000000703,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 1,
+      "label": "candidate",
+      "window": 2,
+      "seconds": 31.080974578857422,
+      "sha256": "93121bd31b4e93dc649f37873d1e8b93a511fad7d95aaa53f48004c2e35ba7d4",
+      "metrics": {
+        "OnTick": {
+          "calls": 2023,
+          "mean_ms": 0.0010336134453781877,
+          "p95_ms": 0.0015,
+          "p99_ms": 0.0018,
+          "max_ms": 0.0142,
+          "total_ms": 2.091000000000074,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 2,
+      "label": "baseline",
+      "window": 0,
+      "seconds": 31.056313514709473,
+      "sha256": "39f3ef6a4b3a599ffb57afe0ace5d0e14b24dcf73dcb1ed285035b5704c09457",
+      "metrics": {
+        "OnTick": {
+          "calls": 2022,
+          "mean_ms": 0.001117161226508438,
+          "p95_ms": 0.0016,
+          "p99_ms": 0.0019,
+          "max_ms": 0.022,
+          "total_ms": 2.258900000000062,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 2,
+      "label": "baseline",
+      "window": 1,
+      "seconds": 31.107582330703735,
+      "sha256": "39f3ef6a4b3a599ffb57afe0ace5d0e14b24dcf73dcb1ed285035b5704c09457",
+      "metrics": {
+        "OnTick": {
+          "calls": 2025,
+          "mean_ms": 0.0011273086419753375,
+          "p95_ms": 0.0016,
+          "p99_ms": 0.0018,
+          "max_ms": 0.0451,
+          "total_ms": 2.2828000000000586,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    },
+    {
+      "series": 2,
+      "label": "baseline",
+      "window": 2,
+      "seconds": 31.07746124267578,
+      "sha256": "39f3ef6a4b3a599ffb57afe0ace5d0e14b24dcf73dcb1ed285035b5704c09457",
+      "metrics": {
+        "OnTick": {
+          "calls": 2023,
+          "mean_ms": 0.0011555610479486173,
+          "p95_ms": 0.0017,
+          "p99_ms": 0.002,
+          "max_ms": 0.0153,
+          "total_ms": 2.3377000000000527,
+          "bytes": 33008
+        }
+      },
+      "zero_players_before_after": true
+    }
+  ],
+  "started_utc": 1794304707.8368683,
+  "restored": true
+}

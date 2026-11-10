@@ -13,6 +13,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        ports: [3306:3306]
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -31,6 +40,16 @@ jobs:
         run: dotnet build WeaponPaints.csproj --no-restore -c Release -o build/WeaponPaints
       - name: Pet lifecycle regression checks
         run: dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release
+      - name: Optimization regression checks
+        run: dotnet run --project tests/OptimizationTests/OptimizationTests.csproj -c Release -- --catalog-directory website/data
+      - name: Production preview callback checks
+        run: dotnet run --project tests/PreviewRuntimeTests/PreviewRuntimeTests.csproj -c Release
+      - name: Measurement integrity checks
+        run: python3 tests/verify_measurements.py docs/measurements/active-20261110
+      - name: MySQL integration checks
+        env:
+          WP_TEST_CONNECTION: "Server=127.0.0.1;Port=3306;User ID=root;Password=;Pooling=true;Allow User Variables=true"
+        run: dotnet run --project tests/MySqlIntegration/MySqlIntegration.csproj -c Release
       - name: Package
         shell: bash
         run: |

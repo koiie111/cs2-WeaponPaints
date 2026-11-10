@@ -1,0 +1,25 @@
+2026-11-10 13:50:34.633 +03:00 [INFO] plugin:WPDiag5 CHECK A command entry
+2026-11-10 13:50:34.645 +03:00 [INFO] plugin:WPDiag5 CHECK B player enumeration complete
+2026-11-10 13:50:34.647 +03:00 [INFO] plugin:WPDiag5 CHECK C assemblies=2
+2026-11-10 13:50:34.647 +03:00 [INFO] plugin:WPDiag5 CHECK D0 before static Instance
+2026-11-10 13:50:34.648 +03:00 [INFO] plugin:WPDiag5 CHECK E0 after static Instance version=3.3a-db6-perf.3
+2026-11-10 13:50:34.648 +03:00 [INFO] plugin:WPDiag5 CHECK D1 before static Instance
+2026-11-10 13:50:34.648 +03:00 [INFO] plugin:WPDiag5 CHECK E1 after static Instance version=3.3a-db6-perf.4
+2026-11-10 13:50:34.649 +03:00 [INFO] plugin:WPDiag5 CHECK F reflection complete selected=true
+2026-11-10 13:50:34.649 +03:00 [INFO] plugin:WPDiag5 CHECK G idempotent callback complete
+2026-11-10 13:50:34.649 +03:00 [INFO] plugin:WPDiag5 CHECK registrations stable=true count=16
+2026-11-10 13:50:34.649 +03:00 [INFO] plugin:WPDiag5 CHECK schema m_AttributeManager offset=3384
+2026-11-10 13:50:34.649 +03:00 [INFO] plugin:WPDiag5 CHECK schema m_nFallbackPaintKit offset=4472
+2026-11-10 13:50:34.650 +03:00 [INFO] plugin:WPDiag5 CHECK schema m_nFallbackSeed offset=4476
+2026-11-10 13:50:34.650 +03:00 [INFO] plugin:WPDiag5 CHECK schema m_flFallbackWear offset=4480
+2026-11-10 13:50:34.650 +03:00 [INFO] plugin:WPDiag5 CHECK before chicken keyvalue spawn
+2026-11-10 13:50:34.652 +03:00 [INFO] plugin:WPDiag5 CHECK chicken spawned
+2026-11-10 13:50:34.657 +03:00 [INFO] plugin:WPDiag5 CHECK production hat spawned=3253797047
+2026-11-10 13:50:34.662 +03:00 [INFO] plugin:WPDiag5 CHECK hat cleared immediately=true
+2026-11-10 13:50:34.663 +03:00 [INFO] plugin:WPDiag5 CHECK before GiveNamedItem
+2026-11-10 13:50:34.664 +03:00 [INFO] plugin:WPDiag5 CHECK item-services gun valid=true
+2026-11-10 13:50:34.664 +03:00 [INFO] plugin:WPDiag5 CHECK item-services gun fields dirtied
+2026-11-10 13:50:34.701 +03:00 [INFO] plugin:WPDiag5 CHECK first paint applied=true
+2026-11-10 13:50:34.701 +03:00 [INFO] plugin:WPDiag5 CHECK second paint applied=true
+2026-11-10 13:50:34.702 +03:00 [INFO] plugin:WPDiag5 CHECK same entity ammo preserved new identity=true
+2026-11-10 13:50:34.710 +03:00 [INFO] plugin:WPDiag5 CHECK native hat removed within two frames=true

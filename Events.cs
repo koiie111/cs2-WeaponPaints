@@ -1,3 +1,4 @@
+using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
@@ -39,6 +40,7 @@ namespace WeaponPaints
 			GPlayersPin.TryRemove(player.Slot, out _);
 			GPlayersMusic.TryRemove(player.Slot, out _);
 			var loadId = NextPlayerDataLoadId();
+                var generation = DataGeneration;
 			PlayerDataLoading[player.Slot] = loadId;
 			if (Config.Additional.PetsEnabled)
 			{
@@ -48,9 +50,9 @@ namespace WeaponPaints
 
 			var weaponSync = WeaponSync;
 			if (weaponSync == null) return HookResult.Continue;
-			_ = Task.Run(async () =>
+			_ = ObserveAsync(async () =>
 			{
-				await weaponSync.GetPlayerData(playerInfo);
+				if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
 				Server.NextFrame(() =>
 				{
 					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
@@ -96,7 +98,7 @@ namespace WeaponPaints
 			var weaponSync = WeaponSync;
 			if (weaponSync != null && detachedWeapons != null)
 			{
-				_ = Task.Run(async () => await weaponSync.SyncStatTrakToDatabase(playerInfo, detachedWeapons));
+				_ = ObserveAsync(async () => await weaponSync.SyncStatTrakToDatabase(playerInfo, detachedWeapons));
 			}
 
 			if (Config.Additional.KnifeEnabled)
@@ -122,6 +124,7 @@ namespace WeaponPaints
 			
 			_temporaryPlayerWeaponWear.TryRemove(player.Slot, out _);
 			CommandsCooldown.Remove(player.Slot);
+            RemoveSkinPreview(player.Slot);
 			Players.Remove(player);
 
 			return HookResult.Continue;
@@ -129,6 +132,9 @@ namespace WeaponPaints
 
 		private void OnMapStart(string mapName)
 		{
+            ClearSkinPreviews();
+            Interlocked.Increment(ref DataGeneration);
+            PlayerDataLoading.Clear();
 			InvalidateKnifePaint();
 			_fadeSeed = 0;
 			_nextItemId = MinimumCustomItemId;
@@ -138,7 +144,7 @@ namespace WeaponPaints
 		{
 			CCSPlayerController? player = @event.Userid;
 
-			if (player is null || !player.IsValid || Config.Additional is { KnifeEnabled: false, GloveEnabled: false })
+			if (player is null || !player.IsValid)
 				return HookResult.Continue;
 			if (PlayerDataLoading.ContainsKey(player.Slot)) return HookResult.Continue;
 
@@ -149,10 +155,7 @@ namespace WeaponPaints
 
 			GivePlayerMusicKit(player);
 			GivePlayerAgent(player);
-			Server.NextFrame(() =>
-			{
-				GivePlayerGloves(player);
-			});
+			DeferPlayer(player, GivePlayerGloves);
 			GivePlayerPin(player);
 
 			return HookResult.Continue;
@@ -214,10 +217,13 @@ namespace WeaponPaints
 
 			if (designerName != null && designerName.Contains("weapon"))
 			{
-				Server.NextWorldUpdate(() =>
-				{
-					var weapon = new CBasePlayerWeapon(entity.Handle);
-					if (!weapon.IsValid) return;
+                var handle = entity.EntityHandle.Raw;
+                var generation = DataGeneration;
+                Server.NextWorldUpdate(() =>
+                {
+                    if (generation != DataGeneration) return;
+                    var weapon = new CHandle<CBasePlayerWeapon>(handle).Value;
+                    if (weapon == null || !weapon.IsValid) return;
 
 					try
 					{
@@ -255,19 +261,6 @@ namespace WeaponPaints
 			}
 		}
 
-		private void OnTick()
-		{
-			if (!Config.Additional.ShowSkinImage) return;
-
-			foreach (var player in Players)
-			{
-				if (_playerWeaponImage.TryGetValue(player.Slot, out var value) && !string.IsNullOrEmpty(value))
-				{
-					player.PrintToCenterHtml("<img src='{PATH}'</img>".Replace("{PATH}", value));
-				}
-			}
-		}
-		
 		[GameEventHandler]
 		public HookResult OnItemPickup(EventItemPickup @event, GameEventInfo _)
 		{
@@ -275,6 +268,9 @@ namespace WeaponPaints
 			var player = @event.Userid;
 			if (player == null || !player.IsValid || player.IsBot) return HookResult.Continue;
 			if (!@event.Item.Contains("knife")) return HookResult.Continue;
+            // GiveNamedItem during a managed refresh already paints the replacement.
+            // Do not enter the legacy single-knife re-give workaround recursively.
+            if (_weaponRefreshes.ContainsKey(player.Slot)) return HookResult.Continue;
 		
 			var weaponDefIndex = (int)@event.Defindex;
 				
@@ -325,6 +321,16 @@ namespace WeaponPaints
 		private void RegisterListeners()
 		{
 			RegisterListener<Listeners.OnMapStart>(OnMapStart);
+            RegisterListener<Listeners.OnEntityDeleted>(entity => _retiringWeapons.Remove(entity.EntityHandle.Raw));
+            RegisterListener<Listeners.OnMapEnd>(() =>
+            {
+                Interlocked.Increment(ref DataGeneration);
+                PlayerDataLoading.Clear();
+                ClearSkinPreviews();
+                InvalidateKnifePaint();
+                ClearDeferredTimers();
+                ClearWeaponRefreshes();
+            });
 
 			RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
 			RegisterEventHandler<EventRoundStart>(OnRoundStart);
@@ -335,8 +341,7 @@ namespace WeaponPaints
 			RegisterListener<Listeners.OnEntitySpawned>(OnEntityCreated);
 			RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
 
-			if (Config.Additional.ShowSkinImage)
-				RegisterListener<Listeners.OnTick>(OnTick);
+			RegisterSkinPreviews();
 
 			VirtualFunctions.GiveNamedItemFunc.Hook(OnGiveNamedItemPost, HookMode.Post);
 			_giveNamedItemHooked = true;

@@ -80,15 +80,18 @@ public partial class WeaponPaints
 	internal static readonly ConcurrentDictionary<int, (string? CT, string? T)> GPlayersAgent = new();
 	internal static readonly ConcurrentDictionary<int, ConcurrentDictionary<CsTeam, ConcurrentDictionary<int, WeaponInfo>>> GPlayerWeaponsInfo = new();
 	internal static readonly ConcurrentDictionary<int, long> PlayerDataLoading = new();
-	private static long _playerDataLoadSequence;
+    private static readonly Lazy<Dictionary<string,int>> KnifeDefindexes = new(BuildKnifeDefindexes);
+    private static Dictionary<string,int> BuildKnifeDefindexes() => WeaponDefindex.GroupBy(x => x.Value, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First().Key, StringComparer.Ordinal);
+    private static long _playerDataLoadSequence;
 	internal static List<JObject> SkinsList = [];
+    internal static SkinCatalog Catalog = new([]);
 	internal static List<JObject> PinsList = [];
 	internal static List<JObject> GlovesList = [];
 	internal static List<JObject> AgentsList = [];
 	internal static List<JObject> MusicList = [];
 	internal static WeaponSynchronization? WeaponSync;
 	private static bool _gBCommandsAllowed = true;
-	private readonly Dictionary<int, string> _playerWeaponImage = new();
+	private readonly PreviewState<CCSPlayerController> _previews = new();
 
 	private static readonly Dictionary<int, DateTime> CommandsCooldown = new();
 	internal static Database? Database;

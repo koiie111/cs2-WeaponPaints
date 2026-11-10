@@ -1,0 +1,23 @@
+from pathlib import Path
+import json,math,statistics
+b=Path(__file__).parent
+keys=['OnTick','GivePlayerWeaponSkin','NativePets','OnGiveNamedItemPost','NextWorldUpdate.callback','NextFrame.callback','LoadDriver','EntityThink.span','TickInterval.wall','RefreshWeapons','ApplyWeaponRefresh','Timer.callback']
+def summarize(path):
+ d=json.loads(path.read_text());secs=(d['stop']-d['start'])/d['frequency'];out={}
+ for k,v in d['rows'].items():
+  a=sorted(t*1000/d['frequency'] for t in v['duration_ticks']);n=len(a)
+  if n:out[k]={'calls':n,'mean_ms':sum(a)/n,'p50_ms':a[math.ceil(n*.5)-1],'p95_ms':a[math.ceil(n*.95)-1],'p99_ms':a[math.ceil(n*.99)-1],'max_ms':a[-1],'total_ms':sum(a),'ms_per_second':sum(a)/secs,'bytes_per_call':v['allocated_bytes']/n,'allocated_bytes_inclusive':v['allocated_bytes'],'over1':sum(x>1 for x in a),'over5':sum(x>5 for x in a),'over15_625':sum(x>15.625 for x in a),'over100':sum(x>100 for x in a),'dropped':v['dropped']}
+ intervals=sorted((start,start+dur) for k,v in d['rows'].items() if k not in ['EntityThink.span','TickInterval.wall','EmptyScope'] for start,dur in zip(v['start_ticks'],v['duration_ticks']))
+ union=0;end=None
+ for lo,hi in intervals:
+  if end is None or lo>=end:union+=hi-lo;end=hi
+  elif hi>end:union+=hi-end;end=hi
+ return {'file':path.name,'version':d['version'],'seconds':secs,'instrumented_scope_union_ms_per_second':union*1000/d['frequency']/secs,'metrics':out}
+if __name__=='__main__':
+ rows=[summarize(p) for p in sorted(b.glob('*-raw.json'))]
+ (b/'summary.json').write_text(json.dumps(rows,indent=2))
+ for row in rows:
+  print(row['file']+' union_ms/s='+str(round(row['instrumented_scope_union_ms_per_second'],3)))
+  for k in keys:
+   if k in row['metrics']:
+    m=row['metrics'][k];print(' '+k+' n='+str(m['calls'])+' mean_us='+str(round(m['mean_ms']*1000,2))+' p99_us='+str(round(m['p99_ms']*1000,2))+' bytes/call='+str(round(m['bytes_per_call'],1)))
