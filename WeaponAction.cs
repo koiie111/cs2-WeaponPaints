@@ -137,9 +137,12 @@ namespace WeaponPaints
 			if (!HasChangedPaint(player ,weaponDefIndex, out var weaponInfo) || weaponInfo == null)
 				return;
 
-			foreach (var sticker in weaponInfo.Stickers)
+			for (var stickerSlot = 0; stickerSlot < Math.Min(5, weaponInfo.Stickers.Count); stickerSlot++)
 			{
-				int stickerSlot = weaponInfo.Stickers.IndexOf(sticker);
+				var sticker = weaponInfo.Stickers[stickerSlot];
+				// GivePlayerWeaponSkin clears both attribute lists before this call.
+				// An empty layer therefore needs no native attribute writes.
+				if (sticker.Id == 0) continue;
 
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
 					$"sticker slot {stickerSlot} id", ViewAsFloat(sticker.Id));
