@@ -371,6 +371,7 @@ namespace WeaponPaints
 			var team = player.TeamNum;
             var model = AgentModel.Normalize(team == 3 ? value.CT : value.T);
             if (!AgentModel.IsAllowed(model, team)) model = null;
+            if (model == null && !Instance.HasAgentPatchOverride(player.Slot, player.SteamID, player.PlayerPawn.Raw)) return;
             var patchIds = new uint[3];
             if (model != null && GPlayersPatchExpiry.TryGetValue(player.Slot, out var expiresAt) && expiresAt > DateTime.UtcNow
                 && GPlayersPatches.TryGetValue(player.Slot, out var patchTeams)
@@ -393,6 +394,7 @@ namespace WeaponPaints
                         for (var slot = 0; slot < nativePatches.Length; slot++)
                             nativePatches[slot] = slot < 3 ? patchIds[slot] : 0;
                         Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_vecPlayerPatchEconIndices");
+                        Instance.MarkAgentPatchOverride(player.Slot, player.SteamID, pawn.EntityHandle.Raw, patchIds.Any(id => id != 0));
                         Instance.ArmAgentPatchExpiry(player.Slot);
                     }
 				});

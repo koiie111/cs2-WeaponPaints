@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../AgentPatches.cs" Link="AgentPatches.cs"/>
+    <Compile Include="../../PetState.cs" Link="PetState.cs"/>
+    <PackageReference Include="Dapper" Version="2.1.72"/>
+    <PackageReference Include="MySqlConnector" Version="2.6.1"/>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0"/>
+  </ItemGroup>
+</Project>

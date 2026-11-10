@@ -97,6 +97,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 
 		RegisterListeners();
 		if (Config.Additional.PetsEnabled) RegisterPetListeners();
+        RegisterEventHandler<EventRoundStart>(OnAgentPatchRoundStart);
 	}
 
 	public override void Unload(bool hotReload)

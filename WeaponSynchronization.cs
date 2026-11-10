@@ -176,52 +176,42 @@ internal class WeaponSynchronization
 		}
 	}
 
-	private async Task GetAgentFromDatabase(PlayerInfo? player, MySqlConnection connection, PlayerDataSnapshot snapshot)
-	{
-		try
-		{
-			if (!_config.Additional.AgentEnabled || string.IsNullOrEmpty(player?.SteamId))
-				return;
-
-			const string query = "SELECT `agent_ct`, `agent_t` FROM `wp_player_agents` WHERE `steamid` = @steamid";
-			var agentData = await connection.QueryFirstOrDefaultAsync<(string, string)>(query, new { steamid = player.SteamId });
-
-            var agentCT = AgentModel.Normalize(agentData.Item1);
-            var agentT = AgentModel.Normalize(agentData.Item2);
-            if (agentCT == null && agentT == null)
-                snapshot.GPlayersAgent.TryRemove(player.Slot, out _);
-            else
-                snapshot.GPlayersAgent[player.Slot] = (agentCT, agentT);
-
-            var patches = new Dictionary<int, uint[]>();
-            foreach (var row in await connection.QueryAsync<(int Team, int Slot, uint Kit)>(
-                "SELECT weapon_team, patch_slot, patch_id FROM wp_player_patches WHERE steamid=@steamid",
-                new { steamid = player.SteamId }))
-            {
-                if (row.Team is not (2 or 3) || row.Slot < 0 || row.Slot > 2) continue;
-                if (!patches.TryGetValue(row.Team, out var slots)) patches[row.Team] = slots = new uint[3];
-                slots[row.Slot] = row.Kit;
-            }
-            snapshot.GPlayersPatches[player.Slot] = patches;
-            // Patches are a 4ill+ entitlement. Missing/unavailable subscription data fails closed
-            // for patches without preventing the remaining cosmetics from loading.
-            var patchExpiry = DateTime.MinValue;
+    private async Task GetAgentFromDatabase(PlayerInfo? player, MySqlConnection connection, PlayerDataSnapshot snapshot)
+    {
+        if (!_config.Additional.AgentEnabled || string.IsNullOrEmpty(player?.SteamId)) return;
+        try
+        {
+            IEnumerable<(string? CT, string? T, DateTime? Expiry, int? Team, int? Slot, uint? Kit)> rows;
             try
             {
-                var expiry = await connection.QueryFirstOrDefaultAsync<DateTime?>(
-                    "SELECT CONVERT_TZ(expires_at,'+03:00','+00:00') FROM plus_active WHERE steam_id=@id LIMIT 1",
-                    new { id = player.SteamId });
-                if (expiry.HasValue) patchExpiry = DateTime.SpecifyKind(expiry.Value, DateTimeKind.Utc);
+                // One round trip for agent, patches and entitlement. Predicate parameters
+                // retain each indexed column's own collation, including plus_active.
+                const string query = "SELECT a.agent_ct,a.agent_t,(SELECT CONVERT_TZ(expires_at,'+03:00','+00:00') FROM plus_active WHERE steam_id=@id LIMIT 1),p.weapon_team,p.patch_slot,p.patch_id FROM (SELECT 1) AS account LEFT JOIN wp_player_agents a ON a.steamid=@id LEFT JOIN wp_player_patches p ON p.steamid=@id";
+                rows = await connection.QueryAsync<(string?,string?,DateTime?,int?,int?,uint?)>(query,new {id=player.SteamId});
             }
-            catch (MySqlException) { }
-            snapshot.GPlayersPatchExpiry[player.Slot] = patchExpiry;
-		}
-		catch (Exception ex)
-		{
-			Utility.Log($"An error occurred in GetAgentFromDatabase: {ex.Message}");
-            throw;
-		}
-	}
+            catch(MySqlException error) when(error.Number is 1146 or 1142 or 1356 or 1054)
+            {
+                // Additive rollout: unavailable 4ill+ schema disables only its patches.
+                var agent=await connection.QueryFirstOrDefaultAsync<(string?,string?)>("SELECT agent_ct,agent_t FROM wp_player_agents WHERE steamid=@id",new {id=player.SteamId});
+                rows=[(agent.Item1,agent.Item2,null,null,null,null)];
+            }
+            var patches=new Dictionary<int,uint[]>();
+            var agentCT=(string?)null; var agentT=(string?)null; var expiry=DateTime.MinValue;
+            foreach(var row in rows)
+            {
+                agentCT=AgentModel.Normalize(row.CT); agentT=AgentModel.Normalize(row.T);
+                if(row.Expiry.HasValue)expiry=DateTime.SpecifyKind(row.Expiry.Value,DateTimeKind.Utc);
+                if(row.Team is not (2 or 3)||row.Slot is not (>=0 and <3)||!row.Kit.HasValue)continue;
+                if(!patches.TryGetValue(row.Team.Value,out var slots))patches[row.Team.Value]=slots=new uint[3];
+                slots[row.Slot.Value]=row.Kit.Value;
+            }
+            if(agentCT==null&&agentT==null)snapshot.GPlayersAgent.TryRemove(player.Slot,out _);
+            else snapshot.GPlayersAgent[player.Slot]=(agentCT,agentT);
+            snapshot.GPlayersPatches[player.Slot]=patches;
+            snapshot.GPlayersPatchExpiry[player.Slot]=expiry;
+        }
+        catch(Exception error){Utility.Log($"An error occurred in GetAgentFromDatabase: {error.Message}");throw;}
+    }
 
 	private async Task GetWeaponPaintsFromDatabase(PlayerInfo? player, MySqlConnection connection, PlayerDataSnapshot snapshot)
 	{
