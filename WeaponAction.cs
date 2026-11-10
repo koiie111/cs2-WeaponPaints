@@ -366,11 +366,16 @@ namespace WeaponPaints
 
 		private static void GivePlayerAgent(CCSPlayerController player)
 		{
-			if (!GPlayersAgent.TryGetValue(player.Slot, out var value)) return;
+			GPlayersAgent.TryGetValue(player.Slot, out var value);
 
 			var team = player.TeamNum;
             var model = AgentModel.Normalize(team == 3 ? value.CT : value.T);
-            if (!AgentModel.IsAllowed(model, team)) return;
+            if (!AgentModel.IsAllowed(model, team)) model = null;
+            var patchIds = new uint[3];
+            if (model != null && GPlayersPatchExpiry.TryGetValue(player.Slot, out var expiresAt) && expiresAt > DateTime.UtcNow
+                && GPlayersPatches.TryGetValue(player.Slot, out var patchTeams)
+                && patchTeams.TryGetValue(team, out var selectedPatches))
+                Array.Copy(selectedPatches, patchIds, Math.Min(3, selectedPatches.Length));
 
 			var expectedSteamId = player.SteamID.ToString();
             var identity = DeferredPlayer.Capture(player);
@@ -382,7 +387,14 @@ namespace WeaponPaints
 					if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
 					var pawn = player.PlayerPawn.Value;
 					if (pawn != null && pawn.IsValid)
-						pawn.SetModel($"agents/models/{model}.vmdl");
+                    {
+                        if (model != null) pawn.SetModel($"agents/models/{model}.vmdl");
+                        var nativePatches = pawn.PlayerPatchEconIndices;
+                        for (var slot = 0; slot < nativePatches.Length; slot++)
+                            nativePatches[slot] = slot < 3 ? patchIds[slot] : 0;
+                        Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_vecPlayerPatchEconIndices");
+                        Instance.ArmAgentPatchExpiry(player.Slot);
+                    }
 				});
 			}
 			catch (Exception)

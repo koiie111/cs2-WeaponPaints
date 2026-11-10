@@ -192,6 +192,29 @@ internal class WeaponSynchronization
                 snapshot.GPlayersAgent.TryRemove(player.Slot, out _);
             else
                 snapshot.GPlayersAgent[player.Slot] = (agentCT, agentT);
+
+            var patches = new Dictionary<int, uint[]>();
+            foreach (var row in await connection.QueryAsync<(int Team, int Slot, uint Kit)>(
+                "SELECT weapon_team, patch_slot, patch_id FROM wp_player_patches WHERE steamid=@steamid",
+                new { steamid = player.SteamId }))
+            {
+                if (row.Team is not (2 or 3) || row.Slot < 0 || row.Slot > 2) continue;
+                if (!patches.TryGetValue(row.Team, out var slots)) patches[row.Team] = slots = new uint[3];
+                slots[row.Slot] = row.Kit;
+            }
+            snapshot.GPlayersPatches[player.Slot] = patches;
+            // Patches are a 4ill+ entitlement. Missing/unavailable subscription data fails closed
+            // for patches without preventing the remaining cosmetics from loading.
+            var patchExpiry = DateTime.MinValue;
+            try
+            {
+                var expiry = await connection.QueryFirstOrDefaultAsync<DateTime?>(
+                    "SELECT CONVERT_TZ(expires_at,'+03:00','+00:00') FROM plus_active WHERE steam_id=@id LIMIT 1",
+                    new { id = player.SteamId });
+                if (expiry.HasValue) patchExpiry = DateTime.SpecifyKind(expiry.Value, DateTimeKind.Utc);
+            }
+            catch (MySqlException) { }
+            snapshot.GPlayersPatchExpiry[player.Slot] = patchExpiry;
 		}
 		catch (Exception ex)
 		{
@@ -261,7 +284,9 @@ internal class WeaponSynchronization
 				}
 
 				// The additive slab column is optional for pre-migration databases.
-				var skinColumns = (IDictionary<string, object>)row;
+                var skinColumns = (IDictionary<string, object>)row;
+                var compositionVersion = skinColumns.TryGetValue("weapon_composition_version", out var storedVersion)
+                    && int.TryParse(storedVersion?.ToString(), out var parsedVersion) ? parsedVersion : 0;
 				if (keyChainInfo.Id == 37 && skinColumns.TryGetValue("weapon_keychain_sticker", out var slabSticker)
 				    && uint.TryParse(slabSticker?.ToString(), out var stickerKit))
 					keyChainInfo.Sticker = stickerKit;
@@ -302,7 +327,7 @@ internal class WeaponSynchronization
 					StickerInfo stickerInfo = new StickerInfo
 					{
 						Id = stickerId,
-						Schema = stickerSchema,
+						Schema = StickerAnchor.Resolve(compositionVersion, stickerSchema, (uint)i, stickerOffsetX, stickerOffsetY),
 						OffsetX = stickerOffsetX,
 						OffsetY = stickerOffsetY,
 						Wear = stickerWear,

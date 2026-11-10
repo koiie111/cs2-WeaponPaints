@@ -37,6 +37,9 @@ namespace WeaponPaints
 			GPlayersKnife.TryRemove(player.Slot, out _);
 			GPlayersGlove.TryRemove(player.Slot, out _);
 			GPlayersAgent.TryRemove(player.Slot, out _);
+			GPlayersPatches.TryRemove(player.Slot, out _);
+			GPlayersPatchExpiry.TryRemove(player.Slot, out _);
+            ClearAgentPatchTimer(player.Slot);
 			GPlayersPin.TryRemove(player.Slot, out _);
 			GPlayersMusic.TryRemove(player.Slot, out _);
 			var loadId = NextPlayerDataLoadId();
@@ -111,6 +114,9 @@ namespace WeaponPaints
 			if (Config.Additional.AgentEnabled)
 			{
 				GPlayersAgent.TryRemove(player.Slot, out _);
+				GPlayersPatches.TryRemove(player.Slot, out _);
+				GPlayersPatchExpiry.TryRemove(player.Slot, out _);
+                ClearAgentPatchTimer(player.Slot);
 			}
 			if (Config.Additional.MusicEnabled)
 			{
@@ -329,6 +335,7 @@ namespace WeaponPaints
                 InvalidateKnifePaint();
                 ClearDeferredTimers();
                 ClearWeaponRefreshes();
+                ClearAllAgentPatchTimers();
             });
 
 			RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);

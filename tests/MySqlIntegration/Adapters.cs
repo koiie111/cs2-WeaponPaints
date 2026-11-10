@@ -24,6 +24,9 @@ namespace WeaponPaints {
   internal static readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,string>> GPlayersKnife=new();
   internal static readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,ushort>> GPlayersGlove=new(),GPlayersMusic=new(),GPlayersPin=new();
   internal static readonly ConcurrentDictionary<int,(string? CT,string? T)> GPlayersAgent=new();
+  internal static readonly ConcurrentDictionary<int,Dictionary<int,uint[]>> GPlayersPatches=new();
+  internal static readonly ConcurrentDictionary<int,DateTime> GPlayersPatchExpiry=new();
+  internal void ArmAgentPatchExpiry(int slot) { }
   internal static readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,ConcurrentDictionary<int,WeaponInfo>>> GPlayerWeaponsInfo=new();
   internal static readonly List<JObject> AgentsList=[JObject.Parse("{team:3,model:'ct'}"),JObject.Parse("{team:2,model:'t'}")];
  }

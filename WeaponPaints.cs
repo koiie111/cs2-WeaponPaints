@@ -47,6 +47,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 			GPlayersKnife.Clear();
 			GPlayersGlove.Clear();
 			GPlayersAgent.Clear();
+			GPlayersPatches.Clear();
 			GPlayersPin.Clear();
 			GPlayersMusic.Clear();
 			PlayerDataLoading.Clear();
@@ -105,6 +106,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
         ClearDeferredTimers();
         ClearWeaponRefreshes();
         ClearAllPets();
+        ClearAllAgentPatchTimers();
         ClearSkinPreviews();
 		InvalidateKnifePaint();
 		// Native hook outlives the plugin's AssemblyLoadContext; without this, css_plugins reload

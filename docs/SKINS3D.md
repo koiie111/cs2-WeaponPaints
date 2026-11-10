@@ -1,7 +1,7 @@
 # Local website composition integration (Draft)
 
 Website PR: https://github.com/koiie111/4ill.ru/pull/10.
-This branch depends on the optimization PR #3 and keeps its lifecycle changes.
+Optimization PR #3 is merged. This branch keeps its lifecycle changes.
 
 ## Native attributes
 
@@ -11,6 +11,12 @@ This branch depends on the optimization PR #3 and keeps its lifecycle changes.
 - Sticker display case uses keychain kit **37**. Its embedded sticker kit is
   written as a uint bitcast in `keychain slot 0 sticker`.
 - Ordinary keychains explicitly write zero to that attribute to clear old slabs.
+- Agent patches use the first three `m_vecPlayerPatchEconIndices` entries, with
+  native patch-kit IDs and separate CT/T slots. The remaining native entries are
+  cleared, preventing decorations from a previously selected agent from leaking.
+- Patches require an active `plus_active` subscription. Convert its MSK expiry to
+  UTC and remove patches at expiry; keep the saved choices for renewal. Missing
+  subscription data disables patches while retaining the other cosmetics.
 
 ## Schema compatibility and rollout
 
@@ -24,6 +30,13 @@ Fresh plugin tables include the field. On existing databases the plugin treats
 an absent field as zero and does not run an automatic ALTER. Loading the plugin
 therefore does not substitute for applying the website SQL migration.
 
+Apply website SQL `20261110_0002_skins3d_patches.sql` and
+`20261110_0003_skins3d_format.sql` next. The latter adds an explicit composition
+format version: pre-versioned rows preserve the old effective sticker anchor
+(moved stickers used schema 0; unmoved stickers used their draw-slot anchor).
+Version 1 rows always use the selected schema, including schemas above 4 where
+the concrete weapon supports them. Do not rewrite legacy rows during installation.
+
 MySqlConnector is updated from 2.5.0 to 2.6.1 to address
 GHSA-473q-m89c-ghf8. Include the matching dependency when packaging the plugin.
 
@@ -34,7 +47,7 @@ catalog, 22 pet lifecycle and 47 linked production preview checks pass locally.
 The website Docker checks cover slab persistence, clearing and transaction rollback.
 
 No native/game visual acceptance or CSSProfiler comparison has been performed.
-Agent patches, complete material parity and refresh-wear behavior remain open.
+Native patch appearance, complete material parity and refresh-wear acceptance remain open.
 Do not deploy or claim parity based on these managed tests alone. Use the approved
 isolated empty-server test, baseline/candidate/baseline profiles and restore the
 exact prior instance configuration after acceptance.

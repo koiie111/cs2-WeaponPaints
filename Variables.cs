@@ -78,6 +78,8 @@ public partial class WeaponPaints
 	internal static readonly ConcurrentDictionary<int, ConcurrentDictionary<CsTeam, ushort>> GPlayersMusic = new();
 	internal static readonly ConcurrentDictionary<int, ConcurrentDictionary<CsTeam, ushort>> GPlayersPin = new();
 	internal static readonly ConcurrentDictionary<int, (string? CT, string? T)> GPlayersAgent = new();
+	internal static readonly ConcurrentDictionary<int, Dictionary<int, uint[]>> GPlayersPatches = new();
+	internal static readonly ConcurrentDictionary<int, DateTime> GPlayersPatchExpiry = new();
 	internal static readonly ConcurrentDictionary<int, ConcurrentDictionary<CsTeam, ConcurrentDictionary<int, WeaponInfo>>> GPlayerWeaponsInfo = new();
 	internal static readonly ConcurrentDictionary<int, long> PlayerDataLoading = new();
     private static readonly Lazy<Dictionary<string,int>> KnifeDefindexes = new(BuildKnifeDefindexes);

@@ -80,6 +80,9 @@ try{
  Check(await Load() && WP.GPlayerWeaponsInfo[1][ct][7].Stickers.Count==5 && WP.GPlayerWeaponsInfo[1][ct][7].Stickers[4].Id==77 && WP.GPlayerWeaponsInfo[1][ct][7].Stickers[0].Id==0,"invalid early sticker does not shift slot four");
  await sql.ExecuteAsync("DELETE FROM wp_player_skins;DELETE FROM wp_player_knife;DELETE FROM wp_player_gloves;DELETE FROM wp_player_agents;DELETE FROM wp_player_music;DELETE FROM wp_player_pins");Check(await Load()&&!WP.GPlayersKnife.ContainsKey(1)&&WP.GPlayerWeaponsInfo[1].Count==0,"empty account clears old values");
  await sql.ExecuteAsync("CREATE TABLE plus_active (steam_id varchar(18) PRIMARY KEY,expires_at datetime NOT NULL); INSERT INTO plus_active VALUES (@id,'2030-01-01 03:00:00'); INSERT INTO wp_player_pets (steamid,pet_seed,pet_hat) VALUES (@id,4294967295,'wizard_hat')",new{id});
+ await sql.ExecuteAsync("INSERT INTO wp_player_patches VALUES (@id,3,2,4550),(@id,2,0,4551),(@id,1,0,4552),(@id,3,7,4553)",new{id});
+ Check(await Load() && WP.GPlayersPatches[1][3].SequenceEqual(new uint[]{0,0,4550}) && WP.GPlayersPatches[1][2].SequenceEqual(new uint[]{4551,0,0}) && WP.GPlayersPatches[1].Count==2,"native patch kits retain team and slot; invalid slots are ignored");
+ Check(WP.GPlayersPatchExpiry[1]==new DateTime(2030,1,1,0,0,0,DateTimeKind.Utc),"patch entitlement converts subscription MSK to UTC");
  var petSource=await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"Pets.source.txt"));
  var petQuery=System.Text.RegularExpressions.Regex.Match(petSource,"new MySqlCommand\\(\"(SELECT CONVERT_TZ[^\"]+)\"").Groups[1].Value;
  Check(petQuery.Length>0,"pet query located in production source");
@@ -96,5 +99,6 @@ try{
  pet=(IDictionary<string,object>)(await sql.QuerySingleAsync(petQuery,new{id}));
  Check(pet["pet_enabled"]==null,"active subscription with no pet preference LEFT JOIN");
  await sql.ExecuteAsync("DELETE FROM plus_active");Check(!(await sql.QueryAsync(petQuery,new{id})).Any(),"inactive subscription has no pet row");
+ Check(await Load() && WP.GPlayersPatchExpiry[1]==DateTime.MinValue && WP.GPlayersPatches[1][3][2]==4550,"inactive patch entitlement fails closed without deleting the saved choice");
  Console.WriteLine($"PASS: {passed} MySQL assertions; engine dispatch adapter; linked production SQL source");
 }finally{Server.BeforeDispatch=null;MySqlConnection.ClearAllPools();await admin.ExecuteAsync($"DROP DATABASE `{schema}`");Console.WriteLine("CLEANUP: isolated schema removed");}
