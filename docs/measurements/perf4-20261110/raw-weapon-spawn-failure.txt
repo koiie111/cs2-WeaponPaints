@@ -1,0 +1,11 @@
+2026-11-10 13:45:57.636 +03:00 [INFO] plugin:WPDiag3 CHECK A command entry
+2026-11-10 13:45:57.645 +03:00 [INFO] plugin:WPDiag3 CHECK B player enumeration complete
+2026-11-10 13:45:57.647 +03:00 [INFO] plugin:WPDiag3 CHECK C assemblies=2
+2026-11-10 13:45:57.647 +03:00 [INFO] plugin:WPDiag3 CHECK D0 before static Instance
+2026-11-10 13:45:57.647 +03:00 [INFO] plugin:WPDiag3 CHECK E0 after static Instance version=3.3a-db6-perf.2
+2026-11-10 13:45:57.647 +03:00 [INFO] plugin:WPDiag3 CHECK D1 before static Instance
+2026-11-10 13:45:57.647 +03:00 [INFO] plugin:WPDiag3 CHECK E1 after static Instance version=3.3a-db6-perf.3
+2026-11-10 13:45:57.647 +03:00 [INFO] plugin:WPDiag3 CHECK F reflection complete selected=true
+2026-11-10 13:45:57.647 +03:00 [INFO] plugin:WPDiag3 CHECK G idempotent callback complete
+2026-11-10 13:45:57.648 +03:00 [INFO] plugin:WPDiag3 CHECK H before gun create
+2026-11-10 13:45:57.649 +03:00 [INFO] plugin:WPDiag3 CHECK I gun created

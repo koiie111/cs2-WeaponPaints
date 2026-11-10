@@ -21,7 +21,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db6-perf.3";
+	public override string ModuleVersion => "3.3a-db6-perf.4";
 
 	internal static long DataGeneration;
 
@@ -34,6 +34,9 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 	public override void Load(bool hotReload)
 	{
 		Instance = this;
+        foreach (var field in new[] { "m_AttributeManager", "m_nFallbackPaintKit", "m_nFallbackSeed", "m_flFallbackWear" })
+            if (Schema.GetSchemaOffset(nameof(CEconEntity), field) <= 0)
+                throw new InvalidOperationException("Missing econ refresh network field: " + field);
         Interlocked.Increment(ref DataGeneration);
 
 		if (hotReload)

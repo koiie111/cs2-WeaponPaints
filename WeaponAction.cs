@@ -283,10 +283,10 @@ namespace WeaponPaints
                     // The new econ identity and fallback values must reach the client so an
                     // already-owned item's cached paint can be invalidated without re-giving it.
                     weaponEntity.AttributeManager.Item.Initialized = true;
-                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_AttributeManager");
-                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_nFallbackPaintKit");
-                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_nFallbackSeed");
-                    Utilities.SetStateChanged(weaponEntity, "CBaseAttributableItem", "m_flFallbackWear");
+                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_AttributeManager");
+                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_nFallbackPaintKit");
+                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_nFallbackSeed");
+                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_flFallbackWear");
 				}
 				catch (Exception ex)
 				{

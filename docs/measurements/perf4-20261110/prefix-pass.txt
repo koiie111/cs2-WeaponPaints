@@ -1,0 +1,9 @@
+2026-11-10 13:45:19.318 +03:00 [INFO] plugin:WPDiag2 CHECK A command entry
+2026-11-10 13:45:19.328 +03:00 [INFO] plugin:WPDiag2 CHECK B player enumeration complete
+2026-11-10 13:45:19.330 +03:00 [INFO] plugin:WPDiag2 CHECK C assemblies=2
+2026-11-10 13:45:19.330 +03:00 [INFO] plugin:WPDiag2 CHECK D0 before static Instance
+2026-11-10 13:45:19.331 +03:00 [INFO] plugin:WPDiag2 CHECK E0 after static Instance version=3.3a-db6-perf.2
+2026-11-10 13:45:19.331 +03:00 [INFO] plugin:WPDiag2 CHECK D1 before static Instance
+2026-11-10 13:45:19.331 +03:00 [INFO] plugin:WPDiag2 CHECK E1 after static Instance version=3.3a-db6-perf.3
+2026-11-10 13:45:19.332 +03:00 [INFO] plugin:WPDiag2 CHECK F reflection complete selected=true
+2026-11-10 13:45:19.333 +03:00 [INFO] plugin:WPDiag2 CHECK G idempotent callback complete
