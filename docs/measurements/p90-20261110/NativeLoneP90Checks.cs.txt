@@ -1,0 +1,29 @@
+using CounterStrikeSharp.API;using CounterStrikeSharp.API.Core;using System.Reflection;using System.Collections;using Microsoft.Extensions.Logging;
+public class Probe:BasePlugin{
+ public override string ModuleName=>"WPLoneP90Check16";public override string ModuleVersion=>"1";
+ public override void Load(bool h)=>AddCommand("css_wp_p90_check15","Lone P90, empty server",(caller,cmd)=>{
+ if(caller!=null||Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsBot&&!p.IsHLTV))return;
+ var bot=Utilities.GetPlayers().Single(p=>p.IsValid&&p.IsBot&&p.PawnIsAlive);
+ var flags=BindingFlags.Static|BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic;
+ var wp=AppDomain.CurrentDomain.GetAssemblies().Where(a=>a.GetName().Name=="WeaponPaints").Select(a=>a.GetType("WeaponPaints.WeaponPaints")?.GetProperty("Instance",flags)?.GetValue(null)).OfType<BasePlugin>().Last(p=>p.ModuleVersion=="3.3a-db6-perf.16");var type=wp.GetType();
+ var root=(IDictionary)type.GetField("GPlayerWeaponsInfo",flags)!.GetValue(null)!;var refresh=type.GetMethod("RefreshWeapons",flags)!;
+ bot.RemoveWeapons();AddTimer(.1f,()=>{
+ try{
+ var weapon=new CBasePlayerWeapon(bot.GiveNamedItem("weapon_p90"));
+ var teamsType=root.GetType().GetGenericArguments()[1];var teams=(IDictionary)Activator.CreateInstance(teamsType)!;var items=(IDictionary)Activator.CreateInstance(teamsType.GetGenericArguments()[1])!;var infoType=type.Assembly.GetType("WeaponPaints.WeaponInfo")!;var info=Activator.CreateInstance(infoType)!;infoType.GetProperty("Paint")!.SetValue(info,44);infoType.GetProperty("Wear")!.SetValue(info,.01f);items[19]=info;teams[bot.Team]=items;root[bot.Slot]=teams;
+ var iteration=0;void Run(){
+ var pawn=bot.PlayerPawn.Value!;var services=pawn.WeaponServices!;var old=services.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true} && w.OwnerEntity.Raw==pawn.EntityHandle.Raw)!;var raw=old.EntityHandle.Raw;services.ActiveWeapon.Raw=raw;services.LastWeapon.Raw=uint.MaxValue;old.Clip1=3;old.ReserveAmmo[0]=11;var attack=Server.TickCount+1024;old.NextPrimaryAttackTick=attack;
+ for(var n=0;n<100;n++)refresh.Invoke(wp,new object?[]{bot,null});
+ AddTimer(.4f,()=>{try{
+ var current=bot.PlayerPawn.Value!.WeaponServices!;var owned=current.MyWeapons.Select(h=>h.Value).ToArray();var target=owned.Single()!;
+ var ok=target is {IsValid:true} && target.OwnerEntity.Raw==bot.PlayerPawn.Raw && current.ActiveWeapon.Raw==target.EntityHandle.Raw && target.EntityHandle.Raw!=raw && target.FallbackPaintKit==44 && target.Clip1==3 && target.ReserveAmmo[0]==11 && target.NextPrimaryAttackTick==attack;
+ foreach(var name in new[]{"_weaponRefreshes","_retiringWeapons","_holsteredWeapons","_pendingKnifePaint"}){var v=type.GetField(name,flags)!.GetValue(wp)!;ok &= (int)v.GetType().GetProperty("Count")!.GetValue(v)! == 0;}
+ Logger.LogInformation("LONE iteration={Iteration} PASS={Pass}",iteration,ok);if(!ok)throw new Exception("Lone P90 invariant");
+ if(++iteration<10)Run();else{root.Remove(bot.Slot);bot.RemoveWeapons();Logger.LogInformation("DEPLOY CHECK COMPLETE");}
+ }catch(Exception ex){root.Remove(bot.Slot);Logger.LogError(ex,"LONE CHECK FAILED");}});
+ }Run();
+ }catch(Exception ex){root.Remove(bot.Slot);Logger.LogError(ex,"LONE SETUP FAILED");}
+ });
+ });
+}
+

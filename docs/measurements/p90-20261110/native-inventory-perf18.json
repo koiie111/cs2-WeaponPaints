@@ -1,0 +1,15 @@
+{
+  "version": "3.3a-db6-perf.18",
+  "source_commit": "74fd6d8362a69fba751d22393cdef6b0e1e0497e",
+  "dll_sha256": "6ecd512ef7c1d37a582b13846d904d24a5e394d0426c17b2c678a4e06ca8d4b2",
+  "server": 6,
+  "native_inventory_cases": 24,
+  "coalesced_requests": 2400,
+  "managed_retirement_assertions": 125,
+  "scope": "inventory ownership/serials, no surviving dropped originals, active/last selection, ammo/attack timing, unchanged smoke, drained work queues",
+  "visual_acceptance": "Owner real-client acceptance on server6: pistol/P90 skins, ammo, Q and new round; reply: всё ок",
+  "cosmetic_observation": "Bot fallback paint values vary in multi-item cases; no native visual or universal paint-retention acceptance. The real-client test explicitly includes both gun skins.",
+  "entry_open": true,
+  "gamecfg_restored": true,
+  "wp_config_preserved": true
+}

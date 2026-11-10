@@ -65,8 +65,7 @@ public partial class WeaponPaints
 							PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
 							if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
 
-							GivePlayerGloves(player);
-							RefreshWeapons(player);
+							RefreshPlayerEquipment(player);
 							GivePlayerAgent(player);
 							GivePlayerMusicKit(player);
 							DeferPlayer(player, GivePlayerPin, 0.15f);
@@ -266,8 +265,7 @@ public partial class WeaponPaints
 						PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
 						if (!Utility.IsPlayerValid(targetPlayer) || targetPlayer.SteamID.ToString() != expectedSteamId) return;
 
-						GivePlayerGloves(targetPlayer);
-						RefreshWeapons(targetPlayer);
+						RefreshPlayerEquipment(targetPlayer);
 						GivePlayerAgent(targetPlayer);
 						GivePlayerMusicKit(targetPlayer);
 						DeferPlayer(targetPlayer, GivePlayerPin, 0.15f);

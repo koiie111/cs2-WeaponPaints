@@ -12,27 +12,16 @@ public partial class WeaponPaints
         internal HashSet<int>? Definitions = defindex.HasValue ? [defindex.Value] : null;
         internal void Include(int? value) { Revision++; if (!value.HasValue) Definitions = null; else Definitions?.Add(value.Value); }
     }
-    private sealed record RefreshItem(uint Handle, string Classname, int Clip1, int Clip2, int[] Reserve, bool Active, bool Last, bool RedeployKnife,
+    private sealed record RefreshItem(uint Handle, string Classname, int Clip1, int Clip2, int[] Reserve, bool Active, bool Last,
         bool Burst, bool Silencer, int PrimaryTick, float PrimaryRatio, int SecondaryTick, float SecondaryRatio);
     private readonly Dictionary<int, RefreshRequest> _weaponRefreshes = new();
     private readonly HashSet<uint> _retiringWeapons = new();
-    private readonly Dictionary<DeferredPlayer,uint> _holsteredKnives = new();
     private void ClearWeaponRefreshes()
     {
-        // Unload/map cleanup may cancel the return timer while a knife-only
-        // inventory is holstered. Resolve serial handles even after generation
-        // invalidation, and never overwrite a later manual selection.
-        foreach (var (identity, handle) in _holsteredKnives)
-        {
-            var pawn = new CHandle<CCSPlayerPawn>(identity.Pawn).Value;
-            var knife = new CHandle<CBasePlayerWeapon>(handle).Value;
-            if (pawn is not {IsValid:true} || pawn.Controller.Raw != identity.Controller ||
-                pawn.WeaponServices is not CCSPlayer_WeaponServices services || services.ActiveWeapon.IsValid ||
-                knife is not {IsValid:true} || knife.OwnerEntity.Raw != identity.Pawn) continue;
-            services.ActiveWeapon.Raw = handle;
-            Utilities.SetStateChanged(pawn, nameof(CBasePlayerPawn), "m_pWeaponServices");
-        }
-        _holsteredKnives.Clear();_weaponRefreshes.Clear();_retiringWeapons.Clear();
+        foreach (var (identity, handle) in _holsteredWeapons) RestoreHolsteredWeapon(identity, handle);
+        _holsteredWeapons.Clear();
+        _weaponRefreshes.Clear();
+        _retiringWeapons.Clear();
     }
     private void RefreshWeapons(CCSPlayerController? player, int? defindex = null)
     {
@@ -64,7 +53,7 @@ public partial class WeaponPaints
     {
         var pawn = player.PlayerPawn.Value;
         var services = pawn?.WeaponServices;
-        if (!_gBCommandsAllowed || pawn == null || !pawn.IsValid || services == null) { completed(); return; }
+        if (!_gBCommandsAllowed || pawn == null || !pawn.IsValid || services == null || pawn.ItemServices == null) { completed(); return; }
         var identity = DeferredPlayer.Capture(player);
         var plans = new List<RefreshItem>();
         var preferredActive = services.ActiveWeapon.Raw;
@@ -80,33 +69,63 @@ public partial class WeaponPaints
             var knife = data.GearSlot == gear_slot_t.GEAR_SLOT_KNIFE;
             var index = (int)old.AttributeManager.Item.ItemDefinitionIndex;
             if (definitions != null && !definitions.Contains(index) && !(knife && definitions.Any(d => d is 42 or 59 || WeaponDefindex.TryGetValue(d,out var name) && (name.Contains("knife") || name.Contains("bayonet"))))) continue;
-            var desiredKnifeIndex = index;
             var hasKnifeChoice = false;
             if (knife && GPlayersKnife.TryGetValue(player.Slot, out var knives) && knives.TryGetValue(player.Team, out var knifeChoice))
             {
-                if (knifeChoice == "weapon_knife") { desiredKnifeIndex = 42; hasKnifeChoice = true; }
-                else hasKnifeChoice = KnifeDefindexes.Value.TryGetValue(knifeChoice, out desiredKnifeIndex);
+                hasKnifeChoice = knifeChoice == "weapon_knife" || KnifeDefindexes.Value.ContainsKey(knifeChoice);
             }
             var hasPreference = GPlayerWeaponsInfo.TryGetValue(player.Slot,out var teams) && teams.TryGetValue(player.Team,out var items) && items.ContainsKey(index);
             if (!hasPreference && !hasKnifeChoice) continue;
             var classname = "weapon_knife";
             if (!knife && !WeaponDefindex.TryGetValue(index,out classname)) continue;
             var settings=old.As<CCSWeaponBase>();
-            plans.Add(new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
-                hasKnifeChoice && preferredActive==handle && desiredKnifeIndex!=index,
-                settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio));
+            var plan = new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
+                settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio);
             _retiringWeapons.Add(handle);
-            old.Remove();
+            // Entity destruction and RemovePlayerItem alone leave this serial in
+            // MyWeapons on CS2 build 10955. The normal item-services drop path
+            // updates the inventory vector before we destroy the retired entity.
+            try
+            {
+                RetireRefreshWeapon(pawn, old);
+                plans.Add(plan);
+            }
+            catch(Exception ex)
+            {
+                _retiringWeapons.Remove(handle);
+                Logger.LogWarning(ex,"Unable to retire refresh item {Classname}",classname);
+            }
         }
         if(plans.Count==0){completed();return;}
         var attempts=0;
-        uint redeployKnife=0;
+        uint redeployActive=0;
+        void FinishSelection()
+        {
+            // Native drops/equips can update LastWeapon after the give loop.
+            // Restore it once those actions finish, while the captured held item
+            // is still selected. Never overwrite a different manual selection.
+            Server.NextFrame(() =>
+            {
+                try
+                {
+                    if (!identity.TryResolve(out var owner) || !owner.PawnIsAlive) return;
+                    var currentPawn = owner.PlayerPawn.Value;
+                    var currentServices = currentPawn?.WeaponServices;
+                    var last = new CHandle<CBasePlayerWeapon>(preferredLast).Value;
+                    if (currentPawn == null || currentServices == null || currentServices.ActiveWeapon.Raw != preferredActive ||
+                        last is not { IsValid: true } || last.OwnerEntity.Raw != currentPawn.EntityHandle.Raw) return;
+                    currentServices.LastWeapon.Raw = preferredLast;
+                    Utilities.SetStateChanged(currentPawn, nameof(CBasePlayerPawn), "m_pWeaponServices");
+                }
+                finally { completed(); }
+            });
+        }
         void GiveRemoved()
         {
             if (!identity.TryResolve(out var current) || !current.PawnIsAlive) { completed(); return; }
             var currentPawn=current.PlayerPawn.Value;
             var currentServices=currentPawn?.WeaponServices;
-            if(currentPawn==null || currentServices==null){completed();return;}
+            if(currentPawn==null || currentServices==null || currentPawn.ItemServices==null){completed();return;}
             attempts++;
             for(var n=plans.Count-1;n>=0;n--)
             {
@@ -130,7 +149,7 @@ public partial class WeaponPaints
                     var reserve=replacement.ReserveAmmo;
                     for(var i=0;i<Math.Min(reserve.Length,plan.Reserve.Length);i++)reserve[i]=plan.Reserve[i];
                     if(plan.Active)preferredActive=replacement.EntityHandle.Raw;
-                    if(plan.RedeployKnife)redeployKnife=replacement.EntityHandle.Raw;
+                    if(plan.Active)redeployActive=replacement.EntityHandle.Raw;
                     if(plan.Last)preferredLast=replacement.EntityHandle.Raw;
                     if(new CHandle<CBasePlayerWeapon>(preferredActive).Value is {IsValid:true} selected && selected.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentServices.ActiveWeapon.Raw=preferredActive;
                     if(new CHandle<CBasePlayerWeapon>(preferredLast).Value is {IsValid:true} previous && previous.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentServices.LastWeapon.Raw=preferredLast;
@@ -140,13 +159,17 @@ public partial class WeaponPaints
                 catch(Exception ex)
                 {
                     // A failed acquisition may leave an unowned newly-created entity.
-                    if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))replacement.Remove();
+                    if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))
+                    {
+                        if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)RetireRefreshWeapon(currentPawn,replacement);
+                        else replacement.Remove();
+                    }
                     Logger.LogWarning(ex,"Weapon replacement attempt {Attempt} failed",attempts);
                 }
             }
             if(plans.Count==0){
-                if(redeployKnife!=0) RedeployChangedKnife(identity,redeployKnife,preferredLast,completed);
-                else completed();
+                if(redeployActive!=0) RedeployRefreshedWeapon(identity,redeployActive,preferredLast,FinishSelection);
+                else FinishSelection();
                 return;
             }
             if(attempts>=8){Logger.LogError("Weapon refresh exhausted retries for slot {Slot}; remaining item classes: {Items}",identity.Slot,string.Join(",",plans.Select(p=>p.Classname)));completed();return;}
@@ -154,60 +177,4 @@ public partial class WeaponPaints
         }
         Server.NextFrame(GiveRemoved);
     }
-    // Restoring ActiveWeapon alone does not run the client's holster/deploy path.
-    // Only a held knife whose TYPE changed needs this; ordinary paint refreshes
-    // retain their current behaviour. No temporary/dummy weapon is ever granted.
-    private void RedeployChangedKnife(DeferredPlayer identity, uint knifeHandle, uint lastHandle, Action completed)
-    {
-        Server.NextFrame(() =>
-        {
-            if (!TryGetKnife(out var player, out var pawn, out var services) || services.ActiveWeapon.Raw != knifeHandle) { completed(); return; }
-            var alternate = services.MyWeapons.Select(h => h.Value)
-                .Where(w => w is {IsValid:true} && w.OwnerEntity.Raw == identity.Pawn && w.EntityHandle.Raw != knifeHandle)
-                .Select(w => (Weapon:w!, Slot:w!.As<CCSWeaponBase>().VData?.GearSlot))
-                .Where(w => w.Slot is gear_slot_t.GEAR_SLOT_RIFLE or gear_slot_t.GEAR_SLOT_PISTOL)
-                .OrderByDescending(w => w.Weapon.EntityHandle.Raw == lastHandle).FirstOrDefault();
-            var alternateHandle = alternate.Weapon?.EntityHandle.Raw ?? uint.MaxValue;
-            if (alternate.Weapon != null)
-                player.ExecuteClientCommand(alternate.Slot == gear_slot_t.GEAR_SLOT_RIFLE ? "slot1" : "slot2");
-            else
-            {
-                // A knife-only loadout still needs an observable holster state.
-                _holsteredKnives[identity] = knifeHandle;
-                services.ActiveWeapon.Raw = uint.MaxValue;
-                Utilities.SetStateChanged(pawn, nameof(CBasePlayerPawn), "m_pWeaponServices");
-            }
-            AddOneShot(0.1f, () =>
-            {
-                try
-                {
-                    if (!TryGetKnife(out var owner, out var currentPawn, out var currentServices)) return;
-                    // Do not take the weapon back from a manual selection of a
-                    // different item, nor revive a knife removed by another plugin.
-                    var active = currentServices.ActiveWeapon.Raw;
-                    if (active != knifeHandle && active != alternateHandle) return;
-                    owner.ExecuteClientCommand("slot3");
-                    // Fake clients do not execute client console commands. Keep
-                    // their native inventory usable, including knife-only bots.
-                    if (owner.IsBot && active == uint.MaxValue)
-                    {
-                        currentServices.ActiveWeapon.Raw = knifeHandle;
-                        Utilities.SetStateChanged(currentPawn, nameof(CBasePlayerPawn), "m_pWeaponServices");
-                    }
-                }
-                catch (Exception ex) { Logger.LogWarning(ex, "Unable to redeploy changed knife"); }
-                finally { _holsteredKnives.Remove(identity); completed(); }
-            });
-        });
-        bool TryGetKnife(out CCSPlayerController player, out CCSPlayerPawn pawn, out CCSPlayer_WeaponServices services)
-        {
-            pawn=null!;services=null!;
-            if (!identity.TryResolve(out player) || !player.PawnIsAlive || PlayerDataLoading.ContainsKey(identity.Slot)) return false;
-            var currentPawn=player.PlayerPawn.Value;
-            var knife=new CHandle<CBasePlayerWeapon>(knifeHandle).Value;
-            if (currentPawn?.WeaponServices is not CCSPlayer_WeaponServices currentServices || knife is not {IsValid:true} || knife.OwnerEntity.Raw!=identity.Pawn) return false;
-            pawn=currentPawn;services=currentServices;return true;
-        }
-    }
-
 }
