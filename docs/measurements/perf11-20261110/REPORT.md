@@ -28,3 +28,6 @@ Candidate is intentionally left on #7 for the authorized owner test. No fleet ro
 Local DLL/deps/PDB and SHA256 manifest: C:/Users/koiie/.codex/tasks/wp-release-perf11-20261110. Full install package remains available from the PR CI build artifact; dependencies/runtime/config/gamedata were not changed on #7.
 
 Restore only when #7 is empty: unload WeaponPaints, restore the private original DLL C:/Users/koiie/.codex/tasks/wp-owner-check-20261110/server7-original.dll to the existing WeaponPaints plugin directory, restart only LinuxGSM cs2_7, verify original SHA256 640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610, exact LOADED version and healthy status. Original configuration is unchanged. Do not replace configs/SQL tables or restart the host.
+
+## Owner acceptance update
+On 2026-11-10 the owner confirmed the held knife TYPE change now works. That defect is accepted. Individual pistol-held/Q/knife-only variants were not separately reported and are not inferred as verified. Remaining manual replacement regressions and lifecycle/preview/pickup scenarios are listed at the top of GAME-ACCEPTANCE.md. Active-load/full-tick performance remains unaccepted; no merge or fleet rollout.
