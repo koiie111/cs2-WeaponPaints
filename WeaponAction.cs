@@ -248,52 +248,6 @@ namespace WeaponPaints
 			return false;
 		}
 
-		// IMPORTANT: never create or remove weapon entities here (GiveNamedItem / Remove / Kill).
-		// Removal is deferred, so repeated refreshes (css_wp spam, menu selection + !wp) used to
-		// re-give weapons that were not yet gone and duplicate them on the ground.
-		// Only re-apply attributes to the existing entities.
-		private void RefreshWeapons(CCSPlayerController? player)
-		{
-			if (!_gBCommandsAllowed) return;
-			if (player == null || !player.IsValid || player.PlayerPawn.Value == null || (LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE)
-				return;
-			if (player.PlayerPawn.Value.WeaponServices == null || player.PlayerPawn.Value.ItemServices == null)
-				return;
-
-			var weapons = player.PlayerPawn.Value.WeaponServices.MyWeapons.ToArray();
-
-			if (weapons.Length == 0)
-				return;
-			if (player.Team is CsTeam.None or CsTeam.Spectator)
-				return;
-
-			foreach (var weapon in weapons)
-			{
-				try
-				{
-					var weaponEntity = weapon.Value;
-					if (!weapon.IsValid || weaponEntity == null || !weaponEntity.IsValid ||
-						!weaponEntity.DesignerName.Contains("weapon_")) continue;
-
-					// Re-apply fallback attributes in place. Destroying and recreating every weapon
-					// from a delayed callback can dereference stale native entities and crash CS2.
-					GivePlayerWeaponSkin(player, weaponEntity);
-					IncrementWearForWeaponWithStickers(player, weaponEntity);
-                    // Schema writes do not automatically dirty their owning network fields.
-                    // The new econ identity and fallback values must reach the client so an
-                    // already-owned item's cached paint can be invalidated without re-giving it.
-                    weaponEntity.AttributeManager.Item.Initialized = true;
-                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_AttributeManager");
-                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_nFallbackPaintKit");
-                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_nFallbackSeed");
-                    Utilities.SetStateChanged(weaponEntity, nameof(CEconEntity), "m_flFallbackWear");
-				}
-				catch (Exception ex)
-				{
-					Logger.LogWarning("Error refreshing weapon in place: " + ex.Message);
-				}
-			}
-		}
 
 		private void GivePlayerGloves(CCSPlayerController player)
 		{

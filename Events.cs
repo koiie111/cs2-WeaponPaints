@@ -289,6 +289,9 @@ namespace WeaponPaints
 			var player = @event.Userid;
 			if (player == null || !player.IsValid || player.IsBot) return HookResult.Continue;
 			if (!@event.Item.Contains("knife")) return HookResult.Continue;
+            // GiveNamedItem during a managed refresh already paints the replacement.
+            // Do not enter the legacy single-knife re-give workaround recursively.
+            if (_weaponRefreshes.ContainsKey(player.Slot)) return HookResult.Continue;
 		
 			var weaponDefIndex = (int)@event.Defindex;
 				
@@ -339,6 +342,7 @@ namespace WeaponPaints
 		private void RegisterListeners()
 		{
 			RegisterListener<Listeners.OnMapStart>(OnMapStart);
+            RegisterListener<Listeners.OnEntityDeleted>(entity => _retiringWeapons.Remove(entity.EntityHandle.Raw));
             RegisterListener<Listeners.OnMapEnd>(() =>
             {
                 Interlocked.Increment(ref DataGeneration);
@@ -346,6 +350,7 @@ namespace WeaponPaints
                 _previews.Entries.Clear();
                 InvalidateKnifePaint();
                 ClearDeferredTimers();
+                ClearWeaponRefreshes();
             });
 
 			RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
