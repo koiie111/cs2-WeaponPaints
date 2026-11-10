@@ -91,7 +91,7 @@ public partial class WeaponPaints
 	internal static List<JObject> MusicList = [];
 	internal static WeaponSynchronization? WeaponSync;
 	private static bool _gBCommandsAllowed = true;
-	private readonly PreviewState _previews = new();
+	private readonly PreviewState<CCSPlayerController> _previews = new();
 
 	private static readonly Dictionary<int, DateTime> CommandsCooldown = new();
 	internal static Database? Database;

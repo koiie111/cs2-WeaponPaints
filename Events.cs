@@ -270,8 +270,8 @@ namespace WeaponPaints
             var now = Server.EngineTime;
             foreach (var (slot, preview) in _previews.Entries)
             {
-                var player = Utilities.GetPlayerFromSlot(slot);
-                if (player == null || !player.IsValid || !_previews.IsCurrent(slot, player.SteamID, now))
+                var player = preview.Recipient;
+                if (player == null || !player.IsValid || !_previews.IsCurrent(slot, player.SteamID, now, player.EntityHandle.Raw))
                 {
                     _expiredPreviews.Add(slot);
                     continue;

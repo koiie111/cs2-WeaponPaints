@@ -436,7 +436,7 @@ public partial class WeaponPaints
 					{
 						var foundSkin = Catalog.Image(weaponDefIndex, paintId);
 						var image = foundSkin?["image"]?.ToString() ?? "";
-						_previews.Show(p.Slot, p.SteamID, image, Server.EngineTime);
+						_previews.Show(p.Slot, p.SteamID, image, Server.EngineTime, p, p.EntityHandle.Raw);
 					}
 
 					p.Print(Localizer["wp_skin_menu_select", selectedSkin]);
@@ -563,7 +563,7 @@ public partial class WeaponPaints
 			    !int.TryParse(selectedGlove["paint"]?.ToString(), out var paint)) return;
 			if (Config.Additional.ShowSkinImage)
 			{
-				_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
+				_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime, player, player.EntityHandle.Raw);
 			}
 
 			if (!string.IsNullOrEmpty(Localizer["wp_glove_menu_select"]))
@@ -708,7 +708,7 @@ public partial class WeaponPaints
 				if (Config.Additional.ShowSkinImage)
 				{
 					var image = selectedAgent["image"]?.ToString() ?? "";
-					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
+					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime, player, player.EntityHandle.Raw);
 				}
 
 				if (!string.IsNullOrEmpty(Localizer["wp_agent_menu_select"]))
@@ -816,7 +816,7 @@ public partial class WeaponPaints
 				var image = selectedMusic["image"]?.ToString() ?? "";
 				if (Config.Additional.ShowSkinImage)
 				{
-					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
+					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime, player, player.EntityHandle.Raw);
 				}
 
 				PlayerInfo playerInfo = new PlayerInfo
@@ -950,7 +950,7 @@ public partial class WeaponPaints
 				var image = selectedPin["image"]?.ToString() ?? "";
 				if (Config.Additional.ShowSkinImage)
 				{
-					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
+					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime, player, player.EntityHandle.Raw);
 				}
 
 				PlayerInfo playerInfo = new PlayerInfo
