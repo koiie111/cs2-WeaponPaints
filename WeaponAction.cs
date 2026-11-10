@@ -121,9 +121,6 @@ namespace WeaponPaints
 
 			fallbackPaintKit = weapon.FallbackPaintKit;
 
-			if (fallbackPaintKit == 0)
-				return;
-
 			if (weaponInfo.KeyChain != null) SetKeychain(player, weapon);
 			if (weaponInfo.Stickers.Count > 0) SetStickers(player, weapon);
 
