@@ -360,7 +360,7 @@ public partial class WeaponPaints
 			}
 			
 			if (_gBCommandsAllowed && (LifeState_t)player.LifeState == LifeState_t.LIFE_ALIVE)
-				RefreshWeapons(player);
+				RefreshWeapons(player, 42);
 
 			if (WeaponSync != null)
 				_ = ObserveAsync(async () => await WeaponSync.SyncKnifeToDatabase(playerInfo, knifeKey, teamsToCheck));
