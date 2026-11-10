@@ -7,7 +7,7 @@
   "coalesced_requests": 2400,
   "managed_retirement_assertions": 125,
   "scope": "inventory ownership/serials, no surviving dropped originals, active/last selection, ammo/attack timing, unchanged smoke, drained work queues",
-  "visual_acceptance": "pending real-client test",
+  "visual_acceptance": "Owner real-client acceptance on server6: pistol/P90 skins, ammo, Q and new round; reply: всё ок",
   "cosmetic_observation": "Bot fallback paint values vary in multi-item cases; no native visual or universal paint-retention acceptance. The real-client test explicitly includes both gun skins.",
   "entry_open": true,
   "gamecfg_restored": true,

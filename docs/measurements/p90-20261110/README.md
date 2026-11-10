@@ -34,3 +34,10 @@ The corrected matrix completed 24/24 cases and 2,400 coalesced requests on empty
 The original LastWeapon failure used a fabricated value overwritten by the engine before queued refresh and is not proof of a player-facing lastinv regression. Earlier paint44 fixtures also used one paint for incompatible gun definitions. The final probe uses actual catalogue entries (P90=1020, Deagle=37) and records fallback paint observations separately from inventory assertions. CSS NetworkedVector does not enumerate CEconItemAttribute; bot fallback values vary by multi-item case. Real-client P90 AND pistol skin rendering remains a required acceptance item. These observations are not reported as a native paint-retention pass.
 
 The managed 125-assertion retirement regression and CI on source74fd6d8 pass, including existing MySQL integration. Public6 entry is reopened and original gamecfg/runtime cvars are restored. Real-client acceptance and merge remain pending. Public7 was occupied and remains on the older perf16 candidate; updating/restoring it still requires an empty window or explicit occupied-maintenance authorization.
+
+
+## Owner real-client acceptance — passed
+
+On public6 the owner executed the requested pistol + P90 setup, held pistol then P90, ran !wp twice with a four-second interval, checked no dropped weapon, held P90, Q to pistol and back, both selected skins/ammo and the next round. The explicit reply was «всё ок». Exact tested perf.18 code74fd6d8 / DLL6ecd512e is accepted for these scenarios. The earlier bot cosmetic observations remain observations; this human result supplies the required visual acceptance. Raw client dumps remain private. No full-server CPU/full-tick, multi-client capacity or fleet-rollout claim is added.
+
+Public6 retains the accepted build with original WP/game config and runtime settings; diagnostic files are removed/unloaded. A safe empty-server update of public7 is being completed separately.
