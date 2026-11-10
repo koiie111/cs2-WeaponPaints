@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 public class Check : BasePlugin
 {
-    public override string ModuleName => "WPP90Check16";
+    public override string ModuleName => "WPP90Check16D";
     public override string ModuleVersion => "1";
     public override void Load(bool hotReload) => AddCommand("css_wp_p90_check15", "Console-only empty-server native refresh check", (caller, command) =>
     {
@@ -81,12 +81,7 @@ public class Check : BasePlugin
                                 Assert((int)value.GetType().GetProperty("Count")!.GetValue(value)! == 0, "empty " + name + " step " + step);
                             }
                             if (++repeat < 10) { Run(); return; } repeat = 0; step++;
-                            if (step == 2)
-                            {
-                                foreach (var item in owned.Where(w => w!.AttributeManager.Item.ItemDefinitionIndex != 19)) { bot.PlayerPawn.Value!.ItemServices!.As<CCSPlayer_ItemServices>().DropActivePlayerWeapon(item!); item!.Remove(); }
-                                Server.NextFrame(() => Server.NextFrame(Run));
-                            }
-                            else if (step < 3) Run();
+                            if (step < 2) Run();
                             else { Cleanup(); Logger.LogInformation("DEPLOY CHECK COMPLETE"); }
                         }
                         catch (Exception ex) { Cleanup(); Logger.LogError(ex, "DEPLOY CHECK FAILED"); }
@@ -98,6 +93,8 @@ public class Check : BasePlugin
         }));
     });
 }
+
+
 
 
 

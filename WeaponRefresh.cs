@@ -79,14 +79,22 @@ public partial class WeaponPaints
             var classname = "weapon_knife";
             if (!knife && !WeaponDefindex.TryGetValue(index,out classname)) continue;
             var settings=old.As<CCSWeaponBase>();
-            plans.Add(new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
-                settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio));
+            var plan = new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
+                settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio);
             _retiringWeapons.Add(handle);
             // Entity destruction and RemovePlayerItem alone leave this serial in
             // MyWeapons on CS2 build 10955. The normal item-services drop path
             // updates the inventory vector before we destroy the retired entity.
-            pawn.ItemServices.As<CCSPlayer_ItemServices>().DropActivePlayerWeapon(old);
-            old.Remove();
+            try
+            {
+                RetireRefreshWeapon(pawn, old);
+                plans.Add(plan);
+            }
+            catch(Exception ex)
+            {
+                _retiringWeapons.Remove(handle);
+                Logger.LogWarning(ex,"Unable to retire refresh item {Classname}",classname);
+            }
         }
         if(plans.Count==0){completed();return;}
         var attempts=0;
@@ -132,8 +140,8 @@ public partial class WeaponPaints
                     // A failed acquisition may leave an unowned newly-created entity.
                     if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))
                     {
-                        if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentPawn.ItemServices.As<CCSPlayer_ItemServices>().DropActivePlayerWeapon(replacement);
-                        replacement.Remove();
+                        if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)RetireRefreshWeapon(currentPawn,replacement);
+                        else replacement.Remove();
                     }
                     Logger.LogWarning(ex,"Weapon replacement attempt {Attempt} failed",attempts);
                 }
