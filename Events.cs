@@ -140,7 +140,6 @@ namespace WeaponPaints
             Interlocked.Increment(ref DataGeneration);
             PlayerDataLoading.Clear();
 			InvalidateKnifePaint();
-			_fadeSeed = 0;
 			_nextItemId = MinimumCustomItemId;
 		}
 
