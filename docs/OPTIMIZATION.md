@@ -27,9 +27,11 @@ References: https://docs.cssharp.dev/docs/features/game-events.html ; https://do
 - Chicken handle inventory maintained on spawn/delete and recovered once; native owner is read fresh to preserve owner changes.
 - Release warnings-as-errors and both portable suites pass. Synthetic catalog benchmark in docs/measurements.
 
-## Required remaining work (not accepted)
-- Ordered persistence for all per-SteamID feature writes, reconnect read-after-write and failure/retry regression coverage. Current skin-only locks are retained, not a complete persistence ordering solution.
-- Full deferred callback/timer lifecycle audit, menu/reverse-knife indexes and session/map race integration tests.
-- Chicken native lifecycle acceptance, slow-query races, stickers/keychains and all feature-flag combinations.
-- Server baseline/candidate/baseline, full-path percentiles/allocations and real-client visual acceptance. No candidate server installation performed.
-Read-only #7 check: 0 humans/0 bots, 61 plugin slots, original WP 3.3a-db6 DLL SHA256 640b78d7511a08dc2c4fc23782cced5f87511abe57bed1c2242c4ce2f706f610. Other plugin state is changing (Advertisement unloaded); recapture a stable manifest before any comparison.
+## Continuation completed
+- FIFO per-SteamID reservation shared by scalar saves, skin/StatTrak batches and player loads, before connection acquisition. Idle keys are removed; obsolete queued loads are skipped. Existing SQL skin locks and bounded retries remain.
+- Deferred pin/glove/agent work validates controller serial, pawn, SteamID and map/plugin generation. One-shot references are removed and pending timers explicitly cleared at map end/unload.
+- Reverse knife lookup and indexed skin-menu groups/images preserve first match and source order.
+- Added tests for FIFO/failure cleanup, independent identities, controller/pawn/map invalidation, menu order and empty-image suppression.
+
+## Acceptance remaining
+Portable tests validate scheduling/identity predicates, not real MySQL transactions or native entity lifecycle. Real-client functional acceptance and active-load profiling remain open. Full tick/timers/SQL are not covered by the idle pilot. See measurements/pilot-20261110/REPORT.md. Keep PR Draft; no fleet rollout or merge.
