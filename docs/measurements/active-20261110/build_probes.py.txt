@@ -1,0 +1,34 @@
+from pathlib import Path
+import subprocess,re,json,hashlib
+b=Path(__file__).parent;repo=Path.home()/'.codex/tasks/weaponpaints-optimization-20261110'
+for label,commit in [('baseline','ba00df35'),('candidate','3220421')]:
+ d=b/label;d.mkdir(exist_ok=True);manifest={}
+ files=subprocess.check_output(['git','ls-tree','-r','--name-only',commit],cwd=repo,text=True).splitlines()
+ for name in files:
+  if (name.endswith('.cs') and '/' not in name) or name in ['WeaponPaints.csproj','3rd_party/MenuManagerApi.dll']:
+   raw=subprocess.check_output(['git','show',commit+':'+name],cwd=repo);p=d/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(raw);manifest[name]=hashlib.sha256(raw).hexdigest()
+ (b/(label+'-sources.json')).write_text(json.dumps({'commit':commit,'files':manifest},indent=2))
+ # Same method and scheduler instrumentation on both source revisions.
+ targets=['OnTick','OnPlayerSpawn','OnPlayerDeath','OnItemPickup','OnClientFullConnect','OnPlayerDisconnect','OnGiveNamedItemPost','OnEntityCreated','GivePlayerWeaponSkin','NativePets','OnPetRoundStart','OnPetSpawn','OnPetEntityDeleted','RefreshWeapons','ApplyWeaponRefresh']
+ counts={}
+ for p in d.glob('*.cs'):
+  s=p.read_text(encoding='utf-8-sig')
+  s=s.replace('player.PrintToCenterHtml(', 'ProfPrintHtml(player,')
+  s=s.replace('Server.NextFrame(', 'ProfNextFrame(').replace('Server.NextWorldUpdate(', 'ProfNextWorldUpdate(')
+  s=re.sub(r'\bAddTimer\(', 'ProfAddTimer(',s)
+  for method in targets:
+   pattern=r'((?:public|private|internal|protected)\s+(?:static\s+)?[\w<>?\[\],]+\s+'+method+r'\([^;{]*?\)\s*\{)'
+   s,n=re.subn(pattern,lambda m:m[0]+'\n using var _profMeasure = new ActiveScope("'+method+'");',s)
+   if n:counts[method]=n
+  if p.name=='WeaponPaints.cs':
+   s=s.replace('Instance = this;', 'Instance = this; RegisterActiveProbe();')
+   s=re.sub(r'public override string ModuleVersion => "[^"]+";', 'public override string ModuleVersion => "3.3a-load-'+label+'";',s)
+  p.write_text(s,encoding='utf-8')
+ harness=(b/'ActiveProbe.cs.txt').read_text()
+ if label=='baseline':harness=harness.replace('PROBE_PREVIEW_UPDATE','_playerWeaponImage[p.Slot] = image;').replace('PROBE_PREVIEW_CLEAR','_playerWeaponImage.Remove(p.Slot);')
+ else:harness=harness.replace('PROBE_PREVIEW_UPDATE','_previews.Show(p.Slot,p.SteamID,image,Server.EngineTime,p,p.EntityHandle.Raw);').replace('PROBE_PREVIEW_CLEAR','_previews.Entries.Remove(p.Slot);')
+ harness=harness.replace('PROBE_PREVIEW_COUNT','_playerWeaponImage.Count' if label=='baseline' else '_previews.Entries.Count')
+ harness=harness.replace('PROBE_REFRESH','RefreshWeapons(p);' if label=='baseline' else 'RefreshWeapons(p,7);')
+ (d/'ActiveProbe.cs').write_text(harness)
+ (b/(label+'-instrumentation.json')).write_text(json.dumps(counts,indent=2))
+ print(label+' instrumented '+str(len(counts))+' methods')

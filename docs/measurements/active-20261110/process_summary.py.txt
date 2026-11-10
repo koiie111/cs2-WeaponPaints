@@ -1,0 +1,24 @@
+from pathlib import Path
+import sys,json,statistics
+b=Path.home()/'.codex/tasks/wp-active-profile12-20261110';sys.path.insert(0,str(b));from analyze import summarize
+r=json.loads((b/'result.json').read_text());out=[]
+for w in r['windows']:
+ stage=w['name'].split('-')[0]
+ path=b/((stage+'-'+('candidate' if stage=='stage1' else 'baseline')+'-telemetry.jsonl') if stage in ['stage0','stage1','stage2'] else 'candidate-extra-telemetry.jsonl')
+ data=[json.loads(line) for line in path.read_text().splitlines() if line.strip()];data=[d for d in data if w['started_utc']<=d['utc']<=w['ended_utc']]
+ cpu=None;steal=None
+ if len(data)>1:
+  a,z=data[0],data[-1];seconds=z['utc']-a['utc'];cpu=((z['utime']+z['stime'])-(a['utime']+a['stime']))/a['clock_ticks']/seconds*100
+  ticks=sum(z['cpu'][:8])-sum(a['cpu'][:8]);steal=(z['cpu'][7]-a['cpu'][7])/ticks*100 if ticks else 0
+ item={'name':w['name'],'seconds':w['ended_utc']-w['started_utc'],'process_cpu_percent_all_threads':cpu,'host_steal_percent':steal,'process_allocation_mb_per_second':(w['after']['allocated']-w['before']['allocated'])/(w['ended_utc']-w['started_utc'])/1e6}
+ if w.get('raw_file'):item['scope_union_ms_per_second']=summarize(b/w['raw_file'])['instrumented_scope_union_ms_per_second']
+ out.append(item)
+(b/'process-window-summary.json').write_text(json.dumps(out,indent=2))
+for prefix in ['stage0','stage1','stage2','control','candidate-refresh']:
+ rows=[x for x in out if x['name'].startswith(prefix)]
+ print(prefix,'cpu%',round(statistics.mean(x['process_cpu_percent_all_threads'] for x in rows if x['process_cpu_percent_all_threads'] is not None),2),'allocMB/s',round(statistics.mean(x['process_allocation_mb_per_second'] for x in rows),3),'unionms/s',round(statistics.mean(x.get('scope_union_ms_per_second',0) for x in rows),3))
+paired=[]
+for n in range(3):
+ before=next(x for x in out if x['name']==f'stage0-baseline-window{n}')['scope_union_ms_per_second'];after=next(x for x in out if x['name']==f'stage2-baseline-window{n}')['scope_union_ms_per_second'];candidate=next(x for x in out if x['name']==f'stage1-candidate-window{n}')['scope_union_ms_per_second'];ref=(before+after)/2
+ paired.append({'window':n,'before':before,'candidate':candidate,'after':after,'effect_percent':(ref-candidate)/ref*100})
+(b/'paired-effect.json').write_text(json.dumps(paired,indent=2));print('effects',*[round(x['effect_percent'],2) for x in paired],'median',round(statistics.median(x['effect_percent'] for x in paired),2))

@@ -1,0 +1,23 @@
+{
+  "commit": "ba00df35",
+  "files": {
+    "3rd_party/MenuManagerApi.dll": "1a4c89023fc7c1c158fde2517efab98a1ddbd4f83dfde2a61b064d2788b5c7e0",
+    "AgentModel.cs": "6d6e7ad13615fbb59c48fdc10444311681d18e25042d39fa92fb90a762c94806",
+    "Commands.cs": "78072887dccfa135e7011a04261bb138587504bdb52b6b65c554ef17394811c7",
+    "Config.cs": "ae155a898cea22e3c65dbd635ca318d9cc16a45026af1745014a3ca86bfdbcc6",
+    "Database.cs": "23e2043a9fdc56bfb1d7e8f3b47ca97107755af61644d4ad9066de6c09f60a7c",
+    "Events.cs": "0363fc6c55d6bc58e2d0f72cfd000760651fe847dcb7fd524166d2f5d0e334a9",
+    "ItemName.cs": "5f8de04cacd78de1d9fc191efd877ffda8b15d273aec0e53cf5f57dd4f02e182",
+    "PetState.cs": "651476f846fb99402eaa46604ec0a67964a14e27e2f9383c5c342541396f94d5",
+    "Pets.cs": "997ffb6cd26b8ee390ab73353ba3ebc03c3db1a765b339d1b45585be56c49833",
+    "PlayerExtensions.cs": "feb7313d163b20907920dd027a16843c48142b3168f8e10266753e68e78b9ca3",
+    "PlayerInfo.cs": "9d233caa3b78d0113e2f8aac87729adf52c84bbe61eeaa76afdc387b91c8ebc9",
+    "Utility.cs": "8fd57d9f6cb225eb75abc06fbf22d82f3c007d22b1c2da5fcd35d7049998c527",
+    "Variables.cs": "90b5290137d0973dec361f836e25185b9ac6029c78462d4e5df06ac694b61bf9",
+    "WeaponAction.cs": "6730c391949940a5cf7a64c2b12bcfdab797d94637700f37c5da7c578b6a801a",
+    "WeaponInfo.cs": "82be391c85115bfac1bec4579b204d33bf3548acdb9a6eddc8f78f5ac8f7bdf5",
+    "WeaponPaints.cs": "3a91533387d7df0d84b6f3d03a2e4c9e1805d3228175a4088e5399c238c965d8",
+    "WeaponPaints.csproj": "cff01e8d86e4084099518c838aa0ebfa2dc4029f4282a77b98a3a298bd9f579c",
+    "WeaponSynchronization.cs": "fb9eb861642839ff2aeb5a21a7b238672d23260dd9941aca37cf8e8752457b1a"
+  }
+}

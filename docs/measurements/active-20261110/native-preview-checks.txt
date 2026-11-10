@@ -1,0 +1,10 @@
+2026-11-10 15:56:21.059 +03:00 [INFO] plugin:WPCacheCheck CHECK live cached recipient retains preview PASS=true
+2026-11-10 15:56:21.077 +03:00 [INFO] plugin:WPCacheCheck CHECK mismatched controller serial rejected PASS=true
+2026-11-10 15:56:21.277 +03:00 [INFO] plugin:WPCacheCheck CHECK disconnect invalidates cached serial and clears preview PASS=true
+2026-11-10 15:56:22.483 +03:00 [INFO] plugin:WPCacheCheck CHECK reconnect geometry oldSlot=0 newSlot=1 oldRaw=227016705 newRaw=2388951042 oldValid=false
+2026-11-10 15:56:22.483 +03:00 [INFO] plugin:WPCacheCheck CHECK old preview remains cleared after reconnect PASS=true
+2026-11-10 15:56:22.496 +03:00 [INFO] plugin:WPCacheCheck CHECK disconnect/reconnect cannot inherit old preview PASS=true
+2026-11-10 15:56:22.605 +03:00 [INFO] plugin:WPCacheCheck CHECK replacement controller receives its own preview PASS=true
+2026-11-10 15:56:24.683 +03:00 [INFO] plugin:WPCacheCheck CHECK preview expires at original duration PASS=true
+2026-11-10 15:56:24.683 +03:00 [INFO] plugin:WPCacheCheck CHECK empty image clears cached recipient PASS=true
+2026-11-10 15:56:24.683 +03:00 [INFO] plugin:WPCacheCheck CHECK COMPLETE

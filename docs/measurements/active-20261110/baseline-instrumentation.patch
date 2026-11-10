@@ -1,0 +1,381 @@
+--- ba00df35/Commands.cs
++++ baseline-instrumented/Commands.cs
+@@ -58,7 +58,7 @@
+ 					_ = Task.Run(async () =>
+ 					{
+ 						await weaponSync.GetPlayerData(playerInfo);
+-						Server.NextFrame(() =>
++						ProfNextFrame(() =>
+ 						{
+ 							if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
+ 							PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+@@ -68,7 +68,7 @@
+ 							RefreshWeapons(player);
+ 							GivePlayerAgent(player);
+ 							GivePlayerMusicKit(player);
+-							AddTimer(0.15f, () => GivePlayerPin(player), TimerFlags.STOP_ON_MAPCHANGE);
++							ProfAddTimer(0.15f, () => GivePlayerPin(player), TimerFlags.STOP_ON_MAPCHANGE);
+ 
+ 							if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
+ 								player.Print(Localizer["wp_command_refresh_done"]);
+@@ -258,7 +258,7 @@
+ 				_ = Task.Run(async () =>
+ 				{
+ 					await weaponSync.GetPlayerData(playerInfo);
+-					Server.NextFrame(() =>
++					ProfNextFrame(() =>
+ 					{
+ 						if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
+ 						PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+@@ -268,7 +268,7 @@
+ 						RefreshWeapons(targetPlayer);
+ 						GivePlayerAgent(targetPlayer);
+ 						GivePlayerMusicKit(targetPlayer);
+-						AddTimer(0.15f, () => GivePlayerPin(targetPlayer), TimerFlags.STOP_ON_MAPCHANGE);
++						ProfAddTimer(0.15f, () => GivePlayerPin(targetPlayer), TimerFlags.STOP_ON_MAPCHANGE);
+ 
+ 						if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
+ 							targetPlayer.Print(Localizer["wp_command_refresh_done"]);
+@@ -448,7 +448,7 @@
+ 						);
+ 						var image = foundSkin?["image"]?.ToString() ?? "";
+ 						_playerWeaponImage[p.Slot] = image;
+-						AddTimer(2.0f, () => _playerWeaponImage.Remove(p.Slot), TimerFlags.STOP_ON_MAPCHANGE);
++						ProfAddTimer(2.0f, () => _playerWeaponImage.Remove(p.Slot), TimerFlags.STOP_ON_MAPCHANGE);
+ 					}
+ 
+ 					p.Print(Localizer["wp_skin_menu_select", selectedSkin]);
+@@ -576,7 +576,7 @@
+ 			if (Config.Additional.ShowSkinImage)
+ 			{
+ 				_playerWeaponImage[player.Slot] = image;
+-				AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE);
++				ProfAddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE);
+ 			}
+ 
+ 			if (!string.IsNullOrEmpty(Localizer["wp_glove_menu_select"]))
+@@ -654,8 +654,8 @@
+ 				await WeaponSync.SyncWeaponPaintsToDatabase(playerInfo);
+ 			});
+ 				
+-			AddTimer(0.1f, () => GivePlayerGloves(player));
+-			AddTimer(0.25f, () => GivePlayerGloves(player));
++			ProfAddTimer(0.1f, () => GivePlayerGloves(player));
++			ProfAddTimer(0.25f, () => GivePlayerGloves(player));
+ 		};
+ 
+ 		// Add weapon options to the weapon selection menu
+@@ -720,7 +720,7 @@
+ 				{
+ 					var image = selectedAgent["image"]?.ToString() ?? "";
+ 					_playerWeaponImage[player.Slot] = image;
+-					AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE);
++					ProfAddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE);
+ 				}
+ 
+ 				if (!string.IsNullOrEmpty(Localizer["wp_agent_menu_select"]))
+@@ -829,7 +829,7 @@
+ 				if (Config.Additional.ShowSkinImage)
+ 				{
+ 					_playerWeaponImage[player.Slot] = image;
+-					AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), TimerFlags.STOP_ON_MAPCHANGE);
++					ProfAddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), TimerFlags.STOP_ON_MAPCHANGE);
+ 				}
+ 
+ 				PlayerInfo playerInfo = new PlayerInfo
+@@ -964,7 +964,7 @@
+ 				if (Config.Additional.ShowSkinImage)
+ 				{
+ 					_playerWeaponImage[player.Slot] = image;
+-					AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), TimerFlags.STOP_ON_MAPCHANGE);
++					ProfAddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), TimerFlags.STOP_ON_MAPCHANGE);
+ 				}
+ 
+ 				PlayerInfo playerInfo = new PlayerInfo
+--- ba00df35/Database.cs
++++ baseline-instrumented/Database.cs
+@@ -1,4 +1,4 @@
+-п»їusing Microsoft.Extensions.Logging;
++using Microsoft.Extensions.Logging;
+ using MySqlConnector;
+ 
+ namespace WeaponPaints
+--- ba00df35/Events.cs
++++ baseline-instrumented/Events.cs
+@@ -15,6 +15,7 @@
+ 		[GameEventHandler]
+ 		public HookResult OnClientFullConnect(EventPlayerConnectFull @event, GameEventInfo info)
+ 		{
++ using var _profMeasure = new ActiveScope("OnClientFullConnect");
+ 			CCSPlayerController? player = @event.Userid;
+ 
+ 			if (player is null || !player.IsValid || player.IsBot ||
+@@ -51,7 +52,7 @@
+ 			_ = Task.Run(async () =>
+ 			{
+ 				await weaponSync.GetPlayerData(playerInfo);
+-				Server.NextFrame(() =>
++				ProfNextFrame(() =>
+ 				{
+ 					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
+ 					PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+@@ -74,6 +75,7 @@
+ 		[GameEventHandler]
+ 		public HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+ 		{
++ using var _profMeasure = new ActiveScope("OnPlayerDisconnect");
+ 			CCSPlayerController? player = @event.Userid;
+ 
+ 			if (player is null || !player.IsValid || player.IsBot) return HookResult.Continue;
+@@ -136,6 +138,7 @@
+ 
+ 		private HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
+ 		{
++ using var _profMeasure = new ActiveScope("OnPlayerSpawn");
+ 			CCSPlayerController? player = @event.Userid;
+ 
+ 			if (player is null || !player.IsValid || Config.Additional is { KnifeEnabled: false, GloveEnabled: false })
+@@ -149,7 +152,7 @@
+ 
+ 			GivePlayerMusicKit(player);
+ 			GivePlayerAgent(player);
+-			Server.NextFrame(() =>
++			ProfNextFrame(() =>
+ 			{
+ 				GivePlayerGloves(player);
+ 			});
+@@ -189,6 +192,7 @@
+ 
+ 		private HookResult OnGiveNamedItemPost(DynamicHook hook)
+ 		{
++ using var _profMeasure = new ActiveScope("OnGiveNamedItemPost");
+ 			try
+ 			{
+ 				var itemServices = hook.GetParam<CCSPlayer_ItemServices>(0);
+@@ -210,11 +214,12 @@
+ 
+ 		private void OnEntityCreated(CEntityInstance entity)
+ 		{
++ using var _profMeasure = new ActiveScope("OnEntityCreated");
+ 			var designerName = entity.DesignerName;
+ 
+ 			if (designerName != null && designerName.Contains("weapon"))
+ 			{
+-				Server.NextWorldUpdate(() =>
++				ProfNextWorldUpdate(() =>
+ 				{
+ 					var weapon = new CBasePlayerWeapon(entity.Handle);
+ 					if (!weapon.IsValid) return;
+@@ -257,13 +262,14 @@
+ 
+ 		private void OnTick()
+ 		{
++ using var _profMeasure = new ActiveScope("OnTick");
+ 			if (!Config.Additional.ShowSkinImage) return;
+ 
+ 			foreach (var player in Players)
+ 			{
+ 				if (_playerWeaponImage.TryGetValue(player.Slot, out var value) && !string.IsNullOrEmpty(value))
+ 				{
+-					player.PrintToCenterHtml("<img src='{PATH}'</img>".Replace("{PATH}", value));
++					ProfPrintHtml(player,"<img src='{PATH}'</img>".Replace("{PATH}", value));
+ 				}
+ 			}
+ 		}
+@@ -271,6 +277,7 @@
+ 		[GameEventHandler]
+ 		public HookResult OnItemPickup(EventItemPickup @event, GameEventInfo _)
+ 		{
++ using var _profMeasure = new ActiveScope("OnItemPickup");
+ 			// if (!IsWindows) return HookResult.Continue;
+ 			var player = @event.Userid;
+ 			if (player == null || !player.IsValid || player.IsBot) return HookResult.Continue;
+@@ -291,6 +298,7 @@
+ 
+ 		private HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
+ 		{
++ using var _profMeasure = new ActiveScope("OnPlayerDeath");
+ 			CCSPlayerController? player = @event.Attacker;
+ 			CCSPlayerController? victim = @event.Userid;
+ 
+--- ba00df35/Pets.cs
++++ baseline-instrumented/Pets.cs
+@@ -66,7 +66,7 @@
+         // Load runs before the entity system exists on a cold start. Recover old
+         // plugin entities once a world is available, without a recurring sweep.
+         var recoveryVersion = ++_petRecoveryVersion;
+-        Server.NextWorldUpdate(() =>
++        ProfNextWorldUpdate(() =>
+         {
+             if (recoveryVersion != _petRecoveryVersion || !Config.Additional.PetsEnabled) return;
+             foreach (var chicken in Utilities.FindAllEntitiesByDesignerName<CChicken>("chicken"))
+@@ -85,7 +85,7 @@
+     private PetTimer AddPetTimer(float delay, Action callback, bool repeat = false)
+     {
+         PetTimer? timer = null;
+-        timer = AddTimer(delay, () =>
++        timer = ProfAddTimer(delay, () =>
+         {
+             // BasePlugin retains completed timers until unload. Drop our one-shot
+             // references immediately, especially the spawn checks on busy servers.
+@@ -149,7 +149,7 @@
+                 var active = await reader.ReadAsync();
+                 var expiresAt = active ? DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Utc) : DateTime.MinValue;
+                 var choice = active && !reader.IsDBNull(1) ? ReadPet(reader, 1) : active ? DefaultPet : null;
+-                Server.NextFrame(() => ApplyPetLoad(slot, steamId, version, choice, expiresAt));
++                ProfNextFrame(() => ApplyPetLoad(slot, steamId, version, choice, expiresAt));
+             }
+             catch (Exception ex) { Logger.LogWarning("Pet load failed for slot {Slot}: {Message}", slot, ex.Message); }
+         });
+@@ -211,7 +211,7 @@
+                 var loaded = new Dictionary<string, (DateTime ExpiresAt, PetChoice Choice)>(StringComparer.Ordinal);
+                 await using (var reader = await command.ExecuteReaderAsync())
+                     while (await reader.ReadAsync()) loaded[reader.GetString(0)] = (DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Utc), reader.IsDBNull(2) ? DefaultPet : ReadPet(reader, 2));
+-                Server.NextFrame(() =>
++                ProfNextFrame(() =>
+                 {
+                     foreach (var (slot, id) in slots)
+                     {
+@@ -226,6 +226,7 @@
+ 
+     private HookResult OnPetSpawn(EventPlayerSpawn e, GameEventInfo info)
+     {
++ using var _profMeasure = new ActiveScope("OnPetSpawn");
+         if (!Config.Additional.PetsEnabled) return HookResult.Continue;
+         var player = e.Userid;
+         if (player != null && player.IsValid && !player.IsBot)
+@@ -239,6 +240,7 @@
+ 
+     private HookResult OnPetRoundStart(EventRoundStart e, GameEventInfo info)
+     {
++ using var _profMeasure = new ActiveScope("OnPetRoundStart");
+         if (!Config.Additional.PetsEnabled) return HookResult.Continue;
+         _petSpawnVersions.InvalidateAll();
+         foreach (var slot in _petEmoteTimers.Keys.ToArray()) CancelPetEmote(slot);
+@@ -284,6 +286,7 @@
+ 
+     private void OnPetEntityDeleted(CEntityInstance entity)
+     {
++ using var _profMeasure = new ActiveScope("OnPetEntityDeleted");
+         if (_livePets.Count == 0 || entity.DesignerName is not ("chicken" or "prop_dynamic")) return;
+         var handle = entity.EntityHandle.Raw;
+         foreach (var (slot, live) in _livePets.ToArray())
+@@ -293,7 +296,7 @@
+                 _livePets.Remove(slot);
+                 CancelPetEmote(slot);
+                 if (live.HatHandle != 0)
+-                    Server.NextFrame(() => KillPetEntity(new CHandle<CDynamicProp>(live.HatHandle).Value));
++                    ProfNextFrame(() => KillPetEntity(new CHandle<CDynamicProp>(live.HatHandle).Value));
+             }
+             else if (live.HatHandle == handle) _livePets[slot] = live with { HatHandle = 0 };
+         }
+@@ -337,6 +340,7 @@
+     // Called only on spawn/connect/round. A native pet is identified by its owner; map chickens are untouched.
+     private List<CChicken> NativePets(CCSPlayerController player)
+     {
++ using var _profMeasure = new ActiveScope("NativePets");
+         var found = new List<CChicken>();
+         if (_ownerOffset <= 0) return found;
+         var owned = _livePets.Values.Select(x => x.Handle).ToHashSet();
+--- ba00df35/PlayerExtensions.cs
++++ baseline-instrumented/PlayerExtensions.cs
+@@ -1,4 +1,4 @@
+-п»їusing CounterStrikeSharp.API.Core;
++using CounterStrikeSharp.API.Core;
+ using System.Text;
+ 
+ namespace WeaponPaints;
+--- ba00df35/PlayerInfo.cs
++++ baseline-instrumented/PlayerInfo.cs
+@@ -1,4 +1,4 @@
+-п»їnamespace WeaponPaints
++namespace WeaponPaints
+ {
+ 	public class PlayerInfo
+ 	{
+--- ba00df35/Utility.cs
++++ baseline-instrumented/Utility.cs
+@@ -1,4 +1,4 @@
+-п»їusing CounterStrikeSharp.API.Core;
++using CounterStrikeSharp.API.Core;
+ using CounterStrikeSharp.API.Core.Translations;
+ using CounterStrikeSharp.API.Modules.Menu;
+ using Dapper;
+--- ba00df35/WeaponAction.cs
++++ baseline-instrumented/WeaponAction.cs
+@@ -14,6 +14,7 @@
+ 	{
+ 		private void GivePlayerWeaponSkin(CCSPlayerController player, CBasePlayerWeapon weapon)
+ 		{
++ using var _profMeasure = new ActiveScope("GivePlayerWeaponSkin");
+ 			if (!Config.Additional.SkinEnabled) return;
+ 			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out _)) return;
+ 			
+@@ -262,6 +263,7 @@
+ 		// Only re-apply attributes to the existing entities.
+ 		private void RefreshWeapons(CCSPlayerController? player)
+ 		{
++ using var _profMeasure = new ActiveScope("RefreshWeapons");
+ 			if (!_gBCommandsAllowed) return;
+ 			if (player == null || !player.IsValid || player.PlayerPawn.Value == null || (LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE)
+ 				return;
+@@ -302,7 +304,7 @@
+ 
+ 			//force gloves model refresh to prevent model overlap
+ 			player.ExecuteClientCommand("lastinv");
+-			Instance.AddTimer(0.08f, () =>
++			Instance.ProfAddTimer(0.08f, () =>
+ 			{	
+ 				try
+ 				{
+@@ -338,7 +340,7 @@
+ 					//force gloves model refresh to prevent model overlap
+ 					player.ExecuteClientCommand("lastinv");
+ 					SetBodygroup(pawn, "first_or_third_person", 0);
+-					AddTimer(0.2f, () =>
++					ProfAddTimer(0.2f, () =>
+ 					{
+ 						if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
+ 						var currentPawn = player.PlayerPawn.Value;
+@@ -392,7 +394,7 @@
+ 			int generation = _knifePaintGeneration;
+ 			ulong steamId = player.SteamID;
+ 			int slot = player.Slot;
+-			Server.NextFrame(() =>
++			ProfNextFrame(() =>
+ 			{
+ 				if (generation != _knifePaintGeneration) return;
+ 				try
+@@ -448,7 +450,7 @@
+ 
+ 			try
+ 			{
+-				Server.NextFrame(() =>
++				ProfNextFrame(() =>
+ 				{
+ 					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
+ 					var pawn = player.PlayerPawn.Value;
+--- ba00df35/WeaponInfo.cs
++++ baseline-instrumented/WeaponInfo.cs
+@@ -1,4 +1,4 @@
+-п»їnamespace WeaponPaints
++namespace WeaponPaints
+ {
+ 	public class WeaponInfo
+ 	{
+--- ba00df35/WeaponPaints.cs
++++ baseline-instrumented/WeaponPaints.cs
+@@ -21,11 +21,11 @@
+     public override string ModuleAuthor => "Nereziel & daffyy";
+ 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
+ 	public override string ModuleName => "WeaponPaints";
+-	public override string ModuleVersion => "3.3a-db6";
++	public override string ModuleVersion => "3.3a-load-baseline";
+ 
+ 	public override void Load(bool hotReload)
+ 	{
+-		Instance = this;
++		Instance = this; RegisterActiveProbe();
+ 
+ 		if (hotReload)
+ 		{

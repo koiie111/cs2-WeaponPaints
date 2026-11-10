@@ -1,0 +1,259 @@
+[
+  {
+    "name": "stage0-baseline-window0",
+    "seconds": 32.49691820144653,
+    "process_cpu_percent_all_threads": 31.625556762148488,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 5.077765927744338,
+    "scope_union_ms_per_second": 20.645954582666903
+  },
+  {
+    "name": "stage0-baseline-window1",
+    "seconds": 31.698007345199585,
+    "process_cpu_percent_all_threads": 29.43753399564154,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 5.092249435182396,
+    "scope_union_ms_per_second": 20.216166550016347
+  },
+  {
+    "name": "stage0-baseline-window2",
+    "seconds": 31.488993883132935,
+    "process_cpu_percent_all_threads": 31.100232103788855,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 5.120670180776106,
+    "scope_union_ms_per_second": 21.66500911339959
+  },
+  {
+    "name": "stage1-candidate-window0",
+    "seconds": 31.52627158164978,
+    "process_cpu_percent_all_threads": 32.75242041303644,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 3.795613816562132,
+    "scope_union_ms_per_second": 13.717644038312166
+  },
+  {
+    "name": "stage1-candidate-window1",
+    "seconds": 31.545467376708984,
+    "process_cpu_percent_all_threads": 29.967712125451484,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 3.7797777593884967,
+    "scope_union_ms_per_second": 12.777467085177387
+  },
+  {
+    "name": "stage1-candidate-window2",
+    "seconds": 31.478564262390137,
+    "process_cpu_percent_all_threads": 30.536951401113793,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 3.8515751541075596,
+    "scope_union_ms_per_second": 13.066383634901072
+  },
+  {
+    "name": "stage2-baseline-window0",
+    "seconds": 31.59159207344055,
+    "process_cpu_percent_all_threads": 32.89711488075435,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 5.122977013116836,
+    "scope_union_ms_per_second": 22.358402566799043
+  },
+  {
+    "name": "stage2-baseline-window1",
+    "seconds": 31.54399847984314,
+    "process_cpu_percent_all_threads": 30.967358408924007,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 5.091705545910193,
+    "scope_union_ms_per_second": 21.120729243799097
+  },
+  {
+    "name": "stage2-baseline-window2",
+    "seconds": 31.734833478927612,
+    "process_cpu_percent_all_threads": 31.329800175088845,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 5.162482926175927,
+    "scope_union_ms_per_second": 22.099125983518746
+  },
+  {
+    "name": "control-no-record-window0",
+    "seconds": 30.974029541015625,
+    "process_cpu_percent_all_threads": 31.799700927741014,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 3.7942834607416867
+  },
+  {
+    "name": "control-no-record-window1",
+    "seconds": 31.343700408935547,
+    "process_cpu_percent_all_threads": 28.705222641233437,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 3.773358424721383
+  },
+  {
+    "name": "control-no-record-window2",
+    "seconds": 30.948238849639893,
+    "process_cpu_percent_all_threads": 30.80298081407423,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 3.888564534631033
+  },
+  {
+    "name": "candidate-refresh-window0",
+    "seconds": 31.487757444381714,
+    "process_cpu_percent_all_threads": 30.539379525448652,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.047528383852568,
+    "scope_union_ms_per_second": 21.262932889461855
+  },
+  {
+    "name": "candidate-refresh-window1",
+    "seconds": 31.485427856445312,
+    "process_cpu_percent_all_threads": 31.036551159907432,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.094782913156692,
+    "scope_union_ms_per_second": 22.567495585338175
+  },
+  {
+    "name": "candidate-refresh-window2",
+    "seconds": 31.546295404434204,
+    "process_cpu_percent_all_threads": 27.972472164982815,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.1091232532419415,
+    "scope_union_ms_per_second": 20.15487197249107
+  },
+  {
+    "name": "candidate-soak-part0",
+    "seconds": 30.934091806411743,
+    "process_cpu_percent_all_threads": 29.89669177607879,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.1624470763777675
+  },
+  {
+    "name": "candidate-soak-part1",
+    "seconds": 31.609551906585693,
+    "process_cpu_percent_all_threads": 31.00062563373341,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.21185065810003
+  },
+  {
+    "name": "candidate-soak-part2",
+    "seconds": 30.97146701812744,
+    "process_cpu_percent_all_threads": 30.60032497478205,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.224839072796083
+  },
+  {
+    "name": "candidate-soak-part3",
+    "seconds": 31.017154693603516,
+    "process_cpu_percent_all_threads": 28.73692671986908,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.326721046004772
+  },
+  {
+    "name": "candidate-soak-part4",
+    "seconds": 30.946810245513916,
+    "process_cpu_percent_all_threads": 29.401985172218208,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.296076750568261
+  },
+  {
+    "name": "candidate-soak-part5",
+    "seconds": 31.01720666885376,
+    "process_cpu_percent_all_threads": 29.804704462648406,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.352006595601939
+  },
+  {
+    "name": "candidate-soak-part6",
+    "seconds": 31.015491724014282,
+    "process_cpu_percent_all_threads": 29.303103860197222,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.346558977674389
+  },
+  {
+    "name": "candidate-soak-part7",
+    "seconds": 30.952226400375366,
+    "process_cpu_percent_all_threads": 29.33537693334438,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.457636301029601
+  },
+  {
+    "name": "candidate-soak-part8",
+    "seconds": 31.293375253677368,
+    "process_cpu_percent_all_threads": 29.464854783535827,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.41099340934082
+  },
+  {
+    "name": "candidate-soak-part9",
+    "seconds": 30.93151569366455,
+    "process_cpu_percent_all_threads": 29.648028841007605,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.46200235923999
+  },
+  {
+    "name": "candidate-soak-part10",
+    "seconds": 30.9878032207489,
+    "process_cpu_percent_all_threads": 28.935125768694686,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.477900127721493
+  },
+  {
+    "name": "candidate-soak-part11",
+    "seconds": 30.957724809646606,
+    "process_cpu_percent_all_threads": 31.539915917653172,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.793740396379409
+  },
+  {
+    "name": "candidate-soak-part12",
+    "seconds": 31.422992706298828,
+    "process_cpu_percent_all_threads": 29.29218963627737,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.555082112573839
+  },
+  {
+    "name": "candidate-soak-part13",
+    "seconds": 31.61346697807312,
+    "process_cpu_percent_all_threads": 29.237186231293027,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.55107742848296
+  },
+  {
+    "name": "candidate-soak-part14",
+    "seconds": 31.643469095230103,
+    "process_cpu_percent_all_threads": 30.132231915628598,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.679362289715576
+  },
+  {
+    "name": "candidate-soak-part15",
+    "seconds": 31.76352047920227,
+    "process_cpu_percent_all_threads": 30.50460915076551,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.602139491927982
+  },
+  {
+    "name": "candidate-soak-part16",
+    "seconds": 31.034537076950073,
+    "process_cpu_percent_all_threads": 29.68460275752011,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.679272503402569
+  },
+  {
+    "name": "candidate-soak-part17",
+    "seconds": 31.018664121627808,
+    "process_cpu_percent_all_threads": 31.537892583746984,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.88971102705375
+  },
+  {
+    "name": "candidate-soak-part18",
+    "seconds": 30.968570470809937,
+    "process_cpu_percent_all_threads": 30.78756056736828,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.810175146457255
+  },
+  {
+    "name": "candidate-soak-part19",
+    "seconds": 30.926734685897827,
+    "process_cpu_percent_all_threads": 30.46557203027182,
+    "host_steal_percent": 0.0,
+    "process_allocation_mb_per_second": 4.820167971627954
+  }
+]

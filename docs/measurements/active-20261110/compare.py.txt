@@ -1,0 +1,37 @@
+from pathlib import Path
+import json,math,statistics
+b=Path(__file__).parent
+files=sorted(b.glob('stage*-raw.json'))
+pooled={};windows=[]
+for p in files:
+ raw=json.loads(p.read_text());series=p.name.split('-')[0];secs=(raw['stop']-raw['start'])/raw['frequency'];rows={}
+ for name,v in raw['rows'].items():
+  key=(series,name);a=[x*1000/raw['frequency'] for x in v['duration_ticks']]
+  if not a:continue
+  item=pooled.setdefault(key,{'samples':[],'bytes':0,'seconds':0});item['samples']+=a;item['bytes']+=v['allocated_bytes'];item['seconds']+=secs
+  rows[name]={'calls':len(a),'bytes':v['allocated_bytes']}
+ windows.append({'file':p.name,'seconds':secs,'preview':raw['preview'],'bots':raw['bots'],'humans':raw['humans'],'rows':rows})
+records=[]
+for (series,name),v in sorted(pooled.items()):
+ a=sorted(v['samples']);n=len(a);records.append({'series':series,'label':name,'calls':n,'mean_us':sum(a)/n*1000,'p50_us':a[math.ceil(n*.5)-1]*1000,'p95_us':a[math.ceil(n*.95)-1]*1000,'p99_us':a[math.ceil(n*.99)-1]*1000,'max_us':a[-1]*1000,'bytes_per_call_inclusive':v['bytes']/n,'milliseconds_per_second':sum(a)/v['seconds'],'over_1ms':sum(x>1 for x in a),'over_5ms':sum(x>5 for x in a),'over_15_625ms':sum(x>15.625 for x in a),'over_100ms':sum(x>100 for x in a)})
+(b/'pooled.json').write_text(json.dumps(records,indent=2))
+for r in records:
+ if r['label'] in ['OnTick','GivePlayerWeaponSkin','NativePets','LoadDriver','EntityThink.span','TickInterval.wall','OnGiveNamedItemPost']:
+  print(r['series'],r['label'],'n',r['calls'],'mean/p95/p99 us',*[round(r[k],2) for k in ['mean_us','p95_us','p99_us']],'B/call',round(r['bytes_per_call_inclusive']))
+# Each handler has its own evented track, avoiding false nested stacks between
+# wall tick intervals/entity spans and ordinary plugin scopes.
+for p in files:
+ raw=json.loads(p.read_text());frames=[];profiles=[]
+ for name,v in raw['rows'].items():
+  if not v['start_ticks']:continue
+  frame=len(frames);frames.append({'name':name});lanes=[]
+  for start,duration in sorted(zip(v['start_ticks'],v['duration_ticks'])):
+   begin=(start-raw['start'])/raw['frequency'];end=begin+duration/raw['frequency']
+   lane=next((lane for lane in lanes if lane['end']<=begin),None)
+   if lane is None:lane={'end':-1,'events':[]};lanes.append(lane)
+   lane['events'].extend([{'type':'O','at':begin,'frame':frame},{'type':'C','at':end,'frame':frame}]);lane['end']=end
+  for n,lane in enumerate(lanes):
+   profiles.append({'type':'evented','name':name+(f' lane {n+1}' if len(lanes)>1 else ''),'unit':'seconds','startValue':0,'endValue':(raw['stop']-raw['start'])/raw['frequency'],'events':lane['events']})
+
+ (b/(p.stem+'.speedscope.json')).write_text(json.dumps({'$schema':'https://www.speedscope.app/file-format-schema.json','shared':{'frames':frames},'profiles':profiles,'exporter':'WPActiveProbe per-label tracks v1'},separators=(',',':')))
+print('Saved pooled percentiles and evented per-label speedscope tracks')

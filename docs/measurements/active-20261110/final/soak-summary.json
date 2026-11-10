@@ -1,0 +1,32 @@
+{
+  "soak_windows": 20,
+  "soak_seconds": 623.0263750553131,
+  "soak_cycles": 624,
+  "requested_refreshes": 4992,
+  "timers": [
+    2
+  ],
+  "fixture_errors": [
+    0
+  ],
+  "heap_first_mb": 114.371624,
+  "heap_last_mb": 117.146216,
+  "heap_min_mb": 114.021632,
+  "heap_max_mb": 117.25376,
+  "gc_first": [
+    74,
+    18,
+    6
+  ],
+  "gc_last": [
+    260,
+    43,
+    7
+  ],
+  "soak_rss_first_mib": 1658.12109375,
+  "soak_rss_last_mib": 1509.1640625,
+  "soak_rss_min_mib": 1505.76171875,
+  "soak_rss_max_mib": 1662.92578125,
+  "rss_first_minute_median_mib": 1657.736328125,
+  "rss_last_minute_median_mib": 1509.16796875
+}
