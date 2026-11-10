@@ -46,6 +46,8 @@ public partial class WeaponPaints
         if (!_gBCommandsAllowed || pawn == null || !pawn.IsValid || services == null) { completed(); return; }
         var identity = DeferredPlayer.Capture(player);
         var plans = new List<RefreshItem>();
+        var preferredActive = services.ActiveWeapon.Raw;
+        var preferredLast = services.LastWeapon.Raw;
         var snapshot = services.MyWeapons.Select(h => h.Raw).ToArray();
         foreach (var handle in snapshot)
         {
@@ -62,7 +64,7 @@ public partial class WeaponPaints
             if (!WeaponDefindex.TryGetValue(index,out var classname)) continue;
             if (knife) classname = "weapon_knife";
             var settings=old.As<CCSWeaponBase>();
-            plans.Add(new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),services.ActiveWeapon.Raw==handle,services.LastWeapon.Raw==handle,
+            plans.Add(new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
                 settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio));
             _retiringWeapons.Add(handle);
             old.Remove();
@@ -97,8 +99,10 @@ public partial class WeaponPaints
                     replacement.NextSecondaryAttackTick=plan.SecondaryTick;replacement.NextSecondaryAttackTickRatio=plan.SecondaryRatio;
                     var reserve=replacement.ReserveAmmo;
                     for(var i=0;i<Math.Min(reserve.Length,plan.Reserve.Length);i++)reserve[i]=plan.Reserve[i];
-                    if(plan.Active)currentServices.ActiveWeapon.Raw=replacement.EntityHandle.Raw;
-                    if(plan.Last)currentServices.LastWeapon.Raw=replacement.EntityHandle.Raw;
+                    if(plan.Active)preferredActive=replacement.EntityHandle.Raw;
+                    if(plan.Last)preferredLast=replacement.EntityHandle.Raw;
+                    if(new CHandle<CBasePlayerWeapon>(preferredActive).Value is {IsValid:true} selected && selected.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentServices.ActiveWeapon.Raw=preferredActive;
+                    if(new CHandle<CBasePlayerWeapon>(preferredLast).Value is {IsValid:true} previous && previous.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentServices.LastWeapon.Raw=preferredLast;
                     Utilities.SetStateChanged(currentPawn,nameof(CBasePlayerPawn),"m_pWeaponServices");
                     plans.RemoveAt(n);
                 }
