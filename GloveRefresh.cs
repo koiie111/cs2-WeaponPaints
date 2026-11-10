@@ -9,7 +9,7 @@ public partial class WeaponPaints
 
     private void RefreshPlayerEquipment(CCSPlayerController player)
     {
-        // Reissuing the held weapon already performs its holster/deploy. A separate
+        // The weapon refresh owns its explicit holster/deploy. A separate
         // pair of lastinv commands races those replacements and can select a knife
         // instead of the pistol held when !wp started. Apply gloves first, then let
         // weapon refresh capture the actual active/last handles without any toggle.

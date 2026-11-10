@@ -46,6 +46,8 @@ jobs:
         run: dotnet run --project tests/PreviewRuntimeTests/PreviewRuntimeTests.csproj -c Release
       - name: Equipment refresh ordering checks
         run: dotnet run --project tests/EquipmentRefreshTests/EquipmentRefreshTests.csproj -c Release
+      - name: Held weapon redeploy checks
+        run: dotnet run --project tests/WeaponRedeployTests/WeaponRedeployTests.csproj -c Release
       - name: Measurement integrity checks
         run: python3 tests/verify_measurements.py docs/measurements/active-20261110
       - name: MySQL integration checks
