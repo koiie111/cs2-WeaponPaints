@@ -1,0 +1,49 @@
+2026-11-10 19:38:22.839 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=0 P90=1020 Deagle=0; real-client visual acceptance required
+2026-11-10 19:38:22.855 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=0 full=true held=19 order=42,1,19 PASS=true
+2026-11-10 19:38:23.500 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=1 P90=1020 Deagle=0; real-client visual acceptance required
+2026-11-10 19:38:23.501 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=1 full=true held=19 order=42,19,1 PASS=true
+2026-11-10 19:38:24.187 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=2 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:24.187 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=2 full=true held=19 order=1,42,19 PASS=true
+2026-11-10 19:38:24.874 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=3 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:24.874 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=3 full=true held=19 order=1,19,42 PASS=true
+2026-11-10 19:38:25.562 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=4 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:25.562 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=4 full=true held=19 order=19,42,1 PASS=true
+2026-11-10 19:38:26.249 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=5 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:26.250 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=5 full=true held=19 order=19,1,42 PASS=true
+2026-11-10 19:38:26.937 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=6 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:26.937 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=6 full=true held=1 order=42,1,19 PASS=true
+2026-11-10 19:38:27.624 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=7 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:27.625 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=7 full=true held=1 order=42,19,1 PASS=true
+2026-11-10 19:38:28.311 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=8 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:28.312 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=8 full=true held=1 order=1,42,19 PASS=true
+2026-11-10 19:38:28.999 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=9 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:28.999 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=9 full=true held=1 order=1,19,42 PASS=true
+2026-11-10 19:38:29.687 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=10 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:29.687 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=10 full=true held=1 order=19,42,1 PASS=true
+2026-11-10 19:38:30.374 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=11 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:30.374 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=11 full=true held=1 order=19,1,42 PASS=true
+2026-11-10 19:38:31.062 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=12 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:31.062 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=12 full=true held=42 order=42,1,19 PASS=true
+2026-11-10 19:38:31.749 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=13 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:31.750 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=13 full=true held=42 order=42,19,1 PASS=true
+2026-11-10 19:38:32.437 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=14 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:32.437 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=14 full=true held=42 order=1,42,19 PASS=true
+2026-11-10 19:38:33.124 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=15 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:33.124 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=15 full=true held=42 order=1,19,42 PASS=true
+2026-11-10 19:38:33.812 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=16 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:33.812 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=16 full=true held=42 order=19,42,1 PASS=true
+2026-11-10 19:38:34.499 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=17 P90=1020 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:34.499 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=17 full=true held=42 order=19,1,42 PASS=true
+2026-11-10 19:38:35.187 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=18 P90=0 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:35.187 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=18 full=false held=19 order=42,1,19 PASS=true
+2026-11-10 19:38:35.874 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=19 P90=0 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:35.874 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=19 full=false held=19 order=42,19,1 PASS=true
+2026-11-10 19:38:36.561 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=20 P90=0 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:36.562 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=20 full=false held=19 order=1,42,19 PASS=true
+2026-11-10 19:38:37.249 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=21 P90=0 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:37.250 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=21 full=false held=19 order=1,19,42 PASS=true
+2026-11-10 19:38:37.937 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=22 P90=0 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:37.938 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=22 full=false held=19 order=19,42,1 PASS=true
+2026-11-10 19:38:38.624 +03:00 [INFO] plugin:WPFullInventory18 COSMETIC_OBSERVATION phase=23 P90=0 Deagle=37; real-client visual acceptance required
+2026-11-10 19:38:38.625 +03:00 [INFO] plugin:WPFullInventory18 CASE phase=23 full=false held=19 order=19,1,42 PASS=true
+2026-11-10 19:38:38.626 +03:00 [INFO] plugin:WPFullInventory18 DEPLOY CHECK COMPLETE cases=24 requests=2400
