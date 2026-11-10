@@ -413,10 +413,7 @@ public partial class WeaponPaints
 			var selectedWeapon = option.Text;
 
 			if (!classNamesByWeapon.TryGetValue(selectedWeapon, out var selectedWeaponClassname)) return;
-			var skinsForSelectedWeapon = SkinsList.Where(skin =>
-				skin.TryGetValue("weapon_name", out var weaponName) &&
-				weaponName?.ToString() == selectedWeaponClassname
-			)?.ToList();
+			var skinsForSelectedWeapon = Catalog.ForWeapon(selectedWeaponClassname);
 
 			var skinSubMenu = Utility.CreateMenu(Localizer["wp_skin_menu_skin_title", selectedWeapon]);
 
@@ -425,14 +422,7 @@ public partial class WeaponPaints
 			{
 				if (!Utility.IsPlayerValid(p)) return;
 
-				var firstSkin = SkinsList.FirstOrDefault(skin =>
-				{
-					if (skin.TryGetValue("weapon_name", out var weaponName))
-					{
-						return weaponName?.ToString() == selectedWeaponClassname;
-					}
-					return false;
-				});
+				var firstSkin = Catalog.ForWeapon(selectedWeaponClassname).FirstOrDefault();
 
 				var selectedSkin = opt.Text;
 				var selectedPaintId = selectedSkin[(selectedSkin.LastIndexOf('(') + 1)..].Trim(')');
@@ -444,11 +434,7 @@ public partial class WeaponPaints
 				{
 					if (Config.Additional.ShowSkinImage)
 					{
-						var foundSkin = SkinsList.FirstOrDefault(skin =>
-							((int?)skin["weapon_defindex"] ?? 0) == weaponDefIndex &&
-							((int?)skin["paint"] ?? 0) == paintId &&
-							skin["image"] != null
-						);
+						var foundSkin = Catalog.Image(weaponDefIndex, paintId);
 						var image = foundSkin?["image"]?.ToString() ?? "";
 						_previews.Show(p.Slot, p.SteamID, image, Server.EngineTime);
 					}

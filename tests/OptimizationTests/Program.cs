@@ -53,3 +53,10 @@ Check(!stamp.Matches(2,123,129,500,10)); // same account reconnect/controller se
 Check(!stamp.Matches(2,123,65,501,10)); // respawn
 Check(!stamp.Matches(2,123,65,500,11)); // map/unload
 Console.WriteLine("PASS: deferred identity account, controller serial, pawn and lifecycle invalidation");
+
+var firstImage=JObject.Parse("{weapon_name:'weapon_ak47',weapon_defindex:7,paint:1,image:'a'}");
+var secondImage=JObject.Parse("{weapon_name:'weapon_ak47',weapon_defindex:7,paint:1,image:'b'}");
+var menus=new SkinCatalog(new[]{firstImage,secondImage});
+Check(menus.ForWeapon("weapon_ak47").SequenceEqual(new[]{firstImage,secondImage}));
+Check(ReferenceEquals(menus.Image(7,1),firstImage)); Check(menus.ForWeapon("missing").Count==0); Check(menus.Image(7,2)==null);
+Console.WriteLine("PASS: menu order and first matching image preserved");

@@ -45,6 +45,7 @@ internal class WeaponSynchronization
         try
         {
             using var operation = await Operations.EnterAsync(player.SteamId!);
+            if (generation != WeaponPaints.DataGeneration || !WeaponPaints.PlayerDataLoading.TryGetValue(player.Slot, out var requested) || requested != loadId) return false;
             await using var connection = await _database.GetConnectionAsync();
 
 			if (_config.Additional.KnifeEnabled)
@@ -278,7 +279,7 @@ internal class WeaponSynchronization
 					string stickerColumn = $"weapon_sticker_{i}";
 					var stickerData = ((IDictionary<string, object>)row!)[stickerColumn]; // Safely cast row to a dictionary
 
-					if (string.IsNullOrEmpty(stickerData.ToString())) continue;
+					if (stickerData == null || string.IsNullOrEmpty(stickerData.ToString())) continue;
 						
 					var parts = stickerData.ToString()!.Split(';');
 
