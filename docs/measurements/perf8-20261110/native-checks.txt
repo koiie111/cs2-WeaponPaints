@@ -1,0 +1,27 @@
+2026-11-10 14:15:32.405 +03:00 [INFO] plugin:WPDiag10 CHECK A command entry
+2026-11-10 14:15:32.412 +03:00 [INFO] plugin:WPDiag10 CHECK B player enumeration complete
+2026-11-10 14:15:32.413 +03:00 [INFO] plugin:WPDiag10 CHECK C assemblies=1
+2026-11-10 14:15:32.413 +03:00 [INFO] plugin:WPDiag10 CHECK D0 before static Instance
+2026-11-10 14:15:32.414 +03:00 [INFO] plugin:WPDiag10 CHECK E0 after static Instance version=3.3a-db6-perf.8
+2026-11-10 14:15:32.414 +03:00 [INFO] plugin:WPDiag10 CHECK F reflection complete selected=true
+2026-11-10 14:15:32.414 +03:00 [INFO] plugin:WPDiag10 CHECK G idempotent callback complete
+2026-11-10 14:15:32.415 +03:00 [INFO] plugin:WPDiag10 CHECK registrations stable=true count=16
+2026-11-10 14:15:32.415 +03:00 [INFO] plugin:WPDiag10 CHECK schema m_AttributeManager offset=3384
+2026-11-10 14:15:32.415 +03:00 [INFO] plugin:WPDiag10 CHECK schema m_nFallbackPaintKit offset=4472
+2026-11-10 14:15:32.415 +03:00 [INFO] plugin:WPDiag10 CHECK schema m_nFallbackSeed offset=4476
+2026-11-10 14:15:32.416 +03:00 [INFO] plugin:WPDiag10 CHECK schema m_flFallbackWear offset=4480
+2026-11-10 14:15:32.417 +03:00 [INFO] plugin:WPDiag10 CHECK before chicken keyvalue spawn
+2026-11-10 14:15:32.419 +03:00 [INFO] plugin:WPDiag10 CHECK chicken spawned
+2026-11-10 14:15:32.427 +03:00 [INFO] plugin:WPDiag10 CHECK production hat spawned=2037153968
+2026-11-10 14:15:32.431 +03:00 [INFO] plugin:WPDiag10 CHECK hat cleared immediately=true
+2026-11-10 14:15:32.440 +03:00 [INFO] plugin:WPDiag10 CHECK native hat removed within two frames=true
+2026-11-10 14:15:32.445 +03:00 [INFO] plugin:WPDiag10 CHECK before GiveNamedItem
+2026-11-10 14:15:32.449 +03:00 [INFO] plugin:WPDiag10 CHECK item-services gun valid=true owned=true allowed=true
+2026-11-10 14:15:32.450 +03:00 [INFO] plugin:WPDiag10 CHECK item-services gun fields dirtied
+2026-11-10 14:15:32.508 +03:00 [INFO] plugin:WPDiag10 CHECK spam50 first replacement count=1 oldGone=true
+2026-11-10 14:15:32.508 +03:00 [INFO] plugin:WPDiag10 CHECK first paint44 and ammo preserved=true
+2026-11-10 14:15:32.519 +03:00 [INFO] plugin:WPDiag10 CHECK spam50 second replacement count=1 oldGone=true
+2026-11-10 14:15:32.519 +03:00 [INFO] plugin:WPDiag10 CHECK second paint180 and ammo preserved=true
+2026-11-10 14:15:32.519 +03:00 [INFO] plugin:WPDiag10 CHECK active slot preserved=true
+2026-11-10 14:15:32.521 +03:00 [INFO] plugin:WPDiag10 CHECK surviving world AK count=1
+2026-11-10 14:15:32.572 +03:00 [INFO] plugin:WPDiag10 CHECK death invalidates queued request=true
