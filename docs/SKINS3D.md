@@ -1,7 +1,8 @@
 # Local website composition integration (Draft)
 
 Website PR: https://github.com/koiie111/4ill.ru/pull/10.
-Optimization PR #3 is merged. This branch keeps its lifecycle changes.
+Optimization PR #3 and the subsequent weapon-refresh PR #5 are merged. This
+branch is rebased onto `bceb553` and retains their lifecycle and held-weapon fixes.
 
 ## Native attributes
 
@@ -17,6 +18,10 @@ Optimization PR #3 is merged. This branch keeps its lifecycle changes.
 - Patches require an active `plus_active` subscription. Convert its MSK expiry to
   UTC and remove patches at expiry; keep the saved choices for renewal. Missing
   subscription data disables patches while retaining the other cosmetics.
+- Patch expiry timers are bound to SteamID, controller/pawn identity, map generation
+  and entitlement version. Native patches on an ordinary Steam-owned agent are
+  retained unless this plugin owns an override on that exact pawn. Renewal reuses
+  the pet subscription batch, or a separate round batch when pets are disabled.
 
 ## Schema compatibility and rollout
 
@@ -43,7 +48,9 @@ GHSA-473q-m89c-ghf8. Include the matching dependency when packaging the plugin.
 ## Validation and remaining acceptance
 
 Release warnings-as-errors build, managed optimization checks against the real
-catalog, 22 pet lifecycle and 47 linked production preview checks pass locally.
+catalog, 22 pet lifecycle, 47 linked production preview and 10 patch lifecycle
+checks pass locally. The rebased candidate also passes 106 MySQL integration,
+32 equipment scheduling, 125 retirement and 39 redeploy assertions.
 The website Docker checks cover slab persistence, clearing and transaction rollback.
 
 No native/game visual acceptance or CSSProfiler comparison has been performed.
