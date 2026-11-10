@@ -41,7 +41,7 @@ jobs:
       - name: Pet lifecycle regression checks
         run: dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release
       - name: Optimization regression checks
-        run: dotnet run --project tests/OptimizationTests/OptimizationTests.csproj -c Release
+        run: dotnet run --project tests/OptimizationTests/OptimizationTests.csproj -c Release -- --catalog-directory website/data
       - name: MySQL integration checks
         env:
           WP_TEST_CONNECTION: "Server=127.0.0.1;Port=3306;User ID=root;Password=;Pooling=true;Allow User Variables=true"
