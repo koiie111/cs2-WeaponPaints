@@ -209,6 +209,8 @@ namespace WeaponPaints
 				"keychain slot 0 offset z", keyChain.OffsetZ);
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
 				"keychain slot 0 seed", ViewAsFloat(keyChain.Seed));
+			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
+				"keychain slot 0 sticker", ViewAsFloat(keyChain.Id == 37 ? keyChain.Sticker : 0u));
 		}
 
 		private static void GiveKnifeToPlayer(CCSPlayerController? player)

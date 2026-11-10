@@ -260,6 +260,12 @@ internal class WeaponSynchronization
 					keyChainInfo.Seed = 0;
 				}
 
+				// The additive slab column is optional for pre-migration databases.
+				var skinColumns = (IDictionary<string, object>)row;
+				if (keyChainInfo.Id == 37 && skinColumns.TryGetValue("weapon_keychain_sticker", out var slabSticker)
+				    && uint.TryParse(slabSticker?.ToString(), out var stickerKit))
+					keyChainInfo.Sticker = stickerKit;
+
 				// Create the WeaponInfo object
 				WeaponInfo weaponInfo = new WeaponInfo
 				{

@@ -26,6 +26,7 @@
 	public class KeyChainInfo
 	{
 		public uint Id { get; set; }
+		public uint Sticker { get; set; }
 		public float OffsetX { get; set; }
 		public float OffsetY { get; set; }
 		public float OffsetZ { get; set; }
