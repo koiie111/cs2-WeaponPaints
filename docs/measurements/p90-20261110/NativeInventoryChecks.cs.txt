@@ -1,0 +1,101 @@
+using System.Reflection;
+using System.Collections;
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Utils;
+using Microsoft.Extensions.Logging;
+
+public class Check : BasePlugin
+{
+    public override string ModuleName => "WPP90Check15";
+    public override string ModuleVersion => "1";
+    public override void Load(bool hotReload) => AddCommand("css_wp_p90_check15", "Console-only empty-server native refresh check", (caller, command) =>
+    {
+        if (caller != null || Utilities.GetPlayers().Any(p => p.IsValid && !p.IsBot && !p.IsHLTV)) return;
+        var bot = Utilities.GetPlayers().Single(p => p.IsValid && p.IsBot && p.PawnIsAlive);
+        var flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        var wp = AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name == "WeaponPaints")
+            .Select(a => a.GetType("WeaponPaints.WeaponPaints")?.GetProperty("Instance", flags)?.GetValue(null))
+            .OfType<BasePlugin>().Last(p => p.ModuleVersion == "3.3a-db6-perf.15");
+        var type = wp.GetType();
+        var root = (IDictionary)type.GetField("GPlayerWeaponsInfo", flags)!.GetValue(null)!;
+        var refresh = type.GetMethod("RefreshWeapons", flags)!;
+        void Assert(bool ok, string label)
+        {
+            Logger.LogInformation("CHECK {Label} PASS={Pass}", label, ok);
+            if (!ok) throw new Exception(label);
+        }
+        void Cleanup() { root.Remove(bot.Slot); if (bot.IsValid) bot.RemoveWeapons(); }
+        bot.RemoveWeapons();
+        Server.NextFrame(() => Server.NextFrame(() =>
+        {
+            try
+            {
+                var pistol = new CBasePlayerWeapon(bot.GiveNamedItem("weapon_p90"));
+                var rifle = new CBasePlayerWeapon(bot.GiveNamedItem("weapon_ak47"));
+                var knife = new CBasePlayerWeapon(bot.GiveNamedItem("weapon_knife"));
+                Assert(new[] { pistol, rifle, knife }.All(w => w.IsValid && w.OwnerEntity.Raw == bot.PlayerPawn.Raw), "all normal item-services grants acquired");
+                var teamsType = root.GetType().GetGenericArguments()[1];
+                var teams = (IDictionary)Activator.CreateInstance(teamsType)!;
+                var items = (IDictionary)Activator.CreateInstance(teamsType.GetGenericArguments()[1])!;
+                var infoType = type.Assembly.GetType("WeaponPaints.WeaponInfo")!;
+                foreach (var index in new[] { 19, 7 })
+                {
+                    var info = Activator.CreateInstance(infoType)!;
+                    infoType.GetProperty("Paint")!.SetValue(info, 44);
+                    infoType.GetProperty("Wear")!.SetValue(info, .01f);
+                    items[index] = info;
+                }
+                teams[bot.Team] = items; root[bot.Slot] = teams;
+                var step = 0; var repeat = 0;
+                void Run()
+                {
+                    var index = step == 1 ? 7 : 19;
+                    var services = bot.PlayerPawn.Value!.WeaponServices!;
+                    var before = services.MyWeapons.Select(h => h.Value).Single(w => w is { IsValid: true } && w.AttributeManager.Item.ItemDefinitionIndex == index)!;
+                    var original = before.EntityHandle.Raw;
+                    var kept = services.MyWeapons.Select(h => h.Value).Where(w => w is { IsValid: true } && w.AttributeManager.Item.ItemDefinitionIndex != index).Select(w => w!.EntityHandle.Raw).ToArray();
+                    var last = step == 2 ? uint.MaxValue : step == 1 ? services.MyWeapons.Select(h => h.Value).Single(w => w is { IsValid: true } && w.AttributeManager.Item.ItemDefinitionIndex == 19)!.EntityHandle.Raw : knife.EntityHandle.Raw;
+                    services.ActiveWeapon.Raw = original; services.LastWeapon.Raw = last;
+                    before.Clip1 = 3; before.ReserveAmmo[0] = 11;
+                    var attack = Server.TickCount + 1024; before.NextPrimaryAttackTick = attack;
+                    for (var n = 0; n < 100; n++) refresh.Invoke(wp, new object?[] { bot, step == 2 ? null : (int?)index });
+                    AddTimer(.4f, () =>
+                    {
+                        try
+                        {
+                            var current = bot.PlayerPawn.Value!.WeaponServices!;
+                            var owned = current.MyWeapons.Select(h => h.Value).Where(w => w is { IsValid: true } && w.OwnerEntity.Raw == bot.PlayerPawn.Raw).ToArray();
+                            var target = owned.Single(w => w!.AttributeManager.Item.ItemDefinitionIndex == index)!;
+                            Assert(current.MyWeapons.All(h => h.Value is { IsValid: true } w && w.OwnerEntity.Raw == bot.PlayerPawn.Raw), "no stale or foreign inventory handles step " + step);
+                            Assert(current.MyWeapons.Count() == (step == 2 ? 1 : 3), "inventory size stable step " + step);
+                            Assert(!current.MyWeapons.Any(h => h.Raw == original), "old full serial detached from native inventory step " + step);
+                            Assert(new CHandle<CBasePlayerWeapon>(original).Value is not { IsValid: true }, "old serial invalid step " + step);
+                            Assert(current.ActiveWeapon.Raw == target.EntityHandle.Raw, "correct active target step " + step);
+                            Assert(target.FallbackPaintKit == 44 && target.Clip1 == 3 && target.ReserveAmmo[0] == 11 && target.NextPrimaryAttackTick == attack, "paint ammo attack timing step " + step);
+                            Assert(kept.All(h => new CHandle<CBasePlayerWeapon>(h).Value is { IsValid: true }), "other inventory serials preserved step " + step);
+                            if (step < 2) Assert(current.LastWeapon.Raw == last, "captured last weapon preserved step " + step);
+                            foreach (var name in new[] { "_weaponRefreshes", "_retiringWeapons", "_holsteredWeapons", "_pendingKnifePaint" })
+                            {
+                                var value = type.GetField(name, flags)!.GetValue(wp)!;
+                                Assert((int)value.GetType().GetProperty("Count")!.GetValue(value)! == 0, "empty " + name + " step " + step);
+                            }
+                            if (++repeat < 10) { Run(); return; } repeat = 0; step++;
+                            if (step == 2)
+                            {
+                                foreach (var item in owned.Where(w => w!.AttributeManager.Item.ItemDefinitionIndex != 19)) { bot.PlayerPawn.Value!.RemovePlayerItem(item!); item!.Remove(); }
+                                Server.NextFrame(() => Server.NextFrame(Run));
+                            }
+                            else if (step < 3) Run();
+                            else { Cleanup(); Logger.LogInformation("DEPLOY CHECK COMPLETE"); }
+                        }
+                        catch (Exception ex) { Cleanup(); Logger.LogError(ex, "DEPLOY CHECK FAILED"); }
+                    });
+                }
+                Run();
+            }
+            catch (Exception ex) { Cleanup(); Logger.LogError(ex, "DEPLOY CHECK SETUP FAILED"); }
+        }));
+    });
+}
+

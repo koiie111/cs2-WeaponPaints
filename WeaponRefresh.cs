@@ -82,6 +82,10 @@ public partial class WeaponPaints
             plans.Add(new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
                 settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio));
             _retiringWeapons.Add(handle);
+            // Killing an owned entity alone leaves its full serial in MyWeapons.
+            // Detach through item services before destruction so round preservation
+            // and subsequent refreshes receive an inventory of live items only.
+            pawn.RemovePlayerItem(old);
             old.Remove();
         }
         if(plans.Count==0){completed();return;}
@@ -126,7 +130,11 @@ public partial class WeaponPaints
                 catch(Exception ex)
                 {
                     // A failed acquisition may leave an unowned newly-created entity.
-                    if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))replacement.Remove();
+                    if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))
+                    {
+                        if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentPawn.RemovePlayerItem(replacement);
+                        replacement.Remove();
+                    }
                     Logger.LogWarning(ex,"Weapon replacement attempt {Attempt} failed",attempts);
                 }
             }
