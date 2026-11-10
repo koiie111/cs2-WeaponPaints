@@ -99,6 +99,27 @@ public partial class WeaponPaints
         if(plans.Count==0){completed();return;}
         var attempts=0;
         uint redeployActive=0;
+        void FinishSelection()
+        {
+            // Native drops/equips can update LastWeapon after the give loop.
+            // Restore it once those actions finish, while the captured held item
+            // is still selected. Never overwrite a different manual selection.
+            Server.NextFrame(() =>
+            {
+                try
+                {
+                    if (!identity.TryResolve(out var owner) || !owner.PawnIsAlive) return;
+                    var currentPawn = owner.PlayerPawn.Value;
+                    var currentServices = currentPawn?.WeaponServices;
+                    var last = new CHandle<CBasePlayerWeapon>(preferredLast).Value;
+                    if (currentPawn == null || currentServices == null || currentServices.ActiveWeapon.Raw != preferredActive ||
+                        last is not { IsValid: true } || last.OwnerEntity.Raw != currentPawn.EntityHandle.Raw) return;
+                    currentServices.LastWeapon.Raw = preferredLast;
+                    Utilities.SetStateChanged(currentPawn, nameof(CBasePlayerPawn), "m_pWeaponServices");
+                }
+                finally { completed(); }
+            });
+        }
         void GiveRemoved()
         {
             if (!identity.TryResolve(out var current) || !current.PawnIsAlive) { completed(); return; }
@@ -147,8 +168,8 @@ public partial class WeaponPaints
                 }
             }
             if(plans.Count==0){
-                if(redeployActive!=0) RedeployRefreshedWeapon(identity,redeployActive,preferredLast,completed);
-                else completed();
+                if(redeployActive!=0) RedeployRefreshedWeapon(identity,redeployActive,preferredLast,FinishSelection);
+                else FinishSelection();
                 return;
             }
             if(attempts>=8){Logger.LogError("Weapon refresh exhausted retries for slot {Slot}; remaining item classes: {Items}",identity.Slot,string.Join(",",plans.Select(p=>p.Classname)));completed();return;}

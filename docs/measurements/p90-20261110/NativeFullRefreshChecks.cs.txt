@@ -1,0 +1,56 @@
+using System.Reflection;using System.Collections;using CounterStrikeSharp.API;using CounterStrikeSharp.API.Core;using CounterStrikeSharp.API.Modules.Utils;using Microsoft.Extensions.Logging;
+public sealed class Check:BasePlugin{
+ public override string ModuleName=>"WPFullRefreshCheck17";public override string ModuleVersion=>"1";private bool stopped;
+ public override void Unload(bool hotReload)=>stopped=true;
+ public override void Load(bool hotReload)=>AddCommand("css_wp_full_check17","Console-only empty-server full refresh regression",(caller,command)=>{
+  if(caller!=null||Utilities.GetPlayers().Any(p=>p.IsValid&&!p.IsBot&&!p.IsHLTV))return;
+  var bot=Utilities.GetPlayers().Single(p=>p.IsValid&&p.IsBot&&p.PawnIsAlive);
+  var flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance;
+  var wp=AppDomain.CurrentDomain.GetAssemblies().Where(a=>a.GetName().Name=="WeaponPaints").Select(a=>a.GetType("WeaponPaints.WeaponPaints")?.GetProperty("Instance",flags)?.GetValue(null)).OfType<BasePlugin>().Last(p=>p.ModuleVersion=="3.3a-db6-perf.17");var type=wp.GetType();
+  var root=(IDictionary)type.GetField("GPlayerWeaponsInfo",flags)!.GetValue(null)!;var refresh=type.GetMethod("RefreshWeapons",flags)!;
+  var teamsType=root.GetType().GetGenericArguments()[1];var teams=(IDictionary)Activator.CreateInstance(teamsType)!;var items=(IDictionary)Activator.CreateInstance(teamsType.GetGenericArguments()[1])!;var infoType=type.Assembly.GetType("WeaponPaints.WeaponInfo")!;
+  foreach(var index in new[]{19,1,42}){var info=Activator.CreateInstance(infoType)!;infoType.GetProperty("Paint")!.SetValue(info,44);infoType.GetProperty("Wear")!.SetValue(info,.01f);items[index]=info;}teams[bot.Team]=items;root[bot.Slot]=teams;
+  var order=new[]{new[]{42,1,19},new[]{42,19,1},new[]{1,42,19},new[]{1,19,42},new[]{19,42,1},new[]{19,1,42}};
+  var names=new Dictionary<int,string>{{19,"weapon_p90"},{1,"weapon_deagle"},{42,"weapon_knife"}};var phase=0;
+  void Cleanup(){root.Remove(bot.Slot);if(bot.IsValid)bot.RemoveWeapons();}
+  void Assert(bool ok,string label){if(!ok)throw new Exception(label);}
+  void Next(){
+   if(stopped||!bot.IsValid)return;
+   bot.RemoveWeapons();AddTimer(.1f,()=>{
+    if(stopped||!bot.IsValid)return;
+    try{
+     var pawn=bot.PlayerPawn.Value!;var ws=pawn.WeaponServices!;var full=phase<18;var held=full?new[]{19,1,42}[phase/6]:19;
+     foreach(var index in order[phase%6])bot.GiveNamedItem(names[index]);
+     var smoke=new CBasePlayerWeapon(bot.GiveNamedItem("weapon_smokegrenade"));
+     var before=ws.MyWeapons.Select(h=>h.Value).ToArray();Assert(before.Length==4 && before.All(w=>w is {IsValid:true} && w.OwnerEntity.Raw==pawn.EntityHandle.Raw),"initial four owned items");
+     var old=before.ToDictionary(w=>(int)w!.AttributeManager.Item.ItemDefinitionIndex,w=>w!.EntityHandle.Raw);
+     ws.ActiveWeapon.Raw=old[held];var last=held==19?1:19;ws.LastWeapon.Raw=old[last];
+     var primary=new CHandle<CBasePlayerWeapon>(old[19]).Value!;primary.Clip1=3;primary.ReserveAmmo[0]=11;var attack=Server.TickCount+1024;primary.NextPrimaryAttackTick=attack;
+     for(var n=0;n<100;n++)refresh.Invoke(wp,new object?[]{bot,full?null:(int?)1});
+     AddTimer(.45f,()=>{
+      if(stopped||!bot.IsValid)return;
+      try{
+       var services=bot.PlayerPawn.Value!.WeaponServices!;var live=services.MyWeapons.Select(h=>h.Value).ToArray();
+       Assert(live.Length==4&&live.All(w=>w is {IsValid:true}&&w.OwnerEntity.Raw==bot.PlayerPawn.Raw),"stable, entirely live inventory");
+       var now=live.ToDictionary(w=>(int)w!.AttributeManager.Item.ItemDefinitionIndex,w=>w!);
+       Assert(now.Keys.Order().SequenceEqual(new[]{1,19,42,45}),"no lost or duplicated gun/knife/grenade");
+       foreach(var index in new[]{19,1,42}){
+        var replaced=full||index==1;
+        Assert((now[index].EntityHandle.Raw!=old[index])==replaced,"intended replacement set");
+        if(replaced)Assert(new CHandle<CBasePlayerWeapon>(old[index]).Value is not {IsValid:true},"no surviving dropped original");
+       }
+       Assert(now[45].EntityHandle.Raw==old[45],"untouched smoke serial");
+       Assert(services.ActiveWeapon.Raw==now[held].EntityHandle.Raw,"held item preserved");
+       Assert(services.LastWeapon.Raw==now[last].EntityHandle.Raw,"last item preserved");
+       Assert(now[19].Clip1==3&&now[19].ReserveAmmo[0]==11&&now[19].NextPrimaryAttackTick==attack,"P90 ammo and attack timing preserved");
+       Assert(now[19].FallbackPaintKit==44 && now[1].FallbackPaintKit==44,"both gun paints applied");
+       foreach(var name in new[]{"_weaponRefreshes","_retiringWeapons","_holsteredWeapons","_pendingKnifePaint"}){var v=type.GetField(name,flags)!.GetValue(wp)!;Assert((int)v.GetType().GetProperty("Count")!.GetValue(v)! == 0,"drained "+name);}
+       Logger.LogInformation("CASE phase={Phase} full={Full} held={Held} order={Order} PASS=true",phase,full,held,string.Join(",",order[phase%6]));
+       if(++phase<24)Next();else{Cleanup();Logger.LogInformation("DEPLOY CHECK COMPLETE cases=24 requests=2400");}
+      }catch(Exception ex){Cleanup();Logger.LogError(ex,"FULL CHECK FAILED phase={Phase}",phase);}
+     });
+    }catch(Exception ex){Cleanup();Logger.LogError(ex,"FULL SETUP FAILED phase={Phase}",phase);}
+   });
+  }Next();
+ });
+}
