@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using Dapper;
 using MySqlConnector;
 using CounterStrikeSharp.API;
@@ -100,5 +101,33 @@ try{
  Check(pet["pet_enabled"]==null,"active subscription with no pet preference LEFT JOIN");
  await sql.ExecuteAsync("DELETE FROM plus_active");Check(!(await sql.QueryAsync(petQuery,new{id})).Any(),"inactive subscription has no pet row");
  Check(await Load() && WP.GPlayersPatchExpiry[1]==DateTime.MinValue && WP.GPlayersPatches[1][3][2]==4550,"inactive patch entitlement fails closed without deleting the saved choice");
+ // Earlier assertions intentionally exercise the pre-migration skin table.
+ await sql.ExecuteAsync("ALTER TABLE wp_player_skins ADD weapon_keychain_sticker INT UNSIGNED NOT NULL DEFAULT 0, ADD weapon_composition_version TINYINT UNSIGNED NOT NULL DEFAULT 0");
+ using(var fixtures = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory,"composition-roundtrip.json")))) {
+  foreach(var fixture in fixtures.RootElement.GetProperty("cases").EnumerateArray()) {
+   var row=fixture.GetProperty("storage");var fields=row.EnumerateObject().ToArray();var parameters=new DynamicParameters();parameters.Add("id",id);
+   foreach(var field in fields) {
+    if(!System.Text.RegularExpressions.Regex.IsMatch(field.Name,"^weapon_(team|defindex|paint_id|seed|wear|nametag|stattrak|composition_version|keychain|keychain_sticker|sticker_[0-4])$"))throw new Exception("Unexpected fixture column");
+    parameters.Add(field.Name,field.Value.ValueKind==JsonValueKind.String?field.Value.GetString():(object)field.Value.GetDouble());
+   }
+   await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id",new{id});
+   await sql.ExecuteAsync("INSERT INTO wp_player_skins (steamid,"+string.Join(',',fields.Select(field=>field.Name))+") VALUES (@id,"+string.Join(',',fields.Select(field=>"@"+field.Name))+")",parameters);
+   Check(await Load(),"shared fixture load "+fixture.GetProperty("name").GetString());
+   var loaded=WP.GPlayerWeaponsInfo[1][(CsTeam)row.GetProperty("weapon_team").GetInt32()][row.GetProperty("weapon_defindex").GetInt32()];
+   Check(loaded.CompositionVersion==row.GetProperty("weapon_composition_version").GetInt32() && loaded.HasCustomization,"shared fixture default paint accepts decoration and explicit format");
+   Check(loaded.Stickers.Select(sticker=>sticker.Schema).SequenceEqual(fixture.GetProperty("expectedSchemas").EnumerateArray().Select(value=>value.GetUInt32())),"shared fixture physical anchors and five draw slots");
+   Check(Math.Abs(loaded.Wear-row.GetProperty("weapon_wear").GetSingle())<.000001f && loaded.Seed==row.GetProperty("weapon_seed").GetInt32(),"shared fixture paint wear/seed precision");
+   if(fixture.TryGetProperty("input",out var input)) {
+    var expected=input.GetProperty("stickers").EnumerateArray().ToArray();
+    Check(loaded.Stickers.Select((sticker,index)=>sticker.Id==expected[index].GetProperty("id").GetUInt32() && (sticker.Id==0 ||
+     Math.Abs(sticker.OffsetX-expected[index].GetProperty("x").GetSingle())<.000001f && Math.Abs(sticker.OffsetY-expected[index].GetProperty("y").GetSingle())<.000001f &&
+     Math.Abs(sticker.Wear-expected[index].GetProperty("wear").GetSingle())<.000001f && Math.Abs(sticker.Scale-expected[index].GetProperty("scale").GetSingle())<.000001f &&
+     Math.Abs(sticker.Rotation-expected[index].GetProperty("rotation").GetSingle())<.000001f)).All(value=>value),"shared fixture sticker units, positions, rotation and wear");
+    var keychain=input.GetProperty("keychain");
+    Check(loaded.KeyChain is {} charm && charm.Id==keychain.GetProperty("id").GetUInt32() && charm.Seed==keychain.GetProperty("seed").GetUInt32() && charm.Sticker==keychain.GetProperty("sticker").GetUInt32() &&
+     Math.Abs(charm.OffsetX-keychain.GetProperty("x").GetSingle())<.000001f && Math.Abs(charm.OffsetY-keychain.GetProperty("y").GetSingle())<.000001f && Math.Abs(charm.OffsetZ-keychain.GetProperty("z").GetSingle())<.000001f,"shared fixture slab coordinates, embedded kit and seed");
+   }
+  }
+ }
  Console.WriteLine($"PASS: {passed} MySQL assertions; engine dispatch adapter; linked production SQL source");
 }finally{Server.BeforeDispatch=null;MySqlConnection.ClearAllPools();await admin.ExecuteAsync($"DROP DATABASE `{schema}`");Console.WriteLine("CLEANUP: isolated schema removed");}

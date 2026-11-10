@@ -3,6 +3,9 @@
 	public class WeaponInfo
 	{
 		public int Paint { get; set; }
+		public int CompositionVersion { get; set; }
+		internal bool HasCustomization => Paint >= 0 && (Paint > 0 || CompositionVersion >= 1 ||
+			KeyChain is { Id: > 0 } || Stickers.Any(sticker => sticker.Id != 0) || StatTrak || !string.IsNullOrEmpty(Nametag));
 		public int Seed { get; set; }
 		public float Wear { get; set; }
 		public string Nametag { get; set; } = "";

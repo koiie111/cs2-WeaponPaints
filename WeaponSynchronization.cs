@@ -285,6 +285,7 @@ internal class WeaponSynchronization
 				WeaponInfo weaponInfo = new WeaponInfo
 				{
 					Paint = weaponPaintId,
+					CompositionVersion = compositionVersion,
 					Seed = weaponSeed,
 					Wear = weaponWear,
 					Nametag = weaponNameTag,
@@ -317,7 +318,7 @@ internal class WeaponSynchronization
 					StickerInfo stickerInfo = new StickerInfo
 					{
 						Id = stickerId,
-						Schema = StickerAnchor.Resolve(compositionVersion, stickerSchema, (uint)i, stickerOffsetX, stickerOffsetY),
+						Schema = stickerId == 0 ? 0 : StickerAnchor.Resolve(compositionVersion, stickerSchema, (uint)i, stickerOffsetX, stickerOffsetY),
 						OffsetX = stickerOffsetX,
 						OffsetY = stickerOffsetY,
 						Wear = stickerWear,

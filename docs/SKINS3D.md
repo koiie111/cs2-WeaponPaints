@@ -45,11 +45,20 @@ the concrete weapon supports them. Do not rewrite legacy rows during installatio
 MySqlConnector is updated from 2.5.0 to 2.6.1 to address
 GHSA-473q-m89c-ghf8. Include the matching dependency when packaging the plugin.
 
+Refresh keeps the exact configured weapon wear: the historical cumulative 0.001
+sticker-refresh increment is removed, since the current refresh replaces the item.
+Decorations and explicitly saved v1 defaults also apply when paint kit is zero.
+Uncustomized legacy default rows retain their random-skin fallback behavior.
+
+`tests/fixtures/composition-roundtrip.json` matches the website fixture byte for
+byte. It covers six physical anchors versus five draw slots, legacy anchors,
+positions, degree rotation, scales, precision and the separate embedded slab kit.
+
 ## Validation and remaining acceptance
 
 Release warnings-as-errors build, managed optimization checks against the real
 catalog, 22 pet lifecycle, 47 linked production preview and 10 patch lifecycle
-checks pass locally. The rebased candidate also passes 106 MySQL integration,
+checks pass locally. The rebased candidate also passes 116 MySQL integration,
 32 equipment scheduling, 125 retirement and 39 redeploy assertions.
 The website Docker checks cover slab persistence, clearing and transaction rollback.
 

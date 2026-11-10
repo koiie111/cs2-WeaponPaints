@@ -131,27 +131,6 @@ namespace WeaponPaints
 			UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
 		}
 		
-		// silly method to update sticker when call RefreshWeapons()
-		private void IncrementWearForWeaponWithStickers(CCSPlayerController player, CBasePlayerWeapon weapon)
-		{
-			int weaponDefIndex = weapon.AttributeManager.Item.ItemDefinitionIndex;
-			if (!HasChangedPaint(player, weaponDefIndex, out var weaponInfo) || weaponInfo == null ||
-			    weaponInfo.Stickers.Count <= 0) return;
-			
-			float wearIncrement = 0.001f;
-			float currentWear = weaponInfo.Wear;
-
-			var playerWear = _temporaryPlayerWeaponWear.GetOrAdd(player.Slot, _ => new ConcurrentDictionary<int, float>());
-
-			float incrementedWear = playerWear.AddOrUpdate(
-				weaponDefIndex,
-				currentWear + wearIncrement,
-				(_, oldWear) => Math.Min(oldWear + wearIncrement, 1.0f)
-			);
-
-			weapon.FallbackWear = incrementedWear;
-		}
-
 		private void SetStickers(CCSPlayerController? player, CBasePlayerWeapon weapon)
 		{
 			if (player == null || !player.IsValid) return;
@@ -181,11 +160,6 @@ namespace WeaponPaints
 					$"sticker slot {stickerSlot} rotation", sticker.Rotation);
 			}
 
-			if (_temporaryPlayerWeaponWear.TryGetValue(player.Slot, out var playerWear) &&
-				playerWear.TryGetValue(weaponDefIndex, out float storedWear))
-			{
-				weapon.FallbackWear = storedWear;
-			}
 		}
 
 		private void SetKeychain(CCSPlayerController? player, CBasePlayerWeapon weapon)
@@ -510,7 +484,7 @@ namespace WeaponPaints
 			}
 
 			// Check if the specified weapon has a paint/skin change
-			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || value.Paint <= 0) return false;
+			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || !value.HasCustomization) return false;
 			
 			weaponInfo = value; // Assign the out variable when it exists
 			return true;

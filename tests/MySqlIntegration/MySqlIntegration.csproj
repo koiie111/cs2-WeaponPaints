@@ -1,1 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup><ItemGroup><Compile Include="../../WeaponSynchronization.cs" Link="WeaponSynchronization.cs"/><Compile Include="../../Database.cs" Link="Database.cs"/><Compile Include="../../PlayerInfo.cs" Link="PlayerInfo.cs"/><Compile Include="../../StickerAnchor.cs" Link="StickerAnchor.cs"/><Compile Include="../../WeaponInfo.cs" Link="WeaponInfo.cs"/><Compile Include="../../AgentModel.cs" Link="AgentModel.cs"/><Compile Include="../../PlayerDataSnapshot.cs" Link="PlayerDataSnapshot.cs"/><Compile Include="../../OrderedOperations.cs" Link="OrderedOperations.cs"/><PackageReference Include="Dapper" Version="2.1.72"/><PackageReference Include="MySqlConnector" Version="2.6.1"/><PackageReference Include="Newtonsoft.Json" Version="13.0.5-beta1"/><PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0"/><None Include="../../Pets.cs" Link="Pets.source.txt" TargetPath="Pets.source.txt" CopyToOutputDirectory="PreserveNewest"/><None Update="schema.sql" CopyToOutputDirectory="PreserveNewest"/></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../WeaponSynchronization.cs" Link="WeaponSynchronization.cs" />
+    <Compile Include="../../Database.cs" Link="Database.cs" />
+    <Compile Include="../../PlayerInfo.cs" Link="PlayerInfo.cs" />
+    <Compile Include="../../StickerAnchor.cs" Link="StickerAnchor.cs" />
+    <Compile Include="../../WeaponInfo.cs" Link="WeaponInfo.cs" />
+    <Compile Include="../../AgentModel.cs" Link="AgentModel.cs" />
+    <Compile Include="../../PlayerDataSnapshot.cs" Link="PlayerDataSnapshot.cs" />
+    <Compile Include="../../OrderedOperations.cs" Link="OrderedOperations.cs" />
+    <PackageReference Include="Dapper" Version="2.1.72" />
+    <PackageReference Include="MySqlConnector" Version="2.6.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.5-beta1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <None Include="../../Pets.cs" Link="Pets.source.txt" TargetPath="Pets.source.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="schema.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../fixtures/composition-roundtrip.json" Link="composition-roundtrip.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

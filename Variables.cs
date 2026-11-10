@@ -169,7 +169,6 @@ public partial class WeaponPaints
 	private ulong _nextItemId = MinimumCustomItemId;
 	private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-	private readonly ConcurrentDictionary<int, ConcurrentDictionary<int, float>> _temporaryPlayerWeaponWear = new();
 	
 	internal static IMenuApi? MenuApi;
 	private static readonly PluginCapability<IMenuApi> MenuCapability = new("menu:nfcore");

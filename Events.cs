@@ -127,7 +127,6 @@ namespace WeaponPaints
 				GPlayersPin.TryRemove(player.Slot, out _);
 			}
 			
-			_temporaryPlayerWeaponWear.TryRemove(player.Slot, out _);
 			CommandsCooldown.Remove(player.Slot);
             RemoveSkinPreview(player.Slot);
 			Players.Remove(player);
