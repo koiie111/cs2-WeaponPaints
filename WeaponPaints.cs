@@ -54,6 +54,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 					Name = player?.PlayerName,
 					IpAddress = player?.IpAddress?.Split(":")[0]
 				};
+				if (Config.Additional.PetsEnabled && player != null) LoadPetFor(player);
 
 				_ = Task.Run(async () =>
 				{
@@ -69,10 +70,12 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 		Utility.LoadPinsFromFile(ModuleDirectory + $"/data/collectibles_{_config.SkinsLanguage}.json", Logger);
 
 		RegisterListeners();
+		if (Config.Additional.PetsEnabled) RegisterPetListeners();
 	}
 
 	public override void Unload(bool hotReload)
 	{
+		ClearAllPets();
 		InvalidateKnifePaint();
 		// Native hook outlives the plugin's AssemblyLoadContext; without this, css_plugins reload
 		// leaves the old OnGiveNamedItemPost delegate registered and the next GiveNamedItem crashes the server.
@@ -86,6 +89,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 	{
 		Config = config;
 		_config = config;
+		if (!config.Additional.PetsEnabled) ClearAllPets();
 
 		if (config.DatabaseHost.Length < 1 || config.DatabaseName.Length < 1 || config.DatabaseUser.Length < 1)
 		{

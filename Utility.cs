@@ -84,7 +84,20 @@ namespace WeaponPaints
 					        `weapon_team` int(1) NOT NULL,
 					        `id` int(11) NOT NULL,
 					        UNIQUE (`steamid`, `weapon_team`) -- Unique constraint
-					    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
+					    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;",
+
+					    @"
+					    CREATE TABLE IF NOT EXISTS `wp_player_pets` (
+					        `steamid` varchar(18) NOT NULL PRIMARY KEY,
+					        `pet_enabled` tinyint(1) NOT NULL DEFAULT 1,
+					        `pet_customized` tinyint(1) NOT NULL DEFAULT 0,
+					        `pet_id` int NOT NULL DEFAULT 3,
+					        `pet_stage` tinyint unsigned NOT NULL DEFAULT 1,
+					        `pet_variant` int NOT NULL DEFAULT 0,
+					        `pet_seed` int unsigned NOT NULL DEFAULT 0,
+					        `pet_name` varchar(32) DEFAULT NULL,
+					        `pet_hat` varchar(32) DEFAULT NULL
+					    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 					];
 
 					foreach (var query in createTableQueries)

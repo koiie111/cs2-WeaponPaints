@@ -29,6 +29,8 @@ jobs:
         run: dotnet restore WeaponPaints.csproj
       - name: Build
         run: dotnet build WeaponPaints.csproj --no-restore -c Release -o build/WeaponPaints
+      - name: Pet lifecycle regression checks
+        run: dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release
       - name: Package
         shell: bash
         run: |
