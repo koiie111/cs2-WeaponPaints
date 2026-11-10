@@ -133,6 +133,7 @@ namespace WeaponPaints
 			{
 				var deserializedSkins = JsonConvert.DeserializeObject<List<JObject>>(json);
 				WeaponPaints.SkinsList = deserializedSkins ?? [];
+                WeaponPaints.Catalog = new SkinCatalog(WeaponPaints.SkinsList);
 			}
 			catch (FileNotFoundException)
 			{

@@ -23,9 +23,12 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 	public override string ModuleName => "WeaponPaints";
 	public override string ModuleVersion => "3.3a-db6";
 
+	internal static long DataGeneration;
+
 	public override void Load(bool hotReload)
 	{
 		Instance = this;
+        Interlocked.Increment(ref DataGeneration);
 
 		if (hotReload)
 		{
@@ -56,9 +59,22 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 				};
 				if (Config.Additional.PetsEnabled && player != null) LoadPetFor(player);
 
+				var loadId = NextPlayerDataLoadId();
+                var generation = DataGeneration;
+                PlayerDataLoading[playerInfo.Slot] = loadId;
 				_ = Task.Run(async () =>
 				{
-					if (WeaponSync != null) await WeaponSync.GetPlayerData(playerInfo);
+					if (WeaponSync == null || !await WeaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
+                    Server.NextFrame(() =>
+                    {
+                        if (generation != DataGeneration || !PlayerDataLoading.TryGetValue(playerInfo.Slot, out var current) || current != loadId) return;
+                        PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
+                        var currentPlayer = Utilities.GetPlayerFromSlot(playerInfo.Slot);
+                        if (currentPlayer == null || !Utility.IsPlayerValid(currentPlayer) || currentPlayer.SteamID.ToString() != playerInfo.SteamId) return;
+                        if (!Players.Contains(currentPlayer)) Players.Add(currentPlayer);
+                        GivePlayerMusicKit(currentPlayer); GivePlayerAgent(currentPlayer); GivePlayerGloves(currentPlayer); GivePlayerPin(currentPlayer);
+                        if (currentPlayer.PawnIsAlive) RefreshWeapons(currentPlayer);
+                    });
 				});
 			}
 		}
@@ -75,7 +91,10 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 
 	public override void Unload(bool hotReload)
 	{
-		ClearAllPets();
+		Interlocked.Increment(ref DataGeneration);
+        PlayerDataLoading.Clear();
+        ClearAllPets();
+        _previews.Entries.Clear();
 		InvalidateKnifePaint();
 		// Native hook outlives the plugin's AssemblyLoadContext; without this, css_plugins reload
 		// leaves the old OnGiveNamedItemPost delegate registered and the next GiveNamedItem crashes the server.

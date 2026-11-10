@@ -39,6 +39,7 @@ namespace WeaponPaints
 			GPlayersPin.TryRemove(player.Slot, out _);
 			GPlayersMusic.TryRemove(player.Slot, out _);
 			var loadId = NextPlayerDataLoadId();
+                var generation = DataGeneration;
 			PlayerDataLoading[player.Slot] = loadId;
 			if (Config.Additional.PetsEnabled)
 			{
@@ -50,7 +51,7 @@ namespace WeaponPaints
 			if (weaponSync == null) return HookResult.Continue;
 			_ = Task.Run(async () =>
 			{
-				await weaponSync.GetPlayerData(playerInfo);
+				if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
 				Server.NextFrame(() =>
 				{
 					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
@@ -122,6 +123,7 @@ namespace WeaponPaints
 			
 			_temporaryPlayerWeaponWear.TryRemove(player.Slot, out _);
 			CommandsCooldown.Remove(player.Slot);
+            _previews.Entries.Remove(player.Slot);
 			Players.Remove(player);
 
 			return HookResult.Continue;
@@ -129,6 +131,9 @@ namespace WeaponPaints
 
 		private void OnMapStart(string mapName)
 		{
+            _previews.Entries.Clear();
+            Interlocked.Increment(ref DataGeneration);
+            PlayerDataLoading.Clear();
 			InvalidateKnifePaint();
 			_fadeSeed = 0;
 			_nextItemId = MinimumCustomItemId;
@@ -255,17 +260,25 @@ namespace WeaponPaints
 			}
 		}
 
+		private readonly List<int> _expiredPreviews = new();
 		private void OnTick()
 		{
 			if (!Config.Additional.ShowSkinImage) return;
 
-			foreach (var player in Players)
-			{
-				if (_playerWeaponImage.TryGetValue(player.Slot, out var value) && !string.IsNullOrEmpty(value))
-				{
-					player.PrintToCenterHtml("<img src='{PATH}'</img>".Replace("{PATH}", value));
-				}
-			}
+            if (_previews.Entries.Count == 0) return;
+            var now = Server.EngineTime;
+            foreach (var (slot, preview) in _previews.Entries)
+            {
+                var player = Utilities.GetPlayerFromSlot(slot);
+                if (player == null || !player.IsValid || !_previews.IsCurrent(slot, player.SteamID, now))
+                {
+                    _expiredPreviews.Add(slot);
+                    continue;
+                }
+                player.PrintToCenterHtml(preview.Html);
+            }
+            foreach (var slot in _expiredPreviews) _previews.Entries.Remove(slot);
+            _expiredPreviews.Clear();
 		}
 		
 		[GameEventHandler]

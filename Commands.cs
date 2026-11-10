@@ -48,16 +48,17 @@ public partial class WeaponPaints
 				{
 					var expectedSteamId = playerInfo.SteamId;
 					var loadId = NextPlayerDataLoadId();
+                var generation = DataGeneration;
 					PlayerDataLoading[player.Slot] = loadId;
-					GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
-					GPlayersKnife.TryRemove(player.Slot, out _);
-					GPlayersGlove.TryRemove(player.Slot, out _);
-					GPlayersAgent.TryRemove(player.Slot, out _);
-					GPlayersPin.TryRemove(player.Slot, out _);
-					GPlayersMusic.TryRemove(player.Slot, out _);
+
+
+
+
+
+
 					_ = Task.Run(async () =>
 					{
-						await weaponSync.GetPlayerData(playerInfo);
+						if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
 						Server.NextFrame(() =>
 						{
 							if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
@@ -248,16 +249,17 @@ public partial class WeaponPaints
 
 				var expectedSteamId = playerInfo.SteamId;
 				var loadId = NextPlayerDataLoadId();
+                var generation = DataGeneration;
 				PlayerDataLoading[targetPlayer.Slot] = loadId;
-				GPlayerWeaponsInfo.TryRemove(targetPlayer.Slot, out _);
-				GPlayersKnife.TryRemove(targetPlayer.Slot, out _);
-				GPlayersGlove.TryRemove(targetPlayer.Slot, out _);
-				GPlayersAgent.TryRemove(targetPlayer.Slot, out _);
-				GPlayersPin.TryRemove(targetPlayer.Slot, out _);
-				GPlayersMusic.TryRemove(targetPlayer.Slot, out _);
+
+
+
+
+
+
 				_ = Task.Run(async () =>
 				{
-					await weaponSync.GetPlayerData(playerInfo);
+					if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
 					Server.NextFrame(() =>
 					{
 						if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
@@ -447,8 +449,7 @@ public partial class WeaponPaints
 							skin["image"] != null
 						);
 						var image = foundSkin?["image"]?.ToString() ?? "";
-						_playerWeaponImage[p.Slot] = image;
-						AddTimer(2.0f, () => _playerWeaponImage.Remove(p.Slot), TimerFlags.STOP_ON_MAPCHANGE);
+						_previews.Show(p.Slot, p.SteamID, image, Server.EngineTime);
 					}
 
 					p.Print(Localizer["wp_skin_menu_select", selectedSkin]);
@@ -575,8 +576,7 @@ public partial class WeaponPaints
 			    !int.TryParse(selectedGlove["paint"]?.ToString(), out var paint)) return;
 			if (Config.Additional.ShowSkinImage)
 			{
-				_playerWeaponImage[player.Slot] = image;
-				AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE);
+				_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
 			}
 
 			if (!string.IsNullOrEmpty(Localizer["wp_glove_menu_select"]))
@@ -626,7 +626,7 @@ public partial class WeaponPaints
 			}
 			else
 			{
-				GPlayersGlove.TryRemove(player.Slot, out _);
+
 			}
 
 			if (WeaponSync == null) return;
@@ -719,8 +719,7 @@ public partial class WeaponPaints
 				if (Config.Additional.ShowSkinImage)
 				{
 					var image = selectedAgent["image"]?.ToString() ?? "";
-					_playerWeaponImage[player.Slot] = image;
-					AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), CounterStrikeSharp.API.Modules.Timers.TimerFlags.STOP_ON_MAPCHANGE);
+					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
 				}
 
 				if (!string.IsNullOrEmpty(Localizer["wp_agent_menu_select"]))
@@ -828,8 +827,7 @@ public partial class WeaponPaints
 				var image = selectedMusic["image"]?.ToString() ?? "";
 				if (Config.Additional.ShowSkinImage)
 				{
-					_playerWeaponImage[player.Slot] = image;
-					AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), TimerFlags.STOP_ON_MAPCHANGE);
+					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
 				}
 
 				PlayerInfo playerInfo = new PlayerInfo
@@ -963,8 +961,7 @@ public partial class WeaponPaints
 				var image = selectedPin["image"]?.ToString() ?? "";
 				if (Config.Additional.ShowSkinImage)
 				{
-					_playerWeaponImage[player.Slot] = image;
-					AddTimer(2.0f, () => _playerWeaponImage.Remove(player.Slot), TimerFlags.STOP_ON_MAPCHANGE);
+					_previews.Show(player.Slot, player.SteamID, image, Server.EngineTime);
 				}
 
 				PlayerInfo playerInfo = new PlayerInfo

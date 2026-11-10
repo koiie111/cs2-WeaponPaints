@@ -55,7 +55,7 @@ namespace WeaponPaints
 			
 			weapon.AttributeManager.Item.AccountID = (uint)player.SteamID;
 			
-			List<JObject> skinInfo;
+			
 			bool isLegacyModel;
 
 			if (_config.Additional.GiveRandomSkin &&
@@ -67,12 +67,12 @@ namespace WeaponPaints
 				weapon.FallbackWear = 0.01f;
 			
 				weapon.AttributeManager.Item.NetworkedDynamicAttributes.Attributes.RemoveAll();
-				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", GetRandomPaint(weaponDefIndex));
+				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weapon.FallbackPaintKit);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture seed", 0);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture wear", 0.01f);
 			
 				weapon.AttributeManager.Item.AttributeList.Attributes.RemoveAll();
-				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture prefab", GetRandomPaint(weaponDefIndex));
+				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture prefab", weapon.FallbackPaintKit);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture seed", 0);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture wear", 0.01f);
 			
@@ -81,13 +81,7 @@ namespace WeaponPaints
 				if (fallbackPaintKit == 0)
 					return;
 			
-				skinInfo = SkinsList
-					.Where(w => 
-						w["weapon_defindex"]?.ToObject<int>() == weaponDefIndex && 
-						w["paint"]?.ToObject<int>() == fallbackPaintKit)
-					.ToList();
-				
-				isLegacyModel = skinInfo.Count <= 0 || skinInfo[0].Value<bool>("legacy_model");
+				isLegacyModel = Catalog.IsLegacy(weaponDefIndex, fallbackPaintKit);
 				UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
 				return;
 			}
@@ -129,13 +123,7 @@ namespace WeaponPaints
 			if (weaponInfo.KeyChain != null) SetKeychain(player, weapon);
 			if (weaponInfo.Stickers.Count > 0) SetStickers(player, weapon);
 
-			skinInfo = SkinsList
-				.Where(w => 
-					w["weapon_defindex"]?.ToObject<int>() == weaponDefIndex && 
-					w["paint"]?.ToObject<int>() == fallbackPaintKit)
-				.ToList();
-				
-			isLegacyModel = skinInfo.Count <= 0 || skinInfo[0].Value<bool>("legacy_model");
+			isLegacyModel = Catalog.IsLegacy(weaponDefIndex, fallbackPaintKit);
 			UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
 		}
 		
@@ -350,23 +338,7 @@ namespace WeaponPaints
 			}, TimerFlags.STOP_ON_MAPCHANGE);
 		}
 
-		private static int GetRandomPaint(int defindex)
-		{
-			if (SkinsList.Count == 0)
-				return 0;
-
-			Random rnd = new Random();
-
-			// Filter weapons by the provided defindex
-			var filteredWeapons = SkinsList.Where(w => w["weapon_defindex"]?.ToString() == defindex.ToString()).ToList();
-
-			if (filteredWeapons.Count == 0)
-				return 0;
-
-			var randomWeapon = filteredWeapons[rnd.Next(filteredWeapons.Count)];
-
-			return int.TryParse(randomWeapon["paint"]?.ToString(), out var paintValue) ? paintValue : 0;
-		}
+		private static int GetRandomPaint(int defindex) => Catalog.RandomPaint(defindex);
 
 		//xstage idea on css discord
 		public static void SubclassChange(CBasePlayerWeapon weapon, ushort itemD)
