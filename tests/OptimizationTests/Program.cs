@@ -60,3 +60,6 @@ var menus=new SkinCatalog(new[]{firstImage,secondImage});
 Check(menus.ForWeapon("weapon_ak47").SequenceEqual(new[]{firstImage,secondImage}));
 Check(ReferenceEquals(menus.Image(7,1),firstImage)); Check(menus.ForWeapon("missing").Count==0); Check(menus.Image(7,2)==null);
 Console.WriteLine("PASS: menu order and first matching image preserved");
+
+var noImage=new PreviewState(); noImage.Show(1,1,"old",0); noImage.Show(1,1,"",1); Check(noImage.Entries.Count==0);
+Console.WriteLine("PASS: empty image suppresses preview and clears older selection");
