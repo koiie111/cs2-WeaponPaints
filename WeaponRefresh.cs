@@ -53,7 +53,7 @@ public partial class WeaponPaints
     {
         var pawn = player.PlayerPawn.Value;
         var services = pawn?.WeaponServices;
-        if (!_gBCommandsAllowed || pawn == null || !pawn.IsValid || services == null) { completed(); return; }
+        if (!_gBCommandsAllowed || pawn == null || !pawn.IsValid || services == null || pawn.ItemServices == null) { completed(); return; }
         var identity = DeferredPlayer.Capture(player);
         var plans = new List<RefreshItem>();
         var preferredActive = services.ActiveWeapon.Raw;
@@ -82,10 +82,10 @@ public partial class WeaponPaints
             plans.Add(new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
                 settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio));
             _retiringWeapons.Add(handle);
-            // Killing an owned entity alone leaves its full serial in MyWeapons.
-            // Detach through item services before destruction so round preservation
-            // and subsequent refreshes receive an inventory of live items only.
-            pawn.RemovePlayerItem(old);
+            // Entity destruction and RemovePlayerItem alone leave this serial in
+            // MyWeapons on CS2 build 10955. The normal item-services drop path
+            // updates the inventory vector before we destroy the retired entity.
+            pawn.ItemServices.As<CCSPlayer_ItemServices>().DropActivePlayerWeapon(old);
             old.Remove();
         }
         if(plans.Count==0){completed();return;}
@@ -96,7 +96,7 @@ public partial class WeaponPaints
             if (!identity.TryResolve(out var current) || !current.PawnIsAlive) { completed(); return; }
             var currentPawn=current.PlayerPawn.Value;
             var currentServices=currentPawn?.WeaponServices;
-            if(currentPawn==null || currentServices==null){completed();return;}
+            if(currentPawn==null || currentServices==null || currentPawn.ItemServices==null){completed();return;}
             attempts++;
             for(var n=plans.Count-1;n>=0;n--)
             {
@@ -132,7 +132,7 @@ public partial class WeaponPaints
                     // A failed acquisition may leave an unowned newly-created entity.
                     if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))
                     {
-                        if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentPawn.RemovePlayerItem(replacement);
+                        if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentPawn.ItemServices.As<CCSPlayer_ItemServices>().DropActivePlayerWeapon(replacement);
                         replacement.Remove();
                     }
                     Logger.LogWarning(ex,"Weapon replacement attempt {Attempt} failed",attempts);
