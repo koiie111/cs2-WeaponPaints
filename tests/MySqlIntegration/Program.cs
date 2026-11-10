@@ -66,6 +66,16 @@ try{
  await sql.ExecuteAsync("RENAME TABLE hidden_pins TO wp_player_pins");Check(await Load(),"SQL recovery");
  var lockName="wp_player_skins:"+id;await sql.ExecuteScalarAsync<int>("SELECT GET_LOCK(@lockName,0)",new{lockName});var watch=System.Diagnostics.Stopwatch.StartNew();var retry=sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);await Task.Delay(2300);await sql.ExecuteScalarAsync<int>("SELECT RELEASE_LOCK(@lockName)",new{lockName});await retry;Check(watch.ElapsedMilliseconds>=2000,"real lock timeout and retry recovery");
  await sql.ExecuteScalarAsync<int>("SELECT GET_LOCK(@lockName,0)",new{lockName});watch.Restart();await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);Check(watch.Elapsed.TotalSeconds>=8&&watch.Elapsed.TotalSeconds<15,"four-attempt retry bound");await sql.ExecuteScalarAsync<int>("SELECT RELEASE_LOCK(@lockName)",new{lockName});await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);Check(operations.PendingKeys==0,"locks and queue released after failure");
+ await sql.ExecuteAsync("SET GLOBAL innodb_lock_wait_timeout=1"); MySqlConnection.ClearAllPools();
+ await using(var blocker=new MySqlConnection(builder.ConnectionString)) {
+  await blocker.OpenAsync();await using var transaction=await blocker.BeginTransactionAsync();
+  await blocker.ExecuteAsync("SELECT * FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7 FOR UPDATE",new{id},transaction);
+  WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount=909;
+  var blockedSave=sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);await Task.Delay(1500);await transaction.RollbackAsync();await blockedSave;
+ }
+ Check(Utility.Messages.Any(message=>message.StartsWith("Retrying player skin batch") && message.Contains("Lock wait timeout exceeded")) && await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==909,"real InnoDB error 1205 retries and saves successfully");
+ await Task.WhenAll(Enumerable.Range(2,16).Select(n=>sync.SyncMusicToDatabase(new PlayerInfo{Slot=n,SteamId=(76561198000000000UL+(ulong)n).ToString()},99,[t])));
+ Check(await sql.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM wp_player_music WHERE music_id=99")==16,"parallel independent accounts persist without mixing identities");
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_sticker_0='bad',weapon_sticker_4='77;0;0;0;0;1;0' WHERE steamid=@id",new{id});
  Check(await Load() && WP.GPlayerWeaponsInfo[1][ct][7].Stickers.Count==5 && WP.GPlayerWeaponsInfo[1][ct][7].Stickers[4].Id==77 && WP.GPlayerWeaponsInfo[1][ct][7].Stickers[0].Id==0,"invalid early sticker does not shift slot four");
  await sql.ExecuteAsync("DELETE FROM wp_player_skins;DELETE FROM wp_player_knife;DELETE FROM wp_player_gloves;DELETE FROM wp_player_agents;DELETE FROM wp_player_music;DELETE FROM wp_player_pins");Check(await Load()&&!WP.GPlayersKnife.ContainsKey(1)&&WP.GPlayerWeaponsInfo[1].Count==0,"empty account clears old values");

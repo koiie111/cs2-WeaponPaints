@@ -35,3 +35,6 @@ References: https://docs.cssharp.dev/docs/features/game-events.html ; https://do
 
 ## Acceptance remaining
 Portable tests validate scheduling/identity predicates, not real MySQL transactions or native entity lifecycle. Real-client functional acceptance and active-load profiling remain open. Full tick/timers/SQL are not covered by the idle pilot. See measurements/pilot-20261110/REPORT.md. Keep PR Draft; no fleet rollout or merge.
+
+## MySQL acceptance completed
+103 real-MySQL assertions and CI service added; report: measurements/mysql-20261110/REPORT.md. Full suite links production synchronization code with explicit engine adapters. Found/fixed sticker-slot compaction, failed-open cleanup, pet collation JOIN failure (PRIMARY index retained). Release is now3.3a-db6-perf.2. Remaining acceptance is native/client behavior in GAME-ACCEPTANCE.md and active-load/full-tick profiling; the earlier note that no MySQL integration exists is superseded.

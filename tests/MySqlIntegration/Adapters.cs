@@ -15,7 +15,7 @@ namespace CounterStrikeSharp.API {
 namespace WeaponPaints {
  internal sealed class Additional { public bool KnifeEnabled=true,GloveEnabled=true,AgentEnabled=true,MusicEnabled=true,SkinEnabled=true,PinsEnabled=true; }
  internal sealed class WeaponPaintsConfig { public Additional Additional=new(); }
- internal static class Utility { internal static void Log(string message)=>Console.WriteLine(message); }
+ internal static class Utility { internal static readonly ConcurrentQueue<string> Messages=new(); internal static void Log(string message) { Messages.Enqueue(message); Console.WriteLine(message); } }
  internal sealed class WeaponPaints {
   internal static readonly WeaponPaints Instance=new(); public ILogger Logger=>NullLogger.Instance;
   internal static long DataGeneration=1;
