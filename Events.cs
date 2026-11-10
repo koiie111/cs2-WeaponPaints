@@ -64,9 +64,8 @@ namespace WeaponPaints
 
 					GivePlayerMusicKit(player);
 					GivePlayerAgent(player);
-					GivePlayerGloves(player);
 					GivePlayerPin(player);
-					RefreshWeapons(player);
+					RefreshPlayerEquipment(player);
 				});
 			});
 

@@ -21,7 +21,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db6-perf.12";
+	public override string ModuleVersion => "3.3a-db6-perf.13";
 
 	internal static long DataGeneration;
 
@@ -81,8 +81,8 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
                         var currentPlayer = Utilities.GetPlayerFromSlot(playerInfo.Slot);
                         if (currentPlayer == null || !Utility.IsPlayerValid(currentPlayer) || currentPlayer.SteamID.ToString() != playerInfo.SteamId) return;
                         if (!Players.Contains(currentPlayer)) Players.Add(currentPlayer);
-                        GivePlayerMusicKit(currentPlayer); GivePlayerAgent(currentPlayer); GivePlayerGloves(currentPlayer); GivePlayerPin(currentPlayer);
-                        if (currentPlayer.PawnIsAlive) RefreshWeapons(currentPlayer);
+                        GivePlayerMusicKit(currentPlayer); GivePlayerAgent(currentPlayer); GivePlayerPin(currentPlayer);
+                        if (currentPlayer.PawnIsAlive) RefreshPlayerEquipment(currentPlayer);
                     });
 				});
 			}

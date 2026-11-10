@@ -249,62 +249,49 @@ namespace WeaponPaints
 		}
 
 
-		private void GivePlayerGloves(CCSPlayerController player)
-		{
-			if (!Utility.IsPlayerValid(player) || (LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE) return;
-			var expectedSteamId = player.SteamID.ToString();
+        private bool TryGetGlovePaint(CCSPlayerController player, out ushort gloveId, out WeaponInfo? weaponInfo)
+        {
+            gloveId = 0;
+            weaponInfo = null;
+            return Config.Additional.GloveEnabled && Utility.IsPlayerValid(player) && player.PawnIsAlive &&
+                GPlayersGlove.TryGetValue(player.Slot, out var gloves) && gloves.TryGetValue(player.Team, out gloveId) &&
+                gloveId != 0 && HasChangedPaint(player, gloveId, out weaponInfo) && weaponInfo != null;
+        }
 
-			//force gloves model refresh to prevent model overlap
-			player.ExecuteClientCommand("lastinv");
-			var identity = DeferredPlayer.Capture(player);
-            Instance.AddOneShot(0.08f, () =>
-			{	
-                try
-                {
-                    if (!identity.TryResolve(out player)) return;
-                    if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive ||
-						player.SteamID.ToString() != expectedSteamId) return;
+        private void ApplyPlayerGloves(CCSPlayerController player)
+        {
+            if (!TryGetGlovePaint(player, out var gloveId, out var weaponInfo) || weaponInfo == null) return;
+            var identity = DeferredPlayer.Capture(player);
+            var expectedSteamId = player.SteamID.ToString();
+            var pawn = player.PlayerPawn.Value;
+            if (pawn == null || !pawn.IsValid) return;
+            var item = pawn.EconGloves;
 
-					if (!GPlayersGlove.TryGetValue(player.Slot, out var gloveInfo) ||
-					    !gloveInfo.TryGetValue(player.Team, out var gloveId) ||
-					    gloveId == 0 ||
-					    !HasChangedPaint(player, gloveId, out var weaponInfo) || weaponInfo == null)
-						return;
+            item.ItemDefinitionIndex = gloveId;
 
-					var pawn = player.PlayerPawn.Value;
-					if (pawn == null || !pawn.IsValid) return;
-					var item = pawn.EconGloves;
+            UpdatePlayerEconItemId(item);
 
-					item.ItemDefinitionIndex = gloveId;
-					
-					UpdatePlayerEconItemId(item);
+            item.NetworkedDynamicAttributes.Attributes.RemoveAll();
+            CAttributeListSetOrAddAttributeValueByName.Invoke(item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weaponInfo.Paint);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(item.NetworkedDynamicAttributes.Handle, "set item texture seed", weaponInfo.Seed);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(item.NetworkedDynamicAttributes.Handle, "set item texture wear", weaponInfo.Wear);
 
-					item.NetworkedDynamicAttributes.Attributes.RemoveAll();
-					CAttributeListSetOrAddAttributeValueByName.Invoke(item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weaponInfo.Paint);
-					CAttributeListSetOrAddAttributeValueByName.Invoke(item.NetworkedDynamicAttributes.Handle, "set item texture seed", weaponInfo.Seed);
-					CAttributeListSetOrAddAttributeValueByName.Invoke(item.NetworkedDynamicAttributes.Handle, "set item texture wear", weaponInfo.Wear);
+            item.AttributeList.Attributes.RemoveAll();
+            CAttributeListSetOrAddAttributeValueByName.Invoke(item.AttributeList.Handle, "set item texture prefab", weaponInfo.Paint);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(item.AttributeList.Handle, "set item texture seed", weaponInfo.Seed);
+            CAttributeListSetOrAddAttributeValueByName.Invoke(item.AttributeList.Handle, "set item texture wear", weaponInfo.Wear);
 
-					item.AttributeList.Attributes.RemoveAll();
-					CAttributeListSetOrAddAttributeValueByName.Invoke(item.AttributeList.Handle, "set item texture prefab", weaponInfo.Paint);
-					CAttributeListSetOrAddAttributeValueByName.Invoke(item.AttributeList.Handle, "set item texture seed", weaponInfo.Seed);
-					CAttributeListSetOrAddAttributeValueByName.Invoke(item.AttributeList.Handle, "set item texture wear", weaponInfo.Wear);
+            item.Initialized = true;
 
-					item.Initialized = true;
-				
-					//force gloves model refresh to prevent model overlap
-					player.ExecuteClientCommand("lastinv");
-					SetBodygroup(pawn, "first_or_third_person", 0);
-					Instance.AddOneShot(0.2f, () =>
-					{
-						if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
-						var currentPawn = player.PlayerPawn.Value;
-						if (currentPawn != null && currentPawn.IsValid)
-							SetBodygroup(currentPawn, "first_or_third_person", 1);
-					});
-				}
-				catch (Exception) { }
-			});
-		}
+            SetBodygroup(pawn, "first_or_third_person", 0);
+            Instance.AddOneShot(0.2f, () =>
+            {
+                if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
+                var currentPawn = player.PlayerPawn.Value;
+                if (currentPawn != null && currentPawn.IsValid)
+                    SetBodygroup(currentPawn, "first_or_third_person", 1);
+            });
+        }
 
 		private static int GetRandomPaint(int defindex) => Catalog.RandomPaint(defindex);
 
