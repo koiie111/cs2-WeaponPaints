@@ -28,3 +28,20 @@ if (args.Contains("--benchmark")) {
   Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new { scenario="synthetic_catalog_lookup_10000_rows", path=operation== (Func<bool>)Baseline ? "baseline" : "candidate", iterations=1000,elapsed_ms=clock.Elapsed.TotalMilliseconds,allocated_bytes=allocated,checksum }));
  }
 }
+
+var operations = new OrderedOperations();
+var first = await operations.EnterAsync("same");
+var second = operations.EnterAsync("same");
+var third = operations.EnterAsync("same");
+Check(!second.IsCompleted && !third.IsCompleted);
+using (await operations.EnterAsync("other")) Check(operations.PendingKeys == 2);
+first.Dispose();
+using (await second) Check(!third.IsCompleted);
+(await third).Dispose(); Check(operations.PendingKeys == 0);
+var values = new List<int>();
+var work = Enumerable.Range(0,100).Select(i=>Run(i)).ToArray();
+await Task.WhenAll(work); Check(values.SequenceEqual(Enumerable.Range(0,100))); Check(operations.PendingKeys==0);
+async Task Run(int i) { using var turn=await operations.EnterAsync("reconnect"); await Task.Yield(); values.Add(i); }
+try { using var turn=await operations.EnterAsync("failed"); throw new InvalidOperationException(); } catch(InvalidOperationException) {}
+using(await operations.EnterAsync("failed")) {} Check(operations.PendingKeys==0);
+Console.WriteLine("PASS: FIFO writes/read-after-write, independent SteamIDs, failure release, idle-key cleanup");

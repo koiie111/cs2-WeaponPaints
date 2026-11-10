@@ -27,16 +27,15 @@ namespace WeaponPaints
 				
 				case true:
 				{
-					var newDefIndex = WeaponDefindex.FirstOrDefault(x => x.Value == GPlayersKnife[player.Slot][player.Team]);
-					if (newDefIndex.Key == 0) return;
+					if (!KnifeDefindexes.Value.TryGetValue(GPlayersKnife[player.Slot][player.Team], out var newDefIndex)) return;
 
-					if (weapon.AttributeManager.Item.ItemDefinitionIndex != newDefIndex.Key)
+					if (weapon.AttributeManager.Item.ItemDefinitionIndex != newDefIndex)
 					{
-						SubclassChange(weapon, (ushort)newDefIndex.Key);
+						SubclassChange(weapon, (ushort)newDefIndex);
 						ScheduleKnifePaint(player, weapon);
 					}
 
-					weapon.AttributeManager.Item.ItemDefinitionIndex = (ushort)newDefIndex.Key;
+					weapon.AttributeManager.Item.ItemDefinitionIndex = (ushort)newDefIndex;
 					weapon.AttributeManager.Item.EntityQuality = 3;
 					
 					weapon.AttributeManager.Item.AttributeList.Attributes.RemoveAll();
@@ -290,11 +289,13 @@ namespace WeaponPaints
 
 			//force gloves model refresh to prevent model overlap
 			player.ExecuteClientCommand("lastinv");
-			Instance.AddTimer(0.08f, () =>
+			var identity = DeferredPlayer.Capture(player);
+            Instance.AddOneShot(0.08f, () =>
 			{	
-				try
-				{
-					if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive ||
+                try
+                {
+                    if (!identity.TryResolve(out player)) return;
+                    if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive ||
 						player.SteamID.ToString() != expectedSteamId) return;
 
 					if (!GPlayersGlove.TryGetValue(player.Slot, out var gloveInfo) ||
@@ -326,16 +327,16 @@ namespace WeaponPaints
 					//force gloves model refresh to prevent model overlap
 					player.ExecuteClientCommand("lastinv");
 					SetBodygroup(pawn, "first_or_third_person", 0);
-					AddTimer(0.2f, () =>
+					Instance.AddOneShot(0.2f, () =>
 					{
-						if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
+						if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
 						var currentPawn = player.PlayerPawn.Value;
 						if (currentPawn != null && currentPawn.IsValid)
 							SetBodygroup(currentPawn, "first_or_third_person", 1);
-					}, TimerFlags.STOP_ON_MAPCHANGE);
+					});
 				}
 				catch (Exception) { }
-			}, TimerFlags.STOP_ON_MAPCHANGE);
+			});
 		}
 
 		private static int GetRandomPaint(int defindex) => Catalog.RandomPaint(defindex);
@@ -417,12 +418,13 @@ namespace WeaponPaints
             if (!AgentModel.IsAllowed(model, team)) return;
 
 			var expectedSteamId = player.SteamID.ToString();
+            var identity = DeferredPlayer.Capture(player);
 
 			try
 			{
 				Server.NextFrame(() =>
 				{
-					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
+					if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
 					var pawn = player.PlayerPawn.Value;
 					if (pawn != null && pawn.IsValid)
 						pawn.SetModel($"agents/models/{model}.vmdl");

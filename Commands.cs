@@ -69,7 +69,7 @@ public partial class WeaponPaints
 							RefreshWeapons(player);
 							GivePlayerAgent(player);
 							GivePlayerMusicKit(player);
-							AddTimer(0.15f, () => GivePlayerPin(player), TimerFlags.STOP_ON_MAPCHANGE);
+							DeferPlayer(player, GivePlayerPin, 0.15f);
 
 							if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
 								player.Print(Localizer["wp_command_refresh_done"]);
@@ -270,7 +270,7 @@ public partial class WeaponPaints
 						RefreshWeapons(targetPlayer);
 						GivePlayerAgent(targetPlayer);
 						GivePlayerMusicKit(targetPlayer);
-						AddTimer(0.15f, () => GivePlayerPin(targetPlayer), TimerFlags.STOP_ON_MAPCHANGE);
+						DeferPlayer(targetPlayer, GivePlayerPin, 0.15f);
 
 						if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
 							targetPlayer.Print(Localizer["wp_command_refresh_done"]);
@@ -318,7 +318,8 @@ public partial class WeaponPaints
 			.Where(pair => pair.Key.StartsWith("weapon_knife") || pair.Key.StartsWith("weapon_bayonet"))
 			.ToDictionary(pair => pair.Key, pair => pair.Value);
 
-		var giveItemMenu = Utility.CreateMenu(Localizer["wp_knife_menu_title"]);
+		var knifeKeys = knivesOnly.GroupBy(x => x.Value, StringComparer.Ordinal).ToDictionary(x => x.Key, x => x.First().Key, StringComparer.Ordinal);
+        var giveItemMenu = Utility.CreateMenu(Localizer["wp_knife_menu_title"]);
 			
 		var handleGive = (CCSPlayerController player, ChatMenuOption option) =>
 		{
@@ -330,7 +331,7 @@ public partial class WeaponPaints
 				: [player.Team];
 			
 			var knifeName = option.Text;
-			var knifeKey = knivesOnly.FirstOrDefault(x => x.Value == knifeName).Key;
+			knifeKeys.TryGetValue(knifeName, out var knifeKey);
 			if (string.IsNullOrEmpty(knifeKey)) return;
 			if (!string.IsNullOrEmpty(Localizer["wp_knife_menu_select"]))
 			{
@@ -650,13 +651,14 @@ public partial class WeaponPaints
 
 				}
 
-				var paintsWrite = WeaponSync.SyncWeaponPaintsToDatabase(playerInfo);
-                await WeaponSync.SyncGloveToDatabase(playerInfo, (ushort)weaponDefindex, teamsToCheck);
+				var gloveWrite = WeaponSync.SyncGloveToDatabase(playerInfo, (ushort)weaponDefindex, teamsToCheck);
+                var paintsWrite = WeaponSync.SyncWeaponPaintsToDatabase(playerInfo);
+                await gloveWrite;
                 await paintsWrite;
 			});
 				
-			AddTimer(0.1f, () => GivePlayerGloves(player));
-			AddTimer(0.25f, () => GivePlayerGloves(player));
+			DeferPlayer(player, GivePlayerGloves, 0.1f);
+			DeferPlayer(player, GivePlayerGloves, 0.25f);
 		};
 
 		// Add weapon options to the weapon selection menu

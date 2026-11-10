@@ -16,6 +16,7 @@ internal class WeaponSynchronization
 		.Select(_ => new SemaphoreSlim(1, 1))
 		.ToArray();
 
+	private static readonly OrderedOperations Operations = new();
 	private readonly WeaponPaintsConfig _config;
 	private readonly Database _database;
 
@@ -43,6 +44,7 @@ internal class WeaponSynchronization
         var snapshot = new PlayerDataSnapshot();
         try
         {
+            using var operation = await Operations.EnterAsync(player.SteamId!);
             await using var connection = await _database.GetConnectionAsync();
 
 			if (_config.Additional.KnifeEnabled)
@@ -433,7 +435,8 @@ internal class WeaponSynchronization
 
 		try
 		{
-			await using var connection = await _database.GetConnectionAsync();
+			using var operation = await Operations.EnterAsync(player.SteamId!);
+            await using var connection = await _database.GetConnectionAsync();
         
 			// Loop through each team and insert/update accordingly
 			foreach (var team in teams)
@@ -461,7 +464,8 @@ internal class WeaponSynchronization
 		try
 		{
 			// Get a database connection
-			await using var connection = await _database.GetConnectionAsync();
+			using var operation = await Operations.EnterAsync(player.SteamId!);
+            await using var connection = await _database.GetConnectionAsync();
         
 			// Loop through each team and insert/update accordingly
 			foreach (var team in teams)
@@ -495,6 +499,7 @@ internal class WeaponSynchronization
 		try
 		{
             if (!WeaponPaints.GPlayersAgent.TryGetValue(player.Slot, out var agents)) return;
+            using var operation = await Operations.EnterAsync(player.SteamId!);
             await using var connection = await _database.GetConnectionAsync();
             await connection.ExecuteAsync(query, new { steamid = player.SteamId, agent_ct = AgentModel.ForTeam(agents.CT, 3), agent_t = AgentModel.ForTeam(agents.T, 2) });
 		}
@@ -524,7 +529,8 @@ internal class WeaponSynchronization
 
 		try
 		{
-			await using var connection = await _database.GetConnectionAsync();
+			using var operation = await Operations.EnterAsync(player.SteamId!);
+            await using var connection = await _database.GetConnectionAsync();
         
 			// Loop through each team and insert/update accordingly
 			foreach (var team in teams)
@@ -546,7 +552,8 @@ internal class WeaponSynchronization
 
 		try
 		{
-			await using var connection = await _database.GetConnectionAsync();
+			using var operation = await Operations.EnterAsync(player.SteamId!);
+            await using var connection = await _database.GetConnectionAsync();
         
 			// Loop through each team and insert/update accordingly
 			foreach (var team in teams)
@@ -603,6 +610,7 @@ internal class WeaponSynchronization
 				.ThenBy(row => row.DefIndex)
 				.ToArray();
 
+        using var operation = await Operations.EnterAsync(player.SteamId);
         var playerLock = GetPlayerSkinWriteLock(player.SteamId);
         await playerLock.WaitAsync();
         try

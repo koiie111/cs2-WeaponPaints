@@ -155,10 +155,7 @@ namespace WeaponPaints
 
 			GivePlayerMusicKit(player);
 			GivePlayerAgent(player);
-			Server.NextFrame(() =>
-			{
-				GivePlayerGloves(player);
-			});
+			DeferPlayer(player, GivePlayerGloves);
 			GivePlayerPin(player);
 
 			return HookResult.Continue;
