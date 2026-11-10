@@ -279,7 +279,7 @@ internal class WeaponSynchronization
 					string stickerColumn = $"weapon_sticker_{i}";
 					var stickerData = ((IDictionary<string, object>)row!)[stickerColumn]; // Safely cast row to a dictionary
 
-					if (stickerData == null || string.IsNullOrEmpty(stickerData.ToString())) continue;
+					if (stickerData == null || string.IsNullOrEmpty(stickerData.ToString())) { weaponInfo.Stickers.Add(new StickerInfo()); continue; }
 						
 					var parts = stickerData.ToString()!.Split(';');
 
@@ -291,7 +291,7 @@ internal class WeaponSynchronization
 					    !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float stickerOffsetY) ||
 					    !float.TryParse(parts[4], NumberStyles.Float, CultureInfo.InvariantCulture, out float stickerWear) ||
 					    !float.TryParse(parts[5], NumberStyles.Float, CultureInfo.InvariantCulture, out float stickerScale) ||
-					    !float.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out float stickerRotation)) continue;
+					    !float.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out float stickerRotation)) { weaponInfo.Stickers.Add(new StickerInfo()); continue; }
 						
 					StickerInfo stickerInfo = new StickerInfo
 					{

@@ -7,15 +7,16 @@ namespace WeaponPaints
 	{
 		public async Task<MySqlConnection> GetConnectionAsync()
 		{
-			try
-			{
-				var connection = new MySqlConnection(dbConnectionString);
+            var connection = new MySqlConnection(dbConnectionString);
+            try
+            {
 				await connection.OpenAsync();
 				return connection;
 			}
-			catch (Exception ex)
-			{
-				WeaponPaints.Instance.Logger.LogError($"Unable to connect to database: {ex.Message}");
+            catch (Exception ex)
+            {
+                await connection.DisposeAsync();
+                WeaponPaints.Instance.Logger.LogError($"Unable to connect to database: {ex.Message}");
 				throw;
 			}
 		}

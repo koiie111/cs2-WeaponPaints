@@ -148,7 +148,7 @@ public partial class WeaponPaints
             {
                 if (Database == null) return;
                 await using var connection = await Database.GetConnectionAsync();
-                await using var command = new MySqlCommand("SELECT CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=a.steam_id WHERE a.steam_id=@id LIMIT 1", connection);
+                await using var command = new MySqlCommand("SELECT CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=CONVERT(a.steam_id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE a.steam_id=@id LIMIT 1", connection);
                 command.Parameters.AddWithValue("@id", steamId);
                 await using var reader = await command.ExecuteReaderAsync();
                 var active = await reader.ReadAsync();
@@ -211,7 +211,7 @@ public partial class WeaponPaints
             {
                 await using var connection = await Database.GetConnectionAsync();
                 var parameters = slots.Values.Select((_, i) => "@p" + i).ToArray();
-                await using var command = new MySqlCommand($"SELECT a.steam_id,CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=a.steam_id WHERE a.steam_id IN ({string.Join(',', parameters)})", connection);
+                await using var command = new MySqlCommand($"SELECT a.steam_id,CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=CONVERT(a.steam_id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE a.steam_id IN ({string.Join(',', parameters)})", connection);
                 var i = 0; foreach (var id in slots.Values) command.Parameters.AddWithValue(parameters[i++], id);
                 var loaded = new Dictionary<string, (DateTime ExpiresAt, PetChoice Choice)>(StringComparer.Ordinal);
                 await using (var reader = await command.ExecuteReaderAsync())
