@@ -41,9 +41,17 @@ dbc8dcc. The native spray implementation is unchanged in .7. Map/cooldown and
 additional client scenarios remain pending. Completed .5 and .6 CSSProfiler
 comparisons found increased SQL queue/end-to-end tails on the isolated
 shared-bot-key/SSH fixture. The .7 query now returns a single joined result set;
-Release warnings-as-errors and all 125 MySQL assertions passed again. A focused
-matched SQL profile is required before accepting this change. These measurements
-do not describe production database latency. GitHub Actions is
+Release warnings-as-errors and all 125 MySQL assertions passed again. The focused
+.7 SQL baseline/candidate/repeat finished with12 windows and12 p95/p99
+comparisons: no threshold flags. Original server6 files/configuration were
+restored; all288 runtime hashes match. This is not a distinguishable speedup,
+production database latency, apply/refresh rerun or whole-build acceptance.
+Raw profiles and tables live in website PR10 under
+`docs/measurements/skins3d-20261111/server-v7-sql/`. The frozen .7 DLL was built
+before source commit360ab5e, so assembly InformationalVersion retains5c4b918;
+normalized compiled source was checked against360ab5e. ModuleVersion and actual
+DLL SHA256ce4d70d70fad5bae1c5b9adfafe1b6ef63338b6c520680ed3bae6977feed3039
+identify the measured artifact. Owner-only agent/patch/pet/!wp follows. GitHub Actions is
 disabled for this repository (workflow dispatch HTTP422); local checks are not
 reported as a CI pass. Old .4 profiles remain scoped to their own build.
 Both PRs remain Draft. No fleet rollout or production schema changes performed.
