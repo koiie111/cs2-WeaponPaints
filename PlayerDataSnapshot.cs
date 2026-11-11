@@ -23,6 +23,16 @@ internal sealed class PlayerDataSnapshot
         Replace(GPlayersPatches, WeaponPaints.GPlayersPatches, slot);
         Replace(GPlayersPatchExpiry, WeaponPaints.GPlayersPatchExpiry, slot);
         WeaponPaints.Instance.ArmAgentPatchExpiry(slot);
+        // Publication runs on the game thread after identity/generation checks.
+        // SQL can be older than kills earned while !wp was loading. Cosmetics
+        // come from the new snapshot; only the live counters survive its swap.
+        if (GPlayerWeaponsInfo.TryGetValue(slot, out var incoming) &&
+            WeaponPaints.GPlayerWeaponsInfo.TryGetValue(slot, out var live))
+            foreach (var (team, weapons) in incoming)
+                if (live.TryGetValue(team, out var previous))
+                    foreach (var (definition, weapon) in weapons)
+                        if (previous.TryGetValue(definition, out var old))
+                            weapon.StatTrakCount = Math.Max(weapon.StatTrakCount, old.StatTrakCount);
         Replace(GPlayerWeaponsInfo, WeaponPaints.GPlayerWeaponsInfo, slot);
     }
     private static void Replace<T>(ConcurrentDictionary<int,T> source, ConcurrentDictionary<int,T> target, int slot) where T : notnull

@@ -1,6 +1,6 @@
 # Graffiti integration (Draft)
 
-ModuleVersion 3.3a-db7-skins3d.8, CounterStrikeSharp API >=376. The new
+ModuleVersion 3.3a-db7-skins3d.9, CounterStrikeSharp API >=376. The new
 `Additional.GraffitiEnabled` flag defaults to false. Install the website SQL
 `20261111_0001_skins3d_graffiti.sql` in the same cosmetics database, deploy the
 matching plugin package including `data/graffiti.json`, then enable the flag.
@@ -81,3 +81,19 @@ Website:18 real MySQL checks plus subscriber/expired browser Apply/retained-draf
 and copy-button checks. Previous .7 profiles remain evidence for .7, not .8.
 .8 has not been deployed or natively profiled. Server6 is restored with all288
 runtime hashes unchanged after the owner session.
+
+## StatTrak preservation (.9)
+
+The game-thread snapshot publication retains the greater live/loaded counter
+for each matching team and weapon definition. Kills earned during an in-flight
+`!wp` load survive a website paint change, while the new paint and enabled state
+still come from the saved selection. A disconnect counter upsert uses GREATEST,
+so a delayed lower snapshot cannot reset a newer persisted count. Empty accounts
+still clear their old appearance; counters are not transferred between weapons
+or teams. No database schema change is needed.
+
+135 linked-source MySQL assertions include kills earned between SQL completion
+and publication, disabled/re-enabled StatTrak, a changed paint, a higher saved
+count and a delayed lower write. The website independently verifies that a paint
+change, disable/re-enable and a forged browser counter preserve the DB count.
+This build is not deployed/profiled; .7 native measurements remain labelled .7.

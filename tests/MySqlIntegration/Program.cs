@@ -49,6 +49,23 @@ try{
  Check(await sql.ExecuteScalarAsync<string>("SELECT weapon_nametag FROM wp_player_skins WHERE steamid=@id AND weapon_team=3 AND weapon_defindex=7",new{id})=="CT","batch update preserves cosmetics");
  await sync.SyncStatTrakToDatabase(player,skins);
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==200,"disconnect StatTrak snapshot");
+ // Simulate kills earned while SQL is in flight, then a website paint change.
+ var beforePublish=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+ var allowPublish=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+ Server.BeforeDispatch=async()=>{beforePublish.TrySetResult();await allowPublish.Task;};
+ var counterReload=Load();await beforePublish.Task.WaitAsync(TimeSpan.FromSeconds(10));
+ skins[t][7].StatTrakCount=207;skins[ct][7].StatTrakCount=311;allowPublish.TrySetResult();
+ Check(await counterReload&&WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount==207&&WP.GPlayerWeaponsInfo[1][ct][7].StatTrakCount==311,"kills during refresh survive per-team snapshot publication");
+ Server.BeforeDispatch=null;
+ await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_paint_id=777,weapon_stattrak=0 WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
+ Check(await Load()&&WP.GPlayerWeaponsInfo[1][t][7].Paint==777&&!WP.GPlayerWeaponsInfo[1][t][7].StatTrak&&WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount==207,"new paint and disabled StatTrak retain unsaved kill count");
+ await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
+ skins[t][7].StatTrakCount=200;
+ await sync.SyncStatTrakToDatabase(player,skins);
+ Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==207,"late lower counter snapshot cannot reset saved kills");
+ await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak_count=400,weapon_stattrak=1 WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
+ Check(await Load()&&WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount==400&&WP.GPlayerWeaponsInfo[1][t][7].StatTrak,"larger persisted count and re-enabled StatTrak survive refresh");
+ skins=WP.GPlayerWeaponsInfo[1];
  var operations=(OrderedOperations)typeof(WeaponSynchronization).GetField("Operations",BindingFlags.NonPublic|BindingFlags.Static)!.GetValue(null)!;
  using(var hold=await operations.EnterAsync(id)){skins[t][7].Paint=300;var save=sync.SyncWeaponPaintsToDatabase(player);skins[t][7].Paint=400;hold.Dispose();await save;}
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_paint_id FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==300,"immutable save before wait");

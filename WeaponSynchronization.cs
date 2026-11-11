@@ -737,7 +737,7 @@ internal class WeaponSynchronization
 
 		query.Append(" ON DUPLICATE KEY UPDATE ");
 		query.Append(updateStatTrakOnly
-			? "`weapon_stattrak`=VALUES(`weapon_stattrak`),`weapon_stattrak_count`=VALUES(`weapon_stattrak_count`)"
+			? "`weapon_stattrak`=VALUES(`weapon_stattrak`),`weapon_stattrak_count`=GREATEST(`weapon_stattrak_count`,VALUES(`weapon_stattrak_count`))"
 			: "`weapon_paint_id`=VALUES(`weapon_paint_id`),`weapon_wear`=VALUES(`weapon_wear`),`weapon_seed`=VALUES(`weapon_seed`)");
 
 		return (query.ToString(), parameters);
