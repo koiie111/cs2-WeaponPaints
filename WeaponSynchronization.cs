@@ -89,14 +89,17 @@ internal class WeaponSynchronization
 
     private async Task GetPinsAndGraffitiFromDatabase(PlayerInfo player, MySqlConnection connection, PlayerDataSnapshot snapshot)
     {
-        // Keep the graffiti read in the existing pin round trip when pins are enabled.
-        // Both result sets use the same ordered operation, connection and snapshot.
-        const string pins = "SELECT id,weapon_team FROM wp_player_pins WHERE steamid=@steamid ORDER BY weapon_team ASC;";
-        const string graffiti = "SELECT graffiti_id,tint_id FROM wp_player_graffiti WHERE steamid=@steamid";
-        using var rows = await connection.QueryMultipleAsync((_config.Additional.PinsEnabled ? pins : "") + graffiti, new { steamid = player.SteamId });
-        if (_config.Additional.PinsEnabled) ApplyPinRows(player, snapshot, await rows.ReadAsync<dynamic>());
-        var choice = await rows.ReadSingleOrDefaultAsync<(int Kit, int Tint)>();
-        if (WeaponPaints.Instance.IsValidGraffiti(choice.Kit, choice.Tint)) snapshot.Graffiti[player.Slot] = choice;
+        // Return one result set as well as one command: separate result-set tails
+        // still add transport waits on the isolated remote SQL profile.
+        const string combined = "SELECT p.id,p.weapon_team,g.graffiti_id,g.tint_id FROM (SELECT 1 AS singleton) a LEFT JOIN wp_player_pins p ON p.steamid=@steamid LEFT JOIN wp_player_graffiti g ON g.steamid=@steamid ORDER BY p.weapon_team ASC";
+        const string graffitiOnly = "SELECT graffiti_id,tint_id FROM wp_player_graffiti WHERE steamid=@steamid";
+        var rows = await connection.QueryAsync<dynamic>(_config.Additional.PinsEnabled ? combined : graffitiOnly, new { steamid = player.SteamId });
+        if (_config.Additional.PinsEnabled) ApplyPinRows(player, snapshot, rows);
+        var first = rows.FirstOrDefault();
+        if (first is not IDictionary<string, object> values || !values.TryGetValue("graffiti_id", out var rawKit) || rawKit is null
+            || !values.TryGetValue("tint_id", out var rawTint) || rawTint is null) return;
+        var kit = Convert.ToInt32(rawKit); var tint = Convert.ToInt32(rawTint);
+        if (WeaponPaints.Instance.IsValidGraffiti(kit, tint)) snapshot.Graffiti[player.Slot] = (kit, tint);
     }
 
     private static void ApplyPinRows(PlayerInfo player, PlayerDataSnapshot snapshot, IEnumerable<dynamic> rows)

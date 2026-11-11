@@ -1,6 +1,6 @@
 # Graffiti integration (Draft)
 
-ModuleVersion 3.3a-db7-skins3d.6, CounterStrikeSharp API >=376. The new
+ModuleVersion 3.3a-db7-skins3d.7, CounterStrikeSharp API >=376. The new
 `Additional.GraffitiEnabled` flag defaults to false. Install the website SQL
 `20261111_0001_skins3d_graffiti.sql` in the same cosmetics database, deploy the
 matching plugin package including `data/graffiti.json`, then enable the flag.
@@ -26,7 +26,7 @@ independent CounterStrikeSharp code using the public game schema and trace API;
 no SwiftlyS2 source is compiled or copied into this plugin. The native catalogue
 comes from the existing pinned local cs2-lib/game export, build26445667.
 
-Enabled graffiti and pins share one parameterized multi-result query; when pins
+Enabled graffiti and pins share one parameterized query with one result set; when pins
 are disabled, only graffiti is read. This avoids a separate network round trip
 without changing the ordered operation, connection, identity check or atomic
 snapshot publication. The disabled graffiti path still supports an old schema
@@ -37,9 +37,13 @@ suites, 125 linked-source MySQL assertions (including graffiti load/reset,
 pin fallback/override, disabled flags and slot reuse during the batched read),
 12 website MySQL graffiti checks and browser draft/Apply/local-image workflow.
 Owner accepted native spray image/colour and reconnect/repeat !wp on frozen .5
-dbc8dcc. The native spray implementation is unchanged in .6. Map/cooldown and
-additional client scenarios remain pending. A fresh .5 CSSProfiler comparison
-is running; it is not a measurement of the .6 batching change. GitHub Actions is
+dbc8dcc. The native spray implementation is unchanged in .7. Map/cooldown and
+additional client scenarios remain pending. Completed .5 and .6 CSSProfiler
+comparisons found increased SQL queue/end-to-end tails on the isolated
+shared-bot-key/SSH fixture. The .7 query now returns a single joined result set;
+Release warnings-as-errors and all 125 MySQL assertions passed again. A focused
+matched SQL profile is required before accepting this change. These measurements
+do not describe production database latency. GitHub Actions is
 disabled for this repository (workflow dispatch HTTP422); local checks are not
 reported as a CI pass. Old .4 profiles remain scoped to their own build.
 Both PRs remain Draft. No fleet rollout or production schema changes performed.
