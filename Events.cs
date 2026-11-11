@@ -34,6 +34,7 @@ namespace WeaponPaints
 			// A slot can be reused immediately after a disconnect. Never let spawn/item hooks
 			// apply the previous occupant's native item state while MySQL is still loading.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
+            ForgetGraffiti(player.Slot, player.SteamID);
 			GPlayersKnife.TryRemove(player.Slot, out _);
 			GPlayersGlove.TryRemove(player.Slot, out _);
 			GPlayersAgent.TryRemove(player.Slot, out _);
@@ -96,6 +97,7 @@ namespace WeaponPaints
 			// reconnecting client inherit stale WeaponInfo and can crash native item hooks.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
+            ForgetGraffiti(player.Slot, player.SteamID);
 			RemovePetFor(player.Slot);
 			var weaponSync = WeaponSync;
 			if (weaponSync != null && detachedWeapons != null)
@@ -137,6 +139,7 @@ namespace WeaponPaints
 		private void OnMapStart(string mapName)
 		{
             ClearSkinPreviews();
+                ClearGraffiti(false);
             Interlocked.Increment(ref DataGeneration);
             PlayerDataLoading.Clear();
 			InvalidateKnifePaint();
@@ -330,6 +333,7 @@ namespace WeaponPaints
                 Interlocked.Increment(ref DataGeneration);
                 PlayerDataLoading.Clear();
                 ClearSkinPreviews();
+                ClearGraffiti(false);
                 InvalidateKnifePaint();
                 ClearDeferredTimers();
                 ClearWeaponRefreshes();

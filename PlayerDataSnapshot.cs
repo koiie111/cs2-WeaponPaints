@@ -9,8 +9,10 @@ internal sealed class PlayerDataSnapshot
     internal readonly ConcurrentDictionary<int, Dictionary<int, uint[]>> GPlayersPatches = new();
     internal readonly ConcurrentDictionary<int, DateTime> GPlayersPatchExpiry = new();
     internal readonly ConcurrentDictionary<int, ConcurrentDictionary<CsTeam, ConcurrentDictionary<int, WeaponInfo>>> GPlayerWeaponsInfo = new();
+    internal readonly ConcurrentDictionary<int, (int Kit, int Tint)> Graffiti = new();
     internal void Publish(int slot)
     {
+        Replace(Graffiti, WeaponPaints.PlayerGraffiti, slot);
         Replace(GPlayersKnife, WeaponPaints.GPlayersKnife, slot);
         Replace(GPlayersGlove, WeaponPaints.GPlayersGlove, slot);
         Replace(GPlayersMusic, WeaponPaints.GPlayersMusic, slot);

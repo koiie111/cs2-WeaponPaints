@@ -129,5 +129,13 @@ try{
    }
   }
  }
+ config.Additional.GraffitiEnabled=true;
+ await sql.ExecuteAsync("CREATE TABLE wp_player_graffiti (steamid VARCHAR(64) PRIMARY KEY,graffiti_id INT,tint_id INT); INSERT INTO wp_player_graffiti VALUES (@id,1671,0)",new{id});
+ Check(await Load(),"graffiti selection loads with the regular identity-guarded snapshot");
+ Check(WP.PlayerGraffiti.TryGetValue(player.Slot,out var graffiti)&&graffiti==(1671,0),"native graffiti kit and tint round trip");
+ await sql.ExecuteAsync("UPDATE wp_player_graffiti SET graffiti_id=999999 WHERE steamid=@id",new{id});
+ Check(await Load(),"invalid graffiti does not block other cosmetics");
+ Check(!WP.PlayerGraffiti.ContainsKey(player.Slot),"invalid catalogue pair removes prior override");
+ config.Additional.GraffitiEnabled=false;
  Console.WriteLine($"PASS: {passed} MySQL assertions; engine dispatch adapter; linked production SQL source");
 }finally{Server.BeforeDispatch=null;MySqlConnection.ClearAllPools();await admin.ExecuteAsync($"DROP DATABASE `{schema}`");Console.WriteLine("CLEANUP: isolated schema removed");}

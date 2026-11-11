@@ -60,6 +60,10 @@ internal class WeaponSynchronization
 				await GetWeaponPaintsFromDatabase(player, connection, snapshot);
 			if (_config.Additional.PinsEnabled)
 				await GetPinsFromDatabase(player, connection, snapshot);
+            if (_config.Additional.GraffitiEnabled) {
+                var graffiti = await connection.QuerySingleOrDefaultAsync<(int Kit, int Tint)>("SELECT graffiti_id,tint_id FROM wp_player_graffiti WHERE steamid=@id",new {id=player.SteamId});
+                if (WeaponPaints.Instance.IsValidGraffiti(graffiti.Kit, graffiti.Tint)) snapshot.Graffiti[player.Slot]=graffiti;
+            }
             var published = false;
             await CounterStrikeSharp.API.Server.NextWorldUpdateAsync(() =>
             {

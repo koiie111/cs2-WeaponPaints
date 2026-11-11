@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
+    <None Update="data/graffiti.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

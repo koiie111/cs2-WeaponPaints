@@ -13,7 +13,7 @@ namespace CounterStrikeSharp.API {
  internal static class Utilities { internal static readonly Dictionary<int,Controller> Players=new(); internal static Controller? GetPlayerFromSlot(int slot)=>Players.GetValueOrDefault(slot); }
 }
 namespace WeaponPaints {
- internal sealed class Additional { public bool KnifeEnabled=true,GloveEnabled=true,AgentEnabled=true,MusicEnabled=true,SkinEnabled=true,PinsEnabled=true; }
+ internal sealed class Additional { public bool KnifeEnabled=true,GloveEnabled=true,AgentEnabled=true,MusicEnabled=true,SkinEnabled=true,PinsEnabled=true; public bool GraffitiEnabled; }
  internal sealed class WeaponPaintsConfig { public Additional Additional=new(); }
  internal static class Utility { internal static readonly ConcurrentQueue<string> Messages=new(); internal static void Log(string message) { Messages.Enqueue(message); Console.WriteLine(message); } }
  internal sealed class WeaponPaints {
@@ -27,6 +27,8 @@ namespace WeaponPaints {
   internal static readonly ConcurrentDictionary<int,Dictionary<int,uint[]>> GPlayersPatches=new();
   internal static readonly ConcurrentDictionary<int,DateTime> GPlayersPatchExpiry=new();
   internal void ArmAgentPatchExpiry(int slot) { }
+  internal static readonly ConcurrentDictionary<int,(int Kit,int Tint)> PlayerGraffiti=new();
+  internal bool IsValidGraffiti(int kit,int tint)=>kit==1671&&tint==0;
   internal static readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,ConcurrentDictionary<int,WeaponInfo>>> GPlayerWeaponsInfo=new();
   internal static readonly List<JObject> AgentsList=[JObject.Parse("{team:3,model:'ct'}"),JObject.Parse("{team:2,model:'t'}")];
  }
