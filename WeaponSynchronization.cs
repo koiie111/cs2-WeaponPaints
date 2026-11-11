@@ -58,12 +58,10 @@ internal class WeaponSynchronization
 				await GetMusicFromDatabase(player, connection, snapshot);
 			if (_config.Additional.SkinEnabled)
 				await GetWeaponPaintsFromDatabase(player, connection, snapshot);
-			if (_config.Additional.PinsEnabled)
-				await GetPinsFromDatabase(player, connection, snapshot);
-            if (_config.Additional.GraffitiEnabled) {
-                var graffiti = await connection.QuerySingleOrDefaultAsync<(int Kit, int Tint)>("SELECT graffiti_id,tint_id FROM wp_player_graffiti WHERE steamid=@id",new {id=player.SteamId});
-                if (WeaponPaints.Instance.IsValidGraffiti(graffiti.Kit, graffiti.Tint)) snapshot.Graffiti[player.Slot]=graffiti;
-            }
+            if (_config.Additional.GraffitiEnabled)
+                await GetPinsAndGraffitiFromDatabase(player, connection, snapshot);
+            else if (_config.Additional.PinsEnabled)
+                await GetPinsFromDatabase(player, connection, snapshot);
             var published = false;
             await CounterStrikeSharp.API.Server.NextWorldUpdateAsync(() =>
             {
@@ -86,6 +84,30 @@ internal class WeaponSynchronization
                     WeaponPaints.PlayerDataLoading.TryRemove(player.Slot, out _);
             });
             return false;
+        }
+    }
+
+    private async Task GetPinsAndGraffitiFromDatabase(PlayerInfo player, MySqlConnection connection, PlayerDataSnapshot snapshot)
+    {
+        // Keep the graffiti read in the existing pin round trip when pins are enabled.
+        // Both result sets use the same ordered operation, connection and snapshot.
+        const string pins = "SELECT id,weapon_team FROM wp_player_pins WHERE steamid=@steamid ORDER BY weapon_team ASC;";
+        const string graffiti = "SELECT graffiti_id,tint_id FROM wp_player_graffiti WHERE steamid=@steamid";
+        using var rows = await connection.QueryMultipleAsync((_config.Additional.PinsEnabled ? pins : "") + graffiti, new { steamid = player.SteamId });
+        if (_config.Additional.PinsEnabled) ApplyPinRows(player, snapshot, await rows.ReadAsync<dynamic>());
+        var choice = await rows.ReadSingleOrDefaultAsync<(int Kit, int Tint)>();
+        if (WeaponPaints.Instance.IsValidGraffiti(choice.Kit, choice.Tint)) snapshot.Graffiti[player.Slot] = choice;
+    }
+
+    private static void ApplyPinRows(PlayerInfo player, PlayerDataSnapshot snapshot, IEnumerable<dynamic> rows)
+    {
+        foreach (var row in rows)
+        {
+            if (row.id == null) continue;
+            var team = (int)row.weapon_team;
+            var pins = snapshot.GPlayersPin.GetOrAdd(player.Slot, _ => new ConcurrentDictionary<CsTeam, ushort>());
+            if (team is not (2 or 3)) { pins[CsTeam.Terrorist] = (ushort)row.id; pins[CsTeam.CounterTerrorist] = (ushort)row.id; }
+            else pins[(CsTeam)team] = (ushort)row.id;
         }
     }
 
@@ -418,34 +440,7 @@ internal class WeaponSynchronization
 			const string query = "SELECT `id`, `weapon_team` FROM `wp_player_pins` WHERE `steamid` = @steamid ORDER BY `weapon_team` ASC";
 			var rows = await connection.QueryAsync<dynamic>(query, new { steamid = player.SteamId }); // Retrieve all records for the player
 
-			foreach (var row in rows)
-			{
-				// Check if id is null
-				if (row.id == null) continue;
-
-				// Determine the weapon team based on the query result
-				CsTeam weaponTeam = (int)row.weapon_team switch
-				{
-					2 => CsTeam.Terrorist,
-					3 => CsTeam.CounterTerrorist,
-					_ => CsTeam.None,
-				};
-
-				// Get or create entries for the player’s slot
-				var playerPins = snapshot.GPlayersPin.GetOrAdd(player.Slot, _ => new ConcurrentDictionary<CsTeam, ushort>());
-
-				if (weaponTeam == CsTeam.None)
-				{
-					// Assign pin ID to both teams if weaponTeam is None
-					playerPins[CsTeam.Terrorist] = (ushort)row.id;
-					playerPins[CsTeam.CounterTerrorist] = (ushort)row.id;
-				}
-				else
-				{
-					// Assign pin ID to the specific team
-					playerPins[weaponTeam] = (ushort)row.id;
-				}
-			}
+            ApplyPinRows(player, snapshot, rows);
 		}
 		catch (Exception ex)
 		{
