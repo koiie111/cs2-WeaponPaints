@@ -76,7 +76,7 @@ public partial class WeaponPaints
     private HookResult OnAgentPatchRoundStart(EventRoundStart e, GameEventInfo info)
     {
         // With pets enabled, their existing batch supplies the same entitlement.
-        if (!Config.Additional.AgentEnabled || Config.Additional.PetsEnabled || Database == null) return HookResult.Continue;
+        if ((!Config.Additional.AgentEnabled && !Config.Additional.GraffitiEnabled) || Config.Additional.PetsEnabled || Database == null) return HookResult.Continue;
         var players = Utilities.GetPlayers().Where(player => player.IsValid && !player.IsBot && !player.IsHLTV)
             .Select(player => (player.Slot, Id: player.SteamID.ToString(), Handle: player.EntityHandle.Raw, Version: _patchLoadVersions.Next(player.Slot))).ToArray();
         if (players.Length == 0) return HookResult.Continue;
@@ -100,6 +100,7 @@ public partial class WeaponPaints
                         if (!_patchLoadVersions.IsCurrent(expected.Slot, expected.Version) || player is not { IsValid: true }
                             || player.SteamID.ToString() != expected.Id || player.EntityHandle.Raw != expected.Handle) continue;
                         UpdateAgentPatchEntitlement(player, loaded.GetValueOrDefault(expected.Id, DateTime.MinValue));
+                        UpdateGraffitiEntitlement(player, loaded.GetValueOrDefault(expected.Id, DateTime.MinValue));
                     }
                 });
             }

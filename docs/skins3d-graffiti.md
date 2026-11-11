@@ -1,6 +1,6 @@
 # Graffiti integration (Draft)
 
-ModuleVersion 3.3a-db7-skins3d.7, CounterStrikeSharp API >=376. The new
+ModuleVersion 3.3a-db7-skins3d.8, CounterStrikeSharp API >=376. The new
 `Additional.GraffitiEnabled` flag defaults to false. Install the website SQL
 `20261111_0001_skins3d_graffiti.sql` in the same cosmetics database, deploy the
 matching plugin package including `data/graffiti.json`, then enable the flag.
@@ -55,3 +55,29 @@ identify the measured artifact. Owner-only agent/patch/pet/!wp follows. GitHub A
 disabled for this repository (workflow dispatch HTTP422); local checks are not
 reported as a CI pass. Old .4 profiles remain scoped to their own build.
 Both PRs remain Draft. No fleet rollout or production schema changes performed.
+
+
+## 4ill+ access (.8)
+
+Plugin sprays and optional native spray overrides require an active4ill+
+subscription. The existing joined pin/graffiti query also returns the Plus expiry
+from plus_active, converted MSK->UTC; no extra SQL command is added. Every use
+checks UTC expiry, so an expired cache cannot spray. Round subscription refresh
+reuses the pet batch, or the existing patch batch when pets are off (including
+agent-off/graffiti-on). Disconnect/config disable/unload clear the expiry cache.
+Stored graffiti choices survive expiry/renewal. Ordinary Steam-owned graffiti is
+not intercepted when the plugin override is unavailable.
+
+Website read returns graffitiEnabled, nonzero writes require the current
+subscription on the server, and clearing an inactive selection remains allowed.
+The editor has a compact direct-console example: `bind "h" "css_spray"`.
+No bind is sent to a client automatically. CounterStrikeSharp console commands:
+https://docs.cssharp.dev/docs/features/console-commands.html
+
+.8 Release warnings-as-errors and all eight regression suites pass;131
+linked-source MySQL assertions include missing/expired/renewed/removed Plus,
+UTC conversion, the actual per-use expiry gate and flag-off old schema support.
+Website:18 real MySQL checks plus subscriber/expired browser Apply/retained-draft
+and copy-button checks. Previous .7 profiles remain evidence for .7, not .8.
+.8 has not been deployed or natively profiled. Server6 is restored with all288
+runtime hashes unchanged after the owner session.

@@ -16,7 +16,7 @@ namespace WeaponPaints {
  internal sealed class Additional { public bool KnifeEnabled=true,GloveEnabled=true,AgentEnabled=true,MusicEnabled=true,SkinEnabled=true,PinsEnabled=true; public bool GraffitiEnabled; }
  internal sealed class WeaponPaintsConfig { public Additional Additional=new(); }
  internal static class Utility { internal static readonly ConcurrentQueue<string> Messages=new(); internal static void Log(string message) { Messages.Enqueue(message); Console.WriteLine(message); } }
- internal sealed class WeaponPaints {
+ public sealed partial class WeaponPaints {
   internal static readonly WeaponPaints Instance=new(); public ILogger Logger=>NullLogger.Instance;
   internal static long DataGeneration=1;
   internal static WeaponSynchronization? WeaponSync;

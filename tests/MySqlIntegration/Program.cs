@@ -133,6 +133,16 @@ try{
  await sql.ExecuteAsync("CREATE TABLE wp_player_graffiti (steamid VARCHAR(64) PRIMARY KEY,graffiti_id INT,tint_id INT); INSERT INTO wp_player_graffiti VALUES (@id,1671,0)",new{id});
  Check(await Load(),"graffiti selection loads with the regular identity-guarded snapshot");
  Check(WP.PlayerGraffiti.TryGetValue(player.Slot,out var graffiti)&&graffiti==(1671,0),"native graffiti kit and tint round trip");
+ Check(!WP.HasGraffitiSubscription(player.Slot),"saved graffiti gives no permission without active 4ill+");
+ await sql.ExecuteAsync("INSERT INTO plus_active VALUES (@id,'2030-01-01 03:00:00')",new{id});
+ Check(await Load()&&WP.HasGraffitiSubscription(player.Slot)&&WP.PlayerGraffitiExpiry[player.Slot]==new DateTime(2030,1,1,0,0,0,DateTimeKind.Utc),"graffiti permission shares joined read and converts MSK expiry to UTC");
+ WP.PlayerGraffitiExpiry[player.Slot]=DateTime.UtcNow.AddSeconds(-1);
+ Check(!WP.HasGraffitiSubscription(player.Slot),"expiry denies the actual spray gate immediately without another SQL load");
+ Check(await Load()&&WP.HasGraffitiSubscription(player.Slot),"renewed entitlement reload enables saved graffiti");
+ await sql.ExecuteAsync("UPDATE plus_active SET expires_at='2000-01-01' WHERE steam_id=@id",new{id});
+ Check(await Load()&&!WP.HasGraffitiSubscription(player.Slot)&&WP.PlayerGraffiti[player.Slot]==(1671,0),"expired subscription retains saved selection but cannot spray");
+ await sql.ExecuteAsync("DELETE FROM plus_active WHERE steam_id=@id",new{id});
+ Check(await Load()&&!WP.PlayerGraffitiExpiry.ContainsKey(player.Slot),"removed subscription clears cached graffiti permission");
  await sql.ExecuteAsync("INSERT INTO wp_player_pins VALUES (@id,0,8),(@id,3,9)",new{id});
  Check(await Load()&&WP.GPlayersPin[player.Slot][t]==8&&WP.GPlayersPin[player.Slot][ct]==9&&WP.PlayerGraffiti[player.Slot]==(1671,0),"batched pin fallback and team override preserve graffiti result");
  var reachedGraffiti=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);var releaseGraffiti=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -150,7 +160,7 @@ try{
  await sql.ExecuteAsync("DELETE FROM wp_player_graffiti WHERE steamid=@id",new{id});
  Check(await Load()&&!WP.PlayerGraffiti.ContainsKey(player.Slot)&&WP.GPlayersPin[player.Slot][ct]==9,"empty graffiti result retains selected pin");
  config.Additional.GraffitiEnabled=false;
- await sql.ExecuteAsync("DROP TABLE wp_player_graffiti");
+ await sql.ExecuteAsync("DROP TABLE wp_player_graffiti;DROP TABLE plus_active");
  Check(await Load()&&WP.GPlayersPin[player.Slot][ct]==9,"disabled graffiti supports the old schema without its table");
  Console.WriteLine($"PASS: {passed} MySQL assertions; engine dispatch adapter; linked production SQL source");
 }finally{Server.BeforeDispatch=null;MySqlConnection.ClearAllPools();await admin.ExecuteAsync($"DROP DATABASE `{schema}`");Console.WriteLine("CLEANUP: isolated schema removed");}

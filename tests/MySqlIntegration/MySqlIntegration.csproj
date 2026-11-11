@@ -13,6 +13,7 @@
     <Compile Include="../../WeaponInfo.cs" Link="WeaponInfo.cs" />
     <Compile Include="../../AgentModel.cs" Link="AgentModel.cs" />
     <Compile Include="../../PlayerDataSnapshot.cs" Link="PlayerDataSnapshot.cs" />
+    <Compile Include="../../GraffitiEntitlement.cs" Link="GraffitiEntitlement.cs" />
     <Compile Include="../../OrderedOperations.cs" Link="OrderedOperations.cs" />
     <PackageReference Include="Dapper" Version="2.1.72" />
     <PackageReference Include="MySqlConnector" Version="2.6.1" />

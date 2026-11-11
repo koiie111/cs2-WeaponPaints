@@ -12,6 +12,8 @@ namespace WeaponPaints;
 public partial class WeaponPaints
 {
     internal static readonly ConcurrentDictionary<int, (int Kit, int Tint)> PlayerGraffiti = new();
+    private void UpdateGraffitiEntitlement(CCSPlayerController player, DateTime expiry)
+    { if (Config.Additional.GraffitiEnabled) PlayerGraffitiExpiry[player.Slot] = expiry; }
     private readonly Dictionary<ulong, CHandle<CPlayerSprayDecal>> _graffitiEntities = new();
     private readonly Dictionary<ulong, long> _graffitiCooldown = new();
     private readonly HashSet<(int Kit, int Tint)> _graffitiCatalog = new();
@@ -41,7 +43,7 @@ public partial class WeaponPaints
             {
                 if (generation != DataGeneration || handle.Value is not { IsValid: true } decal || decal.AccountID == 0) return;
                 var player = Utilities.GetPlayers().FirstOrDefault(p => p.IsValid && !p.IsBot && (uint)p.SteamID == decal.AccountID);
-                if (player == null || !PlayerGraffiti.TryGetValue(player.Slot, out var selected) || !IsValidGraffiti(selected.Kit, selected.Tint)) return;
+                if (player == null || !HasGraffitiSubscription(player.Slot) || !PlayerGraffiti.TryGetValue(player.Slot, out var selected) || !IsValidGraffiti(selected.Kit, selected.Tint)) return;
                 if (decal.Player == selected.Kit && decal.TintID == selected.Tint) return;
                 decal.Player = selected.Kit; decal.TintID = selected.Tint;
                 Utilities.SetStateChanged(decal, "CPlayerSprayDecal", "m_nPlayer");
@@ -57,6 +59,8 @@ public partial class WeaponPaints
     {
         if (!Config.Additional.GraffitiEnabled || player is not { IsValid: true, IsBot: false, PawnIsAlive: true }
             || player.PlayerPawn.Value is not { IsValid: true } pawn || pawn.AbsOrigin is not { } origin) return;
+        if (!HasGraffitiSubscription(player.Slot))
+        { command.ReplyToCommand("[WeaponPaints] Граффити доступны с подпиской 4ill+."); return; }
         if (!PlayerGraffiti.TryGetValue(player.Slot, out var choice) || !IsValidGraffiti(choice.Kit, choice.Tint))
         { command.ReplyToCommand("[WeaponPaints] Выберите граффити на сайте и выполните !wp."); return; }
         var now = Environment.TickCount64;
@@ -93,13 +97,13 @@ public partial class WeaponPaints
 
     private void ForgetGraffiti(int slot, ulong steamId)
     {
-        PlayerGraffiti.TryRemove(slot, out _); _graffitiCooldown.Remove(steamId);
+        PlayerGraffiti.TryRemove(slot, out _); PlayerGraffitiExpiry.TryRemove(slot, out _); _graffitiCooldown.Remove(steamId);
         if (_graffitiEntities.Remove(steamId, out var handle) && handle.Value is { IsValid: true } decal) decal.Remove();
     }
     private void ClearGraffiti(bool removeEntities)
     {
         if (removeEntities) foreach (var handle in _graffitiEntities.Values) if (handle.Value is { IsValid: true } decal) decal.Remove();
         _graffitiEntities.Clear(); _graffitiCooldown.Clear();
-        if (removeEntities) PlayerGraffiti.Clear();
+        if (removeEntities) { PlayerGraffiti.Clear(); PlayerGraffitiExpiry.Clear(); }
     }
 }

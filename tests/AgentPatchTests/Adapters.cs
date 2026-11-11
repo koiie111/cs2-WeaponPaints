@@ -32,7 +32,7 @@ namespace CounterStrikeSharp.API {
  public static class Server { public static void NextFrame(Action callback)=>callback(); }
 }
 namespace WeaponPaints {
- public sealed class Additional { public bool AgentEnabled=true, PetsEnabled=true; }
+ public sealed class Additional { public bool AgentEnabled=true, PetsEnabled=true, GraffitiEnabled; }
  public sealed class Configuration { public Additional Additional=new(); }
  public sealed class Database { public Task<MySqlConnection> GetConnectionAsync()=>throw new NotSupportedException(); }
  public partial class WeaponPaints {
@@ -44,6 +44,7 @@ namespace WeaponPaints {
    var timer=new CounterStrikeSharp.API.Modules.Timers.Timer(seconds,callback);Timers.Add(timer);return timer;
   }
   private static void GivePlayerAgent(CCSPlayerController player) { }
+  private void UpdateGraffitiEntitlement(CCSPlayerController player,DateTime expiry) { }
   public void MapEnd(){DataGeneration++;ClearAllAgentPatchTimers();}
  }
 }
