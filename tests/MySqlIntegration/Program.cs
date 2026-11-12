@@ -83,6 +83,14 @@ try{
  await sql.ExecuteAsync("ALTER TABLE wp_player_skins ADD COLUMN weapon_keychain_sticker INT UNSIGNED NOT NULL DEFAULT 0,ADD COLUMN weapon_composition_version TINYINT UNSIGNED NOT NULL DEFAULT 0");
  await sql.ExecuteAsync("INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_paint_id,weapon_nametag,weapon_sticker_0,weapon_keychain,weapon_keychain_sticker,weapon_composition_version,weapon_stattrak_count) VALUES (@id,0,4,44,'fallback name','4550;0;0;0;0;1;0','37;0.1;0.2;0.3;1',4551,1,321)",new{id});
  Check(await Load(),"load decorated team-zero fallback before toggle");
+ await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak=1 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
+ Check(await Load(),"load active legacy fallback before remote disable");
+ await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak=0 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
+ await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
+ var counterClone=await sql.QuerySingleAsync<dynamic>("SELECT * FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id});
+ Check(!(bool)counterClone.weapon_stattrak&&(string)counterClone.weapon_nametag=="fallback name"&&(string)counterClone.weapon_sticker_0=="4550;0;0;0;0;1;0"&&(uint)counterClone.weapon_keychain_sticker==4551,"background creation retains authoritative fallback preference and complete appearance");
+ await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_team IN (2,3) AND weapon_defindex=4",new{id});
+ Check(await Load(),"reload fallback after isolated counter case");
  await sync.SyncStatTrakChoiceToDatabase(player,t,4,true);
  var cloned=await sql.QuerySingleAsync<dynamic>("SELECT * FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id});
  Check((bool)cloned.weapon_stattrak&&(int)cloned.weapon_stattrak_count==321&&(string)cloned.weapon_nametag=="fallback name"&&(string)cloned.weapon_sticker_0=="4550;0;0;0;0;1;0"&&(string)cloned.weapon_keychain=="37;0.1;0.2;0.3;1"&&(uint)cloned.weapon_keychain_sticker==4551&&(int)cloned.weapon_composition_version==1,"explicit team toggle copies full fallback appearance including slab/version");

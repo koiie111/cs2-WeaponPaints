@@ -665,14 +665,19 @@ internal class WeaponSynchronization
 			if (rows.Count == 0) return;
 
 			var (query, parameters) = BuildPlayerSkinUpsert(steamId, rows, kind);
-            var legacyChoiceQuery = kind == PlayerSkinWrite.StatTrakChoice ? BuildStatTrakChoiceQuery(false) : null;
+            var legacyQuery = kind switch
+            {
+                PlayerSkinWrite.StatTrakChoice => BuildStatTrakChoiceQuery(false),
+                PlayerSkinWrite.Counter => BuildStatTrakCounterQuery(rows.Count, false),
+                _ => null
+            };
 			var lockName = $"wp_player_skins:{steamId}";
 
 			for (var attempt = 1; attempt <= PlayerSkinWriteAttempts; attempt++)
 			{
 				try
 				{
-					await ExecutePlayerSkinUpsertAsync(query, parameters, lockName, legacyChoiceQuery);
+					await ExecutePlayerSkinUpsertAsync(query, parameters, lockName, legacyQuery);
 					return;
 				}
 				catch (Exception e) when (attempt < PlayerSkinWriteAttempts && IsRetryablePlayerSkinWrite(e))
@@ -693,7 +698,7 @@ internal class WeaponSynchronization
 		string query,
 		DynamicParameters parameters,
 		string lockName,
-        string? legacyChoiceQuery = null)
+        string? legacyQuery = null)
 	{
 		await using var connection = await _database.GetConnectionAsync();
 		var lockAcquired = false;
@@ -710,10 +715,10 @@ internal class WeaponSynchronization
 			lockAcquired = true;
 			// A single statement is atomic, so an explicit transaction would only extend lock lifetime.
             try { await connection.ExecuteAsync(query, parameters); }
-            catch (MySqlException error) when (error.Number == 1054 && legacyChoiceQuery != null)
+            catch (MySqlException error) when (error.Number == 1054 && legacyQuery != null)
             {
                 // Composition columns are additive; toggles also work before migration.
-                await connection.ExecuteAsync(legacyChoiceQuery, parameters);
+                await connection.ExecuteAsync(legacyQuery, parameters);
             }
 		}
 		finally
@@ -769,16 +774,56 @@ internal class WeaponSynchronization
             _ => "`weapon_paint_id`=VALUES(`weapon_paint_id`),`weapon_wear`=VALUES(`weapon_wear`),`weapon_seed`=VALUES(`weapon_seed`)"
         });
 
-		return (kind == PlayerSkinWrite.StatTrakChoice ? BuildStatTrakChoiceQuery(true) : query.ToString(), parameters);
+		return (kind switch
+        {
+            PlayerSkinWrite.StatTrakChoice => BuildStatTrakChoiceQuery(true),
+            PlayerSkinWrite.Counter => BuildStatTrakCounterQuery(rows.Count, true),
+            _ => query.ToString()
+        }, parameters);
 	}
+
+    private static string[] SkinCosmetics(bool compositionColumns)
+    {
+        string[] columns = ["weapon_paint_id", "weapon_wear", "weapon_seed", "weapon_nametag",
+            "weapon_sticker_0", "weapon_sticker_1", "weapon_sticker_2", "weapon_sticker_3", "weapon_sticker_4", "weapon_keychain"];
+        return compositionColumns ? [.. columns, "weapon_keychain_sticker", "weapon_composition_version"] : columns;
+    }
+
+    private static string BuildStatTrakCounterQuery(int count, bool compositionColumns)
+    {
+        // A disconnected snapshot is not authoritative even when its explicit
+        // team row does not exist yet. Clone today's DB choice (exact team, then
+        // team 0); preserve all appearance fields instead of shadowing the fallback.
+        var cosmetics = SkinCosmetics(compositionColumns);
+        var selects = Enumerable.Range(0, count).Select(index =>
+        {
+            string Value(string column) => column switch
+            {
+                "weapon_paint_id" => $"COALESCE(source.{column},@paint{index})",
+                "weapon_wear" => $"COALESCE(source.{column},@wear{index})",
+                "weapon_seed" => $"COALESCE(source.{column},@seed{index})",
+                "weapon_nametag" => "source.weapon_nametag",
+                "weapon_keychain" => "COALESCE(source.weapon_keychain,'0;0;0;0;0')",
+                _ when column.StartsWith("weapon_sticker_", StringComparison.Ordinal) => $"COALESCE(source.{column},'0;0;0;0;0;0;0')",
+                _ => $"COALESCE(source.{column},0)"
+            };
+            return $"SELECT @steamid,@team{index},@defindex{index},COALESCE(source.weapon_stattrak,0),"
+                + $"GREATEST(COALESCE(source.weapon_stattrak_count,0),@stattrakCount{index}),"
+                + string.Join(',', cosmetics.Select(Value))
+                + " FROM (SELECT 1) anchor LEFT JOIN (SELECT * FROM wp_player_skins"
+                + $" WHERE steamid=@steamid AND weapon_defindex=@defindex{index} AND weapon_team IN (0,@team{index})"
+                + " ORDER BY weapon_team DESC LIMIT 1) source ON 1=1";
+        });
+        return "INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_stattrak,weapon_stattrak_count,"
+            + string.Join(',', cosmetics) + ") " + string.Join(" UNION ALL ", selects)
+            + " ON DUPLICATE KEY UPDATE weapon_stattrak_count=GREATEST(wp_player_skins.weapon_stattrak_count,VALUES(weapon_stattrak_count))";
+    }
 
     private static string BuildStatTrakChoiceQuery(bool compositionColumns)
     {
         // When only a team-0 fallback exists, copy its complete persisted appearance
         // into the new team row. A partial INSERT would erase its name/decorations.
-        var cosmetics = new[] { "weapon_paint_id", "weapon_wear", "weapon_seed", "weapon_nametag",
-            "weapon_sticker_0", "weapon_sticker_1", "weapon_sticker_2", "weapon_sticker_3", "weapon_sticker_4", "weapon_keychain" };
-        if (compositionColumns) cosmetics = [.. cosmetics, "weapon_keychain_sticker", "weapon_composition_version"];
+        var cosmetics = SkinCosmetics(compositionColumns);
         return "INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_stattrak,weapon_stattrak_count,"
             + string.Join(',', cosmetics) + ") SELECT @steamid,@team0,@defindex0,@stattrak0,"
             + "GREATEST(source.weapon_stattrak_count,@stattrakCount0)," + string.Join(',', cosmetics.Select(column => "source." + column))
