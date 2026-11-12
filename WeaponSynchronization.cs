@@ -29,6 +29,8 @@ internal class WeaponSynchronization
 		bool StatTrak,
 		int StatTrakCount);
 
+    private enum PlayerSkinWrite { Paint, Counter, StatTrakChoice }
+
 	private sealed class PlayerSkinLockTimeoutException(string lockName)
 		: TimeoutException($"Timed out waiting for MySQL lock '{lockName}'.");
 
@@ -612,6 +614,18 @@ internal class WeaponSynchronization
 		}
 	}
 
+    // Only an explicit player action may change the preference. Disconnect and
+    // delayed counter snapshots must not overwrite a newer website/server choice.
+    internal Task SyncStatTrakChoiceToDatabase(PlayerInfo player, CsTeam team, int definition, bool enabled)
+    {
+        if (string.IsNullOrEmpty(player.SteamId) || team is not (CsTeam.Terrorist or CsTeam.CounterTerrorist)
+            || !WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teams)
+            || !teams.TryGetValue(team, out var weapons) || !weapons.TryGetValue(definition, out var weapon))
+            return Task.CompletedTask;
+        var row = new PlayerSkinRow((int)team, definition, weapon.Paint, weapon.Wear, weapon.Seed, enabled, weapon.StatTrakCount);
+        return WritePlayerSkinRowsAsync(player.SteamId, [row], PlayerSkinWrite.StatTrakChoice);
+    }
+
 	private async Task SyncPlayerSkinRowsAsync(
 		PlayerInfo player,
 		bool updateStatTrakOnly,
@@ -638,27 +652,33 @@ internal class WeaponSynchronization
 				.ThenBy(row => row.DefIndex)
 				.ToArray();
 
-        using var operation = await Operations.EnterAsync(player.SteamId);
-        var playerLock = GetPlayerSkinWriteLock(player.SteamId);
+        await WritePlayerSkinRowsAsync(player.SteamId, rows, updateStatTrakOnly ? PlayerSkinWrite.Counter : PlayerSkinWrite.Paint);
+    }
+
+    private async Task WritePlayerSkinRowsAsync(string steamId, IReadOnlyList<PlayerSkinRow> rows, PlayerSkinWrite kind)
+    {
+        using var operation = await Operations.EnterAsync(steamId);
+        var playerLock = GetPlayerSkinWriteLock(steamId);
         await playerLock.WaitAsync();
         try
         {
-			if (rows.Length == 0) return;
+			if (rows.Count == 0) return;
 
-			var (query, parameters) = BuildPlayerSkinUpsert(player.SteamId, rows, updateStatTrakOnly);
-			var lockName = $"wp_player_skins:{player.SteamId}";
+			var (query, parameters) = BuildPlayerSkinUpsert(steamId, rows, kind);
+            var legacyChoiceQuery = kind == PlayerSkinWrite.StatTrakChoice ? BuildStatTrakChoiceQuery(false) : null;
+			var lockName = $"wp_player_skins:{steamId}";
 
 			for (var attempt = 1; attempt <= PlayerSkinWriteAttempts; attempt++)
 			{
 				try
 				{
-					await ExecutePlayerSkinUpsertAsync(query, parameters, lockName);
+					await ExecutePlayerSkinUpsertAsync(query, parameters, lockName, legacyChoiceQuery);
 					return;
 				}
 				catch (Exception e) when (attempt < PlayerSkinWriteAttempts && IsRetryablePlayerSkinWrite(e))
 				{
 					var backoffMs = Random.Shared.Next(25, 101) * attempt;
-					Utility.Log($"Retrying player skin batch for {player.SteamId} after attempt {attempt}: {e.Message}");
+					Utility.Log($"Retrying player skin batch for {steamId} after attempt {attempt}: {e.Message}");
 					await Task.Delay(backoffMs);
 				}
 			}
@@ -672,7 +692,8 @@ internal class WeaponSynchronization
 	private async Task ExecutePlayerSkinUpsertAsync(
 		string query,
 		DynamicParameters parameters,
-		string lockName)
+		string lockName,
+        string? legacyChoiceQuery = null)
 	{
 		await using var connection = await _database.GetConnectionAsync();
 		var lockAcquired = false;
@@ -688,7 +709,12 @@ internal class WeaponSynchronization
 
 			lockAcquired = true;
 			// A single statement is atomic, so an explicit transaction would only extend lock lifetime.
-			await connection.ExecuteAsync(query, parameters);
+            try { await connection.ExecuteAsync(query, parameters); }
+            catch (MySqlException error) when (error.Number == 1054 && legacyChoiceQuery != null)
+            {
+                // Composition columns are additive; toggles also work before migration.
+                await connection.ExecuteAsync(legacyChoiceQuery, parameters);
+            }
 		}
 		finally
 		{
@@ -711,7 +737,7 @@ internal class WeaponSynchronization
 	private static (string Query, DynamicParameters Parameters) BuildPlayerSkinUpsert(
 		string steamId,
 		IReadOnlyList<PlayerSkinRow> rows,
-		bool updateStatTrakOnly)
+		PlayerSkinWrite kind)
 	{
 		var query = new StringBuilder();
 		query.Append("INSERT INTO `wp_player_skins` ");
@@ -736,12 +762,31 @@ internal class WeaponSynchronization
 		}
 
 		query.Append(" ON DUPLICATE KEY UPDATE ");
-		query.Append(updateStatTrakOnly
-			? "`weapon_stattrak`=VALUES(`weapon_stattrak`),`weapon_stattrak_count`=GREATEST(`weapon_stattrak_count`,VALUES(`weapon_stattrak_count`))"
-			: "`weapon_paint_id`=VALUES(`weapon_paint_id`),`weapon_wear`=VALUES(`weapon_wear`),`weapon_seed`=VALUES(`weapon_seed`)");
+		query.Append(kind switch
+        {
+            PlayerSkinWrite.Counter => "`weapon_stattrak_count`=GREATEST(`weapon_stattrak_count`,VALUES(`weapon_stattrak_count`))",
+            PlayerSkinWrite.StatTrakChoice => "`weapon_stattrak`=VALUES(`weapon_stattrak`),`weapon_stattrak_count`=GREATEST(`weapon_stattrak_count`,VALUES(`weapon_stattrak_count`))",
+            _ => "`weapon_paint_id`=VALUES(`weapon_paint_id`),`weapon_wear`=VALUES(`weapon_wear`),`weapon_seed`=VALUES(`weapon_seed`)"
+        });
 
-		return (query.ToString(), parameters);
+		return (kind == PlayerSkinWrite.StatTrakChoice ? BuildStatTrakChoiceQuery(true) : query.ToString(), parameters);
 	}
+
+    private static string BuildStatTrakChoiceQuery(bool compositionColumns)
+    {
+        // When only a team-0 fallback exists, copy its complete persisted appearance
+        // into the new team row. A partial INSERT would erase its name/decorations.
+        var cosmetics = new[] { "weapon_paint_id", "weapon_wear", "weapon_seed", "weapon_nametag",
+            "weapon_sticker_0", "weapon_sticker_1", "weapon_sticker_2", "weapon_sticker_3", "weapon_sticker_4", "weapon_keychain" };
+        if (compositionColumns) cosmetics = [.. cosmetics, "weapon_keychain_sticker", "weapon_composition_version"];
+        return "INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_stattrak,weapon_stattrak_count,"
+            + string.Join(',', cosmetics) + ") SELECT @steamid,@team0,@defindex0,@stattrak0,"
+            + "GREATEST(source.weapon_stattrak_count,@stattrakCount0)," + string.Join(',', cosmetics.Select(column => "source." + column))
+            + " FROM wp_player_skins source WHERE source.steamid=@steamid AND source.weapon_defindex=@defindex0"
+            + " AND source.weapon_team IN (0,@team0) ORDER BY source.weapon_team DESC LIMIT 1"
+            + " ON DUPLICATE KEY UPDATE weapon_stattrak=@stattrak0,"
+            + "weapon_stattrak_count=GREATEST(wp_player_skins.weapon_stattrak_count,@stattrakCount0)";
+    }
 
 	private static SemaphoreSlim GetPlayerSkinWriteLock(string steamId)
 	{

@@ -63,10 +63,35 @@ try{
  skins[t][7].StatTrakCount=200;
  await sync.SyncStatTrakToDatabase(player,skins);
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==207,"late lower counter snapshot cannot reset saved kills");
+ Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id}),"late true counter snapshot cannot re-enable website-disabled StatTrak");
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak_count=400,weapon_stattrak=1 WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
  Check(await Load()&&WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount==400&&WP.GPlayerWeaponsInfo[1][t][7].StatTrak,"larger persisted count and re-enabled StatTrak survive refresh");
- skins=WP.GPlayerWeaponsInfo[1];
  var operations=(OrderedOperations)typeof(WeaponSynchronization).GetField("Operations",BindingFlags.NonPublic|BindingFlags.Static)!.GetValue(null)!;
+ await sync.SyncStatTrakChoiceToDatabase(player,t,7,false);
+ Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id}),"explicit command disable persists immediately");
+ skins[t][7].StatTrak=true;skins[t][7].StatTrakCount=900;
+ await sync.SyncStatTrakToDatabase(player,skins);
+ Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})&&await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==900,"stale disconnect can increase count without undoing explicit disable");
+ await sync.SyncStatTrakChoiceToDatabase(player,t,7,true);
+ skins[t][7].StatTrak=false;await sync.SyncStatTrakToDatabase(player,skins);
+ Check(await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id}),"stale false counter snapshot cannot undo explicit enable");
+ using(var hold=await operations.EnterAsync(id)){
+  var off=sync.SyncStatTrakChoiceToDatabase(player,t,7,false);var on=sync.SyncStatTrakChoiceToDatabase(player,t,7,true);var reload=Load();
+  hold.Dispose();await off;await on;Check(await reload&&WP.GPlayerWeaponsInfo[1][t][7].StatTrak,"rapid explicit toggles and immediate refresh keep FIFO order");
+ }
+ Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==900,"explicit toggle cannot decrease a larger persisted kill count");
+ await sql.ExecuteAsync("ALTER TABLE wp_player_skins ADD COLUMN weapon_keychain_sticker INT UNSIGNED NOT NULL DEFAULT 0,ADD COLUMN weapon_composition_version TINYINT UNSIGNED NOT NULL DEFAULT 0");
+ await sql.ExecuteAsync("INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_paint_id,weapon_nametag,weapon_sticker_0,weapon_keychain,weapon_keychain_sticker,weapon_composition_version,weapon_stattrak_count) VALUES (@id,0,4,44,'fallback name','4550;0;0;0;0;1;0','37;0.1;0.2;0.3;1',4551,1,321)",new{id});
+ Check(await Load(),"load decorated team-zero fallback before toggle");
+ await sync.SyncStatTrakChoiceToDatabase(player,t,4,true);
+ var cloned=await sql.QuerySingleAsync<dynamic>("SELECT * FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id});
+ Check((bool)cloned.weapon_stattrak&&(int)cloned.weapon_stattrak_count==321&&(string)cloned.weapon_nametag=="fallback name"&&(string)cloned.weapon_sticker_0=="4550;0;0;0;0;1;0"&&(string)cloned.weapon_keychain=="37;0.1;0.2;0.3;1"&&(uint)cloned.weapon_keychain_sticker==4551&&(int)cloned.weapon_composition_version==1,"explicit team toggle copies full fallback appearance including slab/version");
+ Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id})&&!WP.GPlayerWeaponsInfo[1][ct][4].StatTrak,"explicit team toggle leaves opposite team and shared fallback unchanged");
+ await sql.ExecuteAsync("ALTER TABLE wp_player_skins DROP COLUMN weapon_keychain_sticker,DROP COLUMN weapon_composition_version");
+ await sync.SyncStatTrakChoiceToDatabase(player,t,4,false);
+ Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id}),"explicit toggle supports pre-composition schema");
+ await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_defindex=4",new{id});
+ skins=WP.GPlayerWeaponsInfo[1];
  using(var hold=await operations.EnterAsync(id)){skins[t][7].Paint=300;var save=sync.SyncWeaponPaintsToDatabase(player);skins[t][7].Paint=400;hold.Dispose();await save;}
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_paint_id FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==300,"immutable save before wait");
  skins[t][7].Paint=500;var saving=sync.SyncWeaponPaintsToDatabase(player);var reconnecting=Load();await saving;Check(await reconnecting&&WP.GPlayerWeaponsInfo[1][t][7].Paint==500,"real read-after-write");
