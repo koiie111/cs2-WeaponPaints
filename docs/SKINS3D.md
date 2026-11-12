@@ -67,3 +67,24 @@ Native patch appearance, complete material parity and refresh-wear acceptance re
 Do not deploy or claim parity based on these managed tests alone. Use the approved
 isolated empty-server test, baseline/candidate/baseline profiles and restore the
 exact prior instance configuration after acceptance.
+
+## StatTrak persistence in .12
+
+Background and disconnect saves merge the kill count with `GREATEST`; they do
+not change an existing StatTrak preference. When a side-specific row must be
+created, the writer copies the current database row for that side, or its team-0
+fallback, including the complete name, stickers and keychain composition. It
+uses that authoritative preference instead of the disconnected player's old
+flag. With no persisted preference, a new counter row defaults to StatTrak off.
+
+`!stattrak` explicitly saves only the active side's choice and a monotonic count.
+It enters the same per-account FIFO queue and MySQL advisory lock as refresh
+and background saves before returning to the engine. Commands during an
+in-flight player-data load are ignored, so a pending snapshot cannot undo the
+local toggle. Rapid toggles followed immediately by `!wp` retain their order.
+Old schemas without the additive composition columns retain a legacy write
+fallback; no schema migration is run by these changes.
+
+149 real MySQL assertions cover stale true/false snapshots, live counts,
+immediate reload, rapid toggles, team-0 fallback creation and old schemas.
+These managed/SQL checks do not establish game-client or performance acceptance.

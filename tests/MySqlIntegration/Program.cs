@@ -90,6 +90,10 @@ try{
  var counterClone=await sql.QuerySingleAsync<dynamic>("SELECT * FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id});
  Check(!(bool)counterClone.weapon_stattrak&&(string)counterClone.weapon_nametag=="fallback name"&&(string)counterClone.weapon_sticker_0=="4550;0;0;0;0;1;0"&&(uint)counterClone.weapon_keychain_sticker==4551,"background creation retains authoritative fallback preference and complete appearance");
  await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_team IN (2,3) AND weapon_defindex=4",new{id});
+ await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak=1 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
+ await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
+ Check(await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id}),"new background row retains an enabled authoritative fallback");
+ await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_team IN (2,3) AND weapon_defindex=4; UPDATE wp_player_skins SET weapon_stattrak=0 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
  Check(await Load(),"reload fallback after isolated counter case");
  await sync.SyncStatTrakChoiceToDatabase(player,t,4,true);
  var cloned=await sql.QuerySingleAsync<dynamic>("SELECT * FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id});
