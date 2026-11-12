@@ -16,7 +16,7 @@ namespace CounterStrikeSharp.API.Core {
  }
 }
 namespace CounterStrikeSharp.API.Modules.Timers {
- [Flags] public enum TimerFlags { STOP_ON_MAPCHANGE=1 }
+ [Flags] public enum TimerFlags { STOP_ON_MAPCHANGE=2 }
  public sealed class Timer(float seconds,Action callback) {
   public float Seconds=seconds; public bool Killed; public void Kill()=>Killed=true;
   public void ForceQueuedCallback()=>callback();

@@ -29,7 +29,9 @@ public partial class WeaponPaints
 
     internal void ClearAgentPatchTimer(int slot)
     {
-        if (_patchExpiryTimers.Remove(slot, out var timer)) timer.Kill();
+        if (!_patchExpiryTimers.Remove(slot, out var timer)) return;
+        timer.Kill();
+        Timers.Remove(timer);
     }
 
     internal void ArmAgentPatchExpiry(int slot)
@@ -52,15 +54,21 @@ public partial class WeaponPaints
         var steamId = player.SteamID;
         var controllerHandle = player.EntityHandle.Raw;
         var generation = DataGeneration;
-        _patchExpiryTimers[slot] = AddTimer((float)Math.Clamp((expiry - DateTime.UtcNow).TotalSeconds + .05, .001, 86400), () =>
+        PatchTimer? timer = null;
+        timer = AddTimer((float)Math.Clamp((expiry - DateTime.UtcNow).TotalSeconds + .05, .001, 86400), () =>
         {
+            // A cancelled callback may already be queued. It must not detach a
+            // replacement timer, even when the entitlement expiry is unchanged.
+            if (!_patchExpiryTimers.TryGetValue(slot, out var active) || !ReferenceEquals(active, timer)) return;
             _patchExpiryTimers.Remove(slot);
+            Timers.Remove(active);
             var currentPlayer = Utilities.GetPlayerFromSlot(slot);
             if (generation == DataGeneration && currentPlayer is { IsValid: true }
                 && currentPlayer.SteamID == steamId && currentPlayer.EntityHandle.Raw == controllerHandle
                 && GPlayersPatchExpiry.TryGetValue(slot, out var current) && current == expiry)
                 ArmAgentPatchExpiry(slot);
         }, TimerFlags.STOP_ON_MAPCHANGE);
+        _patchExpiryTimers[slot] = timer;
     }
 
     private void UpdateAgentPatchEntitlement(CCSPlayerController player, DateTime expiry)

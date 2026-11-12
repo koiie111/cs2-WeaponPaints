@@ -40,7 +40,7 @@ namespace WeaponPaints
 			GPlayersAgent.TryRemove(player.Slot, out _);
 			GPlayersPatches.TryRemove(player.Slot, out _);
 			GPlayersPatchExpiry.TryRemove(player.Slot, out _);
-            ClearAgentPatchTimer(player.Slot);
+            ForgetAgentPatches(player.Slot);
 			GPlayersPin.TryRemove(player.Slot, out _);
 			GPlayersMusic.TryRemove(player.Slot, out _);
 			var loadId = NextPlayerDataLoadId();
@@ -98,6 +98,7 @@ namespace WeaponPaints
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
             ForgetGraffiti(player.Slot, player.SteamID);
+			ForgetAgentPatches(player.Slot);
 			RemovePetFor(player.Slot);
 			var weaponSync = WeaponSync;
 			if (weaponSync != null && detachedWeapons != null)
@@ -118,7 +119,6 @@ namespace WeaponPaints
 				GPlayersAgent.TryRemove(player.Slot, out _);
 				GPlayersPatches.TryRemove(player.Slot, out _);
 				GPlayersPatchExpiry.TryRemove(player.Slot, out _);
-                ClearAgentPatchTimer(player.Slot);
 			}
 			if (Config.Additional.MusicEnabled)
 			{
@@ -139,7 +139,7 @@ namespace WeaponPaints
 		private void OnMapStart(string mapName)
 		{
             ClearSkinPreviews();
-                ClearGraffiti(false);
+            ClearGraffiti(false);
             Interlocked.Increment(ref DataGeneration);
             PlayerDataLoading.Clear();
 			InvalidateKnifePaint();
