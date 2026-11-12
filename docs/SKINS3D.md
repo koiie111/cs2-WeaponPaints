@@ -57,16 +57,18 @@ positions, degree rotation, scales, precision and the separate embedded slab kit
 ## Validation and remaining acceptance
 
 Release warnings-as-errors build, managed optimization checks against the real
-catalog, 22 pet lifecycle, 47 linked production preview and 10 patch lifecycle
-checks pass locally. The rebased candidate also passes 116 MySQL integration,
+catalog, 22 pet lifecycle, 47 linked production preview and 16 patch lifecycle
+checks pass locally. The rebased candidate also passes 149 MySQL integration,
 32 equipment scheduling, 125 retirement and 39 redeploy assertions.
 The website Docker checks cover slab persistence, clearing and transaction rollback.
 
-No native/game visual acceptance or CSSProfiler comparison has been performed.
-Native patch appearance, complete material parity and refresh-wear acceptance remain open.
-Do not deploy or claim parity based on these managed tests alone. Use the approved
-isolated empty-server test, baseline/candidate/baseline profiles and restore the
-exact prior instance configuration after acceptance.
+The current .12 matched-transport CSSProfiler campaign is incomplete: only the
+first baseline was recorded before the owner ended testing for the day. It is
+not a candidate comparison. See [the checkpoint](measurements/stattrak-20261112/README.md).
+Native patch appearance, complete material parity and the remaining owner
+lifecycle/performance acceptance remain open. Do not deploy or claim parity
+based on managed tests or a baseline-only recording. Complete the approved
+baseline/candidate/repeat-baseline protocol and restore the prior configuration.
 
 ## StatTrak persistence in .12
 
