@@ -64,3 +64,7 @@
 					        `pet_name` varchar(32) DEFAULT NULL,
 					        `pet_hat` varchar(32) DEFAULT NULL
 					    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS wp_player_patches (
+ steamid varchar(64) NOT NULL, weapon_team int NOT NULL, patch_slot tinyint unsigned NOT NULL,
+ patch_id int unsigned NOT NULL DEFAULT 0, PRIMARY KEY(steamid,weapon_team,patch_slot)
+);

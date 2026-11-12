@@ -166,6 +166,8 @@ public partial class WeaponPaints
         if (!_petLoadVersions.IsCurrent(slot, version)) return;
         var player = Utilities.GetPlayerFromSlot(slot);
         if (player == null || !player.IsValid || player.SteamID.ToString() != steamId) return;
+        UpdateAgentPatchEntitlement(player, expiresAt);
+        UpdateGraffitiEntitlement(player, expiresAt);
         if (_petExpiryTimers.Remove(slot, out var previous)) StopPetTimer(previous);
         var state = new PetState(steamId, expiresAt, choice);
         _petChoices[slot] = state;

@@ -141,7 +141,6 @@ public partial class WeaponPaints
                     replacement=new CBasePlayerWeapon(raw);
                     if(!replacement.IsValid || replacement.OwnerEntity.Raw!=currentPawn.EntityHandle.Raw)throw new InvalidOperationException("Replacement was not acquired");
                     GivePlayerWeaponSkin(current,replacement);
-                    IncrementWearForWeaponWithStickers(current,replacement);
                     replacement.Clip1=plan.Clip1;replacement.Clip2=plan.Clip2;
                     var settings=replacement.As<CCSWeaponBase>();settings.BurstMode=plan.Burst;settings.SilencerOn=plan.Silencer;
                     replacement.NextPrimaryAttackTick=plan.PrimaryTick;replacement.NextPrimaryAttackTickRatio=plan.PrimaryRatio;

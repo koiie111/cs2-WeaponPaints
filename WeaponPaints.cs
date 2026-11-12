@@ -11,7 +11,7 @@ using MySqlConnector;
 
 namespace WeaponPaints;
 
-[MinimumApiVersion(338)]
+[MinimumApiVersion(376)]
 public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig>
 {
 	internal static WeaponPaints Instance { get; private set; } = new();
@@ -21,7 +21,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db6-perf.18";
+	public override string ModuleVersion => "3.3a-db7-skins3d.12";
 
 	internal static long DataGeneration;
 
@@ -34,6 +34,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 	public override void Load(bool hotReload)
 	{
 		Instance = this;
+        RegisterGraffiti();
         foreach (var field in new[] { "m_AttributeManager", "m_nFallbackPaintKit", "m_nFallbackSeed", "m_flFallbackWear" })
             if (Schema.GetSchemaOffset(nameof(CEconEntity), field) <= 0)
                 throw new InvalidOperationException("Missing econ refresh network field: " + field);
@@ -47,6 +48,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 			GPlayersKnife.Clear();
 			GPlayersGlove.Clear();
 			GPlayersAgent.Clear();
+			GPlayersPatches.Clear();
 			GPlayersPin.Clear();
 			GPlayersMusic.Clear();
 			PlayerDataLoading.Clear();
@@ -96,6 +98,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 
 		RegisterListeners();
 		if (Config.Additional.PetsEnabled) RegisterPetListeners();
+        RegisterEventHandler<EventRoundStart>(OnAgentPatchRoundStart);
 	}
 
 	public override void Unload(bool hotReload)
@@ -105,7 +108,9 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
         ClearDeferredTimers();
         ClearWeaponRefreshes();
         ClearAllPets();
+        ClearAllAgentPatchTimers();
         ClearSkinPreviews();
+        try { ClearGraffiti(true); } catch (Exception error) { Logger.LogError(error, "Graffiti cleanup failed"); }
 		InvalidateKnifePaint();
 		// Native hook outlives the plugin's AssemblyLoadContext; without this, css_plugins reload
 		// leaves the old OnGiveNamedItemPost delegate registered and the next GiveNamedItem crashes the server.
@@ -120,6 +125,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 		Config = config;
 		_config = config;
 		if (!config.Additional.PetsEnabled) ClearAllPets();
+        if (!config.Additional.GraffitiEnabled) ClearGraffiti(true);
 
 		if (config.DatabaseHost.Length < 1 || config.DatabaseName.Length < 1 || config.DatabaseUser.Length < 1)
 		{

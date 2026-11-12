@@ -43,6 +43,8 @@ namespace WeaponPaints
 					        `weapon_sticker_3` VARCHAR(128) NOT NULL DEFAULT '0;0;0;0;0;0;0' COMMENT 'id;schema;x;y;wear;scale;rotation',
 					        `weapon_sticker_4` VARCHAR(128) NOT NULL DEFAULT '0;0;0;0;0;0;0' COMMENT 'id;schema;x;y;wear;scale;rotation',
 					        `weapon_keychain` VARCHAR(128) NOT NULL DEFAULT '0;0;0;0;0' COMMENT 'id;x;y;z;seed',
+					        `weapon_keychain_sticker` INT UNSIGNED NOT NULL DEFAULT 0,
+                            `weapon_composition_version` TINYINT UNSIGNED NOT NULL DEFAULT 0,
 					        UNIQUE (`steamid`, `weapon_team`, `weapon_defindex`) -- Add unique constraint here
 					    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;",
 
@@ -71,6 +73,15 @@ namespace WeaponPaints
 					    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;",
 
 					    @"
+					    CREATE TABLE IF NOT EXISTS `wp_player_patches` (
+                            `steamid` varchar(64) NOT NULL,
+                            `weapon_team` int NOT NULL,
+                            `patch_slot` tinyint unsigned NOT NULL,
+                            `patch_id` int unsigned NOT NULL DEFAULT 0,
+                            PRIMARY KEY (`steamid`,`weapon_team`,`patch_slot`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+                        @"
 					    CREATE TABLE IF NOT EXISTS `wp_player_music` (
 					        `steamid` varchar(64) NOT NULL,
 					        `weapon_team` int(1) NOT NULL,

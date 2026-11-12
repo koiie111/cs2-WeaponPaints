@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "five-slots-six-anchors-slab",
+      "input": {
+        "version": 1, "team": 3, "defindex": 3, "paint": 0, "seed": 423,
+        "wear": 0.123456, "nametag": "roundtrip", "stattrak": true,
+        "stickers": [
+          {"id": 1, "schema": 5, "x": 0.125, "y": -0.25, "wear": 0.75, "scale": 1.25, "rotation": -90},
+          {"id": 2, "schema": 2, "x": 0, "y": 0, "wear": 0, "scale": 1, "rotation": 45},
+          {"id": 0, "schema": 0, "x": 0, "y": 0, "wear": 0, "scale": 1, "rotation": 0},
+          {"id": 3, "schema": 1, "x": -0.25, "y": 0.125, "wear": 1, "scale": 0.5, "rotation": 180},
+          {"id": 4, "schema": 0, "x": 0, "y": 0, "wear": 0.125, "scale": 2, "rotation": -45}
+        ],
+        "keychain": {"id": 37, "x": 1.25, "y": 0.25, "z": 5.5, "seed": 100000, "sticker": 1}
+      },
+      "storage": {
+        "weapon_team": 3, "weapon_defindex": 3, "weapon_paint_id": 0, "weapon_seed": 423,
+        "weapon_wear": 0.123456, "weapon_nametag": "roundtrip", "weapon_stattrak": 1,
+        "weapon_composition_version": 1,
+        "weapon_sticker_0": "1;5;0.125;-0.25;0.75;1.25;-90",
+        "weapon_sticker_1": "2;2;0;0;0;1;45",
+        "weapon_sticker_2": "0;0;0;0;0;0;0",
+        "weapon_sticker_3": "3;1;-0.25;0.125;1;0.5;180",
+        "weapon_sticker_4": "4;0;0;0;0.125;2;-45",
+        "weapon_keychain": "37;1.25;0.25;5.5;100000", "weapon_keychain_sticker": 1
+      },
+      "expectedSchemas": [5, 2, 0, 1, 0]
+    },
+    {
+      "name": "legacy-unmoved-and-moved",
+      "storage": {
+        "weapon_team": 3, "weapon_defindex": 7, "weapon_paint_id": 0, "weapon_seed": 0,
+        "weapon_wear": 0.25, "weapon_nametag": "", "weapon_stattrak": 0,
+        "weapon_composition_version": 0,
+        "weapon_sticker_0": "0;0;0;0;0;0;0",
+        "weapon_sticker_1": "1;4;0;0;0;1;0",
+        "weapon_sticker_2": "0;0;0;0;0;0;0",
+        "weapon_sticker_3": "2;4;0.125;0;0;1;0",
+        "weapon_sticker_4": "3;0;0;0;0;1;0",
+        "weapon_keychain": "0;0;0;0;0", "weapon_keychain_sticker": 0
+      },
+      "expectedSchemas": [0, 1, 0, 0, 4]
+    }
+  ]
+}

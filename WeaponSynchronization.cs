@@ -29,6 +29,8 @@ internal class WeaponSynchronization
 		bool StatTrak,
 		int StatTrakCount);
 
+    private enum PlayerSkinWrite { Paint, Counter, StatTrakChoice }
+
 	private sealed class PlayerSkinLockTimeoutException(string lockName)
 		: TimeoutException($"Timed out waiting for MySQL lock '{lockName}'.");
 
@@ -58,8 +60,10 @@ internal class WeaponSynchronization
 				await GetMusicFromDatabase(player, connection, snapshot);
 			if (_config.Additional.SkinEnabled)
 				await GetWeaponPaintsFromDatabase(player, connection, snapshot);
-			if (_config.Additional.PinsEnabled)
-				await GetPinsFromDatabase(player, connection, snapshot);
+            if (_config.Additional.GraffitiEnabled)
+                await GetPinsAndGraffitiFromDatabase(player, connection, snapshot);
+            else if (_config.Additional.PinsEnabled)
+                await GetPinsFromDatabase(player, connection, snapshot);
             var published = false;
             await CounterStrikeSharp.API.Server.NextWorldUpdateAsync(() =>
             {
@@ -82,6 +86,36 @@ internal class WeaponSynchronization
                     WeaponPaints.PlayerDataLoading.TryRemove(player.Slot, out _);
             });
             return false;
+        }
+    }
+
+    private async Task GetPinsAndGraffitiFromDatabase(PlayerInfo player, MySqlConnection connection, PlayerDataSnapshot snapshot)
+    {
+        // Return one result set as well as one command: separate result-set tails
+        // still add transport waits on the isolated remote SQL profile.
+        const string combined = "SELECT p.id,p.weapon_team,g.graffiti_id,g.tint_id,CONVERT_TZ(a.expires_at,'+03:00','+00:00') AS graffiti_expires_at FROM (SELECT 1 AS singleton) anchor LEFT JOIN wp_player_pins p ON p.steamid=@steamid LEFT JOIN wp_player_graffiti g ON g.steamid=@steamid LEFT JOIN plus_active a ON a.steam_id=@steamid ORDER BY p.weapon_team ASC";
+        const string graffitiOnly = "SELECT g.graffiti_id,g.tint_id,CONVERT_TZ(a.expires_at,'+03:00','+00:00') AS graffiti_expires_at FROM (SELECT 1 AS singleton) anchor LEFT JOIN wp_player_graffiti g ON g.steamid=@steamid LEFT JOIN plus_active a ON a.steam_id=@steamid";
+        var rows = await connection.QueryAsync<dynamic>(_config.Additional.PinsEnabled ? combined : graffitiOnly, new { steamid = player.SteamId });
+        if (_config.Additional.PinsEnabled) ApplyPinRows(player, snapshot, rows);
+        var first = rows.FirstOrDefault();
+        if (first is not IDictionary<string, object> values) return;
+        if (values.TryGetValue("graffiti_expires_at", out var rawExpiry) && rawExpiry is DateTime expiry)
+            snapshot.GraffitiExpiry[player.Slot] = DateTime.SpecifyKind(expiry, DateTimeKind.Utc);
+        if (!values.TryGetValue("graffiti_id", out var rawKit) || rawKit is null
+            || !values.TryGetValue("tint_id", out var rawTint) || rawTint is null) return;
+        var kit = Convert.ToInt32(rawKit); var tint = Convert.ToInt32(rawTint);
+        if (WeaponPaints.Instance.IsValidGraffiti(kit, tint)) snapshot.Graffiti[player.Slot] = (kit, tint);
+    }
+
+    private static void ApplyPinRows(PlayerInfo player, PlayerDataSnapshot snapshot, IEnumerable<dynamic> rows)
+    {
+        foreach (var row in rows)
+        {
+            if (row.id == null) continue;
+            var team = (int)row.weapon_team;
+            var pins = snapshot.GPlayersPin.GetOrAdd(player.Slot, _ => new ConcurrentDictionary<CsTeam, ushort>());
+            if (team is not (2 or 3)) { pins[CsTeam.Terrorist] = (ushort)row.id; pins[CsTeam.CounterTerrorist] = (ushort)row.id; }
+            else pins[(CsTeam)team] = (ushort)row.id;
         }
     }
 
@@ -176,29 +210,42 @@ internal class WeaponSynchronization
 		}
 	}
 
-	private async Task GetAgentFromDatabase(PlayerInfo? player, MySqlConnection connection, PlayerDataSnapshot snapshot)
-	{
-		try
-		{
-			if (!_config.Additional.AgentEnabled || string.IsNullOrEmpty(player?.SteamId))
-				return;
-
-			const string query = "SELECT `agent_ct`, `agent_t` FROM `wp_player_agents` WHERE `steamid` = @steamid";
-			var agentData = await connection.QueryFirstOrDefaultAsync<(string, string)>(query, new { steamid = player.SteamId });
-
-            var agentCT = AgentModel.Normalize(agentData.Item1);
-            var agentT = AgentModel.Normalize(agentData.Item2);
-            if (agentCT == null && agentT == null)
-                snapshot.GPlayersAgent.TryRemove(player.Slot, out _);
-            else
-                snapshot.GPlayersAgent[player.Slot] = (agentCT, agentT);
-		}
-		catch (Exception ex)
-		{
-			Utility.Log($"An error occurred in GetAgentFromDatabase: {ex.Message}");
-            throw;
-		}
-	}
+    private async Task GetAgentFromDatabase(PlayerInfo? player, MySqlConnection connection, PlayerDataSnapshot snapshot)
+    {
+        if (!_config.Additional.AgentEnabled || string.IsNullOrEmpty(player?.SteamId)) return;
+        try
+        {
+            IEnumerable<(string? CT, string? T, DateTime? Expiry, int? Team, int? Slot, uint? Kit)> rows;
+            try
+            {
+                // One round trip for agent, patches and entitlement. Predicate parameters
+                // retain each indexed column's own collation, including plus_active.
+                const string query = "SELECT a.agent_ct,a.agent_t,(SELECT CONVERT_TZ(expires_at,'+03:00','+00:00') FROM plus_active WHERE steam_id=@id LIMIT 1),p.weapon_team,p.patch_slot,p.patch_id FROM (SELECT 1) AS account LEFT JOIN wp_player_agents a ON a.steamid=@id LEFT JOIN wp_player_patches p ON p.steamid=@id";
+                rows = await connection.QueryAsync<(string?,string?,DateTime?,int?,int?,uint?)>(query,new {id=player.SteamId});
+            }
+            catch(MySqlException error) when(error.Number is 1146 or 1142 or 1356 or 1054)
+            {
+                // Additive rollout: unavailable 4ill+ schema disables only its patches.
+                var agent=await connection.QueryFirstOrDefaultAsync<(string?,string?)>("SELECT agent_ct,agent_t FROM wp_player_agents WHERE steamid=@id",new {id=player.SteamId});
+                rows=[(agent.Item1,agent.Item2,null,null,null,null)];
+            }
+            var patches=new Dictionary<int,uint[]>();
+            var agentCT=(string?)null; var agentT=(string?)null; var expiry=DateTime.MinValue;
+            foreach(var row in rows)
+            {
+                agentCT=AgentModel.Normalize(row.CT); agentT=AgentModel.Normalize(row.T);
+                if(row.Expiry.HasValue)expiry=DateTime.SpecifyKind(row.Expiry.Value,DateTimeKind.Utc);
+                if(row.Team is not (2 or 3)||row.Slot is not (>=0 and <3)||!row.Kit.HasValue)continue;
+                if(!patches.TryGetValue(row.Team.Value,out var slots))patches[row.Team.Value]=slots=new uint[3];
+                slots[row.Slot.Value]=row.Kit.Value;
+            }
+            if(agentCT==null&&agentT==null)snapshot.GPlayersAgent.TryRemove(player.Slot,out _);
+            else snapshot.GPlayersAgent[player.Slot]=(agentCT,agentT);
+            snapshot.GPlayersPatches[player.Slot]=patches;
+            snapshot.GPlayersPatchExpiry[player.Slot]=expiry;
+        }
+        catch(Exception error){Utility.Log($"An error occurred in GetAgentFromDatabase: {error.Message}");throw;}
+    }
 
 	private async Task GetWeaponPaintsFromDatabase(PlayerInfo? player, MySqlConnection connection, PlayerDataSnapshot snapshot)
 	{
@@ -260,10 +307,19 @@ internal class WeaponSynchronization
 					keyChainInfo.Seed = 0;
 				}
 
+				// The additive slab column is optional for pre-migration databases.
+                var skinColumns = (IDictionary<string, object>)row;
+                var compositionVersion = skinColumns.TryGetValue("weapon_composition_version", out var storedVersion)
+                    && int.TryParse(storedVersion?.ToString(), out var parsedVersion) ? parsedVersion : 0;
+				if (keyChainInfo.Id == 37 && skinColumns.TryGetValue("weapon_keychain_sticker", out var slabSticker)
+				    && uint.TryParse(slabSticker?.ToString(), out var stickerKit))
+					keyChainInfo.Sticker = stickerKit;
+
 				// Create the WeaponInfo object
 				WeaponInfo weaponInfo = new WeaponInfo
 				{
 					Paint = weaponPaintId,
+					CompositionVersion = compositionVersion,
 					Seed = weaponSeed,
 					Wear = weaponWear,
 					Nametag = weaponNameTag,
@@ -296,7 +352,7 @@ internal class WeaponSynchronization
 					StickerInfo stickerInfo = new StickerInfo
 					{
 						Id = stickerId,
-						Schema = stickerSchema,
+						Schema = stickerId == 0 ? 0 : StickerAnchor.Resolve(compositionVersion, stickerSchema, (uint)i, stickerOffsetX, stickerOffsetY),
 						OffsetX = stickerOffsetX,
 						OffsetY = stickerOffsetY,
 						Wear = stickerWear,
@@ -392,34 +448,7 @@ internal class WeaponSynchronization
 			const string query = "SELECT `id`, `weapon_team` FROM `wp_player_pins` WHERE `steamid` = @steamid ORDER BY `weapon_team` ASC";
 			var rows = await connection.QueryAsync<dynamic>(query, new { steamid = player.SteamId }); // Retrieve all records for the player
 
-			foreach (var row in rows)
-			{
-				// Check if id is null
-				if (row.id == null) continue;
-
-				// Determine the weapon team based on the query result
-				CsTeam weaponTeam = (int)row.weapon_team switch
-				{
-					2 => CsTeam.Terrorist,
-					3 => CsTeam.CounterTerrorist,
-					_ => CsTeam.None,
-				};
-
-				// Get or create entries for the player’s slot
-				var playerPins = snapshot.GPlayersPin.GetOrAdd(player.Slot, _ => new ConcurrentDictionary<CsTeam, ushort>());
-
-				if (weaponTeam == CsTeam.None)
-				{
-					// Assign pin ID to both teams if weaponTeam is None
-					playerPins[CsTeam.Terrorist] = (ushort)row.id;
-					playerPins[CsTeam.CounterTerrorist] = (ushort)row.id;
-				}
-				else
-				{
-					// Assign pin ID to the specific team
-					playerPins[weaponTeam] = (ushort)row.id;
-				}
-			}
+            ApplyPinRows(player, snapshot, rows);
 		}
 		catch (Exception ex)
 		{
@@ -585,6 +614,18 @@ internal class WeaponSynchronization
 		}
 	}
 
+    // Only an explicit player action may change the preference. Disconnect and
+    // delayed counter snapshots must not overwrite a newer website/server choice.
+    internal Task SyncStatTrakChoiceToDatabase(PlayerInfo player, CsTeam team, int definition, bool enabled)
+    {
+        if (string.IsNullOrEmpty(player.SteamId) || team is not (CsTeam.Terrorist or CsTeam.CounterTerrorist)
+            || !WeaponPaints.GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teams)
+            || !teams.TryGetValue(team, out var weapons) || !weapons.TryGetValue(definition, out var weapon))
+            return Task.CompletedTask;
+        var row = new PlayerSkinRow((int)team, definition, weapon.Paint, weapon.Wear, weapon.Seed, enabled, weapon.StatTrakCount);
+        return WritePlayerSkinRowsAsync(player.SteamId, [row], PlayerSkinWrite.StatTrakChoice);
+    }
+
 	private async Task SyncPlayerSkinRowsAsync(
 		PlayerInfo player,
 		bool updateStatTrakOnly,
@@ -611,27 +652,38 @@ internal class WeaponSynchronization
 				.ThenBy(row => row.DefIndex)
 				.ToArray();
 
-        using var operation = await Operations.EnterAsync(player.SteamId);
-        var playerLock = GetPlayerSkinWriteLock(player.SteamId);
+        await WritePlayerSkinRowsAsync(player.SteamId, rows, updateStatTrakOnly ? PlayerSkinWrite.Counter : PlayerSkinWrite.Paint);
+    }
+
+    private async Task WritePlayerSkinRowsAsync(string steamId, IReadOnlyList<PlayerSkinRow> rows, PlayerSkinWrite kind)
+    {
+        using var operation = await Operations.EnterAsync(steamId);
+        var playerLock = GetPlayerSkinWriteLock(steamId);
         await playerLock.WaitAsync();
         try
         {
-			if (rows.Length == 0) return;
+			if (rows.Count == 0) return;
 
-			var (query, parameters) = BuildPlayerSkinUpsert(player.SteamId, rows, updateStatTrakOnly);
-			var lockName = $"wp_player_skins:{player.SteamId}";
+			var (query, parameters) = BuildPlayerSkinUpsert(steamId, rows, kind);
+            var legacyQuery = kind switch
+            {
+                PlayerSkinWrite.StatTrakChoice => BuildStatTrakChoiceQuery(false),
+                PlayerSkinWrite.Counter => BuildStatTrakCounterQuery(rows.Count, false),
+                _ => null
+            };
+			var lockName = $"wp_player_skins:{steamId}";
 
 			for (var attempt = 1; attempt <= PlayerSkinWriteAttempts; attempt++)
 			{
 				try
 				{
-					await ExecutePlayerSkinUpsertAsync(query, parameters, lockName);
+					await ExecutePlayerSkinUpsertAsync(query, parameters, lockName, legacyQuery);
 					return;
 				}
 				catch (Exception e) when (attempt < PlayerSkinWriteAttempts && IsRetryablePlayerSkinWrite(e))
 				{
 					var backoffMs = Random.Shared.Next(25, 101) * attempt;
-					Utility.Log($"Retrying player skin batch for {player.SteamId} after attempt {attempt}: {e.Message}");
+					Utility.Log($"Retrying player skin batch for {steamId} after attempt {attempt}: {e.Message}");
 					await Task.Delay(backoffMs);
 				}
 			}
@@ -645,7 +697,8 @@ internal class WeaponSynchronization
 	private async Task ExecutePlayerSkinUpsertAsync(
 		string query,
 		DynamicParameters parameters,
-		string lockName)
+		string lockName,
+        string? legacyQuery = null)
 	{
 		await using var connection = await _database.GetConnectionAsync();
 		var lockAcquired = false;
@@ -661,7 +714,12 @@ internal class WeaponSynchronization
 
 			lockAcquired = true;
 			// A single statement is atomic, so an explicit transaction would only extend lock lifetime.
-			await connection.ExecuteAsync(query, parameters);
+            try { await connection.ExecuteAsync(query, parameters); }
+            catch (MySqlException error) when (error.Number == 1054 && legacyQuery != null)
+            {
+                // Composition columns are additive; toggles also work before migration.
+                await connection.ExecuteAsync(legacyQuery, parameters);
+            }
 		}
 		finally
 		{
@@ -684,7 +742,7 @@ internal class WeaponSynchronization
 	private static (string Query, DynamicParameters Parameters) BuildPlayerSkinUpsert(
 		string steamId,
 		IReadOnlyList<PlayerSkinRow> rows,
-		bool updateStatTrakOnly)
+		PlayerSkinWrite kind)
 	{
 		var query = new StringBuilder();
 		query.Append("INSERT INTO `wp_player_skins` ");
@@ -709,12 +767,71 @@ internal class WeaponSynchronization
 		}
 
 		query.Append(" ON DUPLICATE KEY UPDATE ");
-		query.Append(updateStatTrakOnly
-			? "`weapon_stattrak`=VALUES(`weapon_stattrak`),`weapon_stattrak_count`=VALUES(`weapon_stattrak_count`)"
-			: "`weapon_paint_id`=VALUES(`weapon_paint_id`),`weapon_wear`=VALUES(`weapon_wear`),`weapon_seed`=VALUES(`weapon_seed`)");
+		query.Append(kind switch
+        {
+            PlayerSkinWrite.Counter => "`weapon_stattrak_count`=GREATEST(`weapon_stattrak_count`,VALUES(`weapon_stattrak_count`))",
+            PlayerSkinWrite.StatTrakChoice => "`weapon_stattrak`=VALUES(`weapon_stattrak`),`weapon_stattrak_count`=GREATEST(`weapon_stattrak_count`,VALUES(`weapon_stattrak_count`))",
+            _ => "`weapon_paint_id`=VALUES(`weapon_paint_id`),`weapon_wear`=VALUES(`weapon_wear`),`weapon_seed`=VALUES(`weapon_seed`)"
+        });
 
-		return (query.ToString(), parameters);
+		return (kind switch
+        {
+            PlayerSkinWrite.StatTrakChoice => BuildStatTrakChoiceQuery(true),
+            PlayerSkinWrite.Counter => BuildStatTrakCounterQuery(rows.Count, true),
+            _ => query.ToString()
+        }, parameters);
 	}
+
+    private static string[] SkinCosmetics(bool compositionColumns)
+    {
+        string[] columns = ["weapon_paint_id", "weapon_wear", "weapon_seed", "weapon_nametag",
+            "weapon_sticker_0", "weapon_sticker_1", "weapon_sticker_2", "weapon_sticker_3", "weapon_sticker_4", "weapon_keychain"];
+        return compositionColumns ? [.. columns, "weapon_keychain_sticker", "weapon_composition_version"] : columns;
+    }
+
+    private static string BuildStatTrakCounterQuery(int count, bool compositionColumns)
+    {
+        // A disconnected snapshot is not authoritative even when its explicit
+        // team row does not exist yet. Clone today's DB choice (exact team, then
+        // team 0); preserve all appearance fields instead of shadowing the fallback.
+        var cosmetics = SkinCosmetics(compositionColumns);
+        var selects = Enumerable.Range(0, count).Select(index =>
+        {
+            string Value(string column) => column switch
+            {
+                "weapon_paint_id" => $"COALESCE(source.{column},@paint{index})",
+                "weapon_wear" => $"COALESCE(source.{column},@wear{index})",
+                "weapon_seed" => $"COALESCE(source.{column},@seed{index})",
+                "weapon_nametag" => "source.weapon_nametag",
+                "weapon_keychain" => "COALESCE(source.weapon_keychain,'0;0;0;0;0')",
+                _ when column.StartsWith("weapon_sticker_", StringComparison.Ordinal) => $"COALESCE(source.{column},'0;0;0;0;0;0;0')",
+                _ => $"COALESCE(source.{column},0)"
+            };
+            return $"SELECT @steamid,@team{index},@defindex{index},COALESCE(source.weapon_stattrak,0),"
+                + $"GREATEST(COALESCE(source.weapon_stattrak_count,0),@stattrakCount{index}),"
+                + string.Join(',', cosmetics.Select(Value))
+                + " FROM (SELECT 1) anchor LEFT JOIN (SELECT * FROM wp_player_skins"
+                + $" WHERE steamid=@steamid AND weapon_defindex=@defindex{index} AND weapon_team IN (0,@team{index})"
+                + " ORDER BY weapon_team DESC LIMIT 1) source ON 1=1";
+        });
+        return "INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_stattrak,weapon_stattrak_count,"
+            + string.Join(',', cosmetics) + ") " + string.Join(" UNION ALL ", selects)
+            + " ON DUPLICATE KEY UPDATE weapon_stattrak_count=GREATEST(wp_player_skins.weapon_stattrak_count,VALUES(weapon_stattrak_count))";
+    }
+
+    private static string BuildStatTrakChoiceQuery(bool compositionColumns)
+    {
+        // When only a team-0 fallback exists, copy its complete persisted appearance
+        // into the new team row. A partial INSERT would erase its name/decorations.
+        var cosmetics = SkinCosmetics(compositionColumns);
+        return "INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_stattrak,weapon_stattrak_count,"
+            + string.Join(',', cosmetics) + ") SELECT @steamid,@team0,@defindex0,@stattrak0,"
+            + "GREATEST(source.weapon_stattrak_count,@stattrakCount0)," + string.Join(',', cosmetics.Select(column => "source." + column))
+            + " FROM wp_player_skins source WHERE source.steamid=@steamid AND source.weapon_defindex=@defindex0"
+            + " AND source.weapon_team IN (0,@team0) ORDER BY source.weapon_team DESC LIMIT 1"
+            + " ON DUPLICATE KEY UPDATE weapon_stattrak=@stattrak0,"
+            + "weapon_stattrak_count=GREATEST(wp_player_skins.weapon_stattrak_count,@stattrakCount0)";
+    }
 
 	private static SemaphoreSlim GetPlayerSkinWriteLock(string steamId)
 	{

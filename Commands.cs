@@ -289,7 +289,8 @@ public partial class WeaponPaints
 
 	private void OnCommandStattrak(CCSPlayerController? player, CommandInfo commandInfo)
 	{
-		if (player == null || !player.IsValid) return;
+		if (!Config.Additional.SkinEnabled || !_gBCommandsAllowed || player == null || !player.IsValid
+            || player.IsBot || PlayerDataLoading.ContainsKey(player.Slot) || WeaponSync == null) return;
 		
 		var weapon = player.PlayerPawn.Value?.WeaponServices?.ActiveWeapon.Value;
 		
@@ -300,6 +301,11 @@ public partial class WeaponPaints
 			return;
 		
 		weaponInfo.StatTrak = !weaponInfo.StatTrak;
+        // Capture the choice and enter the per-account write queue before returning
+        // to the engine, so immediate !wp/disconnect and rapid toggles retain order.
+        var write = WeaponSync.SyncStatTrakChoiceToDatabase(new PlayerInfo { Slot = player.Slot, SteamId = player.SteamID.ToString() },
+            player.Team, weapon.AttributeManager.Item.ItemDefinitionIndex, weaponInfo.StatTrak);
+        _ = ObserveAsync(async () => await write);
 		RefreshWeapons(player);
 
 		if (!string.IsNullOrEmpty(Localizer["wp_stattrak_action"]))

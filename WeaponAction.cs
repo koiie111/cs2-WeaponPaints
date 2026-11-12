@@ -98,7 +98,7 @@ namespace WeaponPaints
 			weapon.AttributeManager.Item.CustomName = ItemName.Truncate(weaponInfo.Nametag);
 			weapon.FallbackPaintKit = weaponInfo.Paint;
 			
-			weapon.FallbackSeed = weaponInfo is { Paint: 38, Seed: 0 } ? _fadeSeed++ : weaponInfo.Seed;
+			weapon.FallbackSeed = weaponInfo.Seed;
 			
 			weapon.FallbackWear = weaponInfo.Wear;
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weapon.FallbackPaintKit);
@@ -121,9 +121,6 @@ namespace WeaponPaints
 
 			fallbackPaintKit = weapon.FallbackPaintKit;
 
-			if (fallbackPaintKit == 0)
-				return;
-
 			if (weaponInfo.KeyChain != null) SetKeychain(player, weapon);
 			if (weaponInfo.Stickers.Count > 0) SetStickers(player, weapon);
 
@@ -131,27 +128,6 @@ namespace WeaponPaints
 			UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
 		}
 		
-		// silly method to update sticker when call RefreshWeapons()
-		private void IncrementWearForWeaponWithStickers(CCSPlayerController player, CBasePlayerWeapon weapon)
-		{
-			int weaponDefIndex = weapon.AttributeManager.Item.ItemDefinitionIndex;
-			if (!HasChangedPaint(player, weaponDefIndex, out var weaponInfo) || weaponInfo == null ||
-			    weaponInfo.Stickers.Count <= 0) return;
-			
-			float wearIncrement = 0.001f;
-			float currentWear = weaponInfo.Wear;
-
-			var playerWear = _temporaryPlayerWeaponWear.GetOrAdd(player.Slot, _ => new ConcurrentDictionary<int, float>());
-
-			float incrementedWear = playerWear.AddOrUpdate(
-				weaponDefIndex,
-				currentWear + wearIncrement,
-				(_, oldWear) => Math.Min(oldWear + wearIncrement, 1.0f)
-			);
-
-			weapon.FallbackWear = incrementedWear;
-		}
-
 		private void SetStickers(CCSPlayerController? player, CBasePlayerWeapon weapon)
 		{
 			if (player == null || !player.IsValid) return;
@@ -161,15 +137,17 @@ namespace WeaponPaints
 			if (!HasChangedPaint(player ,weaponDefIndex, out var weaponInfo) || weaponInfo == null)
 				return;
 
-			foreach (var sticker in weaponInfo.Stickers)
+			for (var stickerSlot = 0; stickerSlot < Math.Min(5, weaponInfo.Stickers.Count); stickerSlot++)
 			{
-				int stickerSlot = weaponInfo.Stickers.IndexOf(sticker);
+				var sticker = weaponInfo.Stickers[stickerSlot];
+				// GivePlayerWeaponSkin clears both attribute lists before this call.
+				// An empty layer therefore needs no native attribute writes.
+				if (sticker.Id == 0) continue;
 
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
 					$"sticker slot {stickerSlot} id", ViewAsFloat(sticker.Id));
-				if (sticker.OffsetX != 0 || sticker.OffsetY != 0)
-					CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
-						$"sticker slot {stickerSlot} schema", 0);
+				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
+					$"sticker slot {stickerSlot} schema", ViewAsFloat(sticker.Schema));
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
 					$"sticker slot {stickerSlot} offset x", sticker.OffsetX);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
@@ -182,11 +160,6 @@ namespace WeaponPaints
 					$"sticker slot {stickerSlot} rotation", sticker.Rotation);
 			}
 
-			if (_temporaryPlayerWeaponWear.TryGetValue(player.Slot, out var playerWear) &&
-				playerWear.TryGetValue(weaponDefIndex, out float storedWear))
-			{
-				weapon.FallbackWear = storedWear;
-			}
 		}
 
 		private void SetKeychain(CCSPlayerController? player, CBasePlayerWeapon weapon)
@@ -210,6 +183,8 @@ namespace WeaponPaints
 				"keychain slot 0 offset z", keyChain.OffsetZ);
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
 				"keychain slot 0 seed", ViewAsFloat(keyChain.Seed));
+			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle,
+				"keychain slot 0 sticker", ViewAsFloat(keyChain.Id == 37 ? keyChain.Sticker : 0u));
 		}
 
 		private static void GiveKnifeToPlayer(CCSPlayerController? player)
@@ -365,11 +340,17 @@ namespace WeaponPaints
 
 		private static void GivePlayerAgent(CCSPlayerController player)
 		{
-			if (!GPlayersAgent.TryGetValue(player.Slot, out var value)) return;
+			GPlayersAgent.TryGetValue(player.Slot, out var value);
 
 			var team = player.TeamNum;
             var model = AgentModel.Normalize(team == 3 ? value.CT : value.T);
-            if (!AgentModel.IsAllowed(model, team)) return;
+            if (!AgentModel.IsAllowed(model, team)) model = null;
+            if (model == null && !Instance.HasAgentPatchOverride(player.Slot, player.SteamID, player.PlayerPawn.Raw)) return;
+            var patchIds = new uint[3];
+            if (model != null && GPlayersPatchExpiry.TryGetValue(player.Slot, out var expiresAt) && expiresAt > DateTime.UtcNow
+                && GPlayersPatches.TryGetValue(player.Slot, out var patchTeams)
+                && patchTeams.TryGetValue(team, out var selectedPatches))
+                Array.Copy(selectedPatches, patchIds, Math.Min(3, selectedPatches.Length));
 
 			var expectedSteamId = player.SteamID.ToString();
             var identity = DeferredPlayer.Capture(player);
@@ -381,7 +362,15 @@ namespace WeaponPaints
 					if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
 					var pawn = player.PlayerPawn.Value;
 					if (pawn != null && pawn.IsValid)
-						pawn.SetModel($"agents/models/{model}.vmdl");
+                    {
+                        if (model != null) pawn.SetModel($"agents/models/{model}.vmdl");
+                        var nativePatches = pawn.PlayerPatchEconIndices;
+                        for (var slot = 0; slot < nativePatches.Length; slot++)
+                            nativePatches[slot] = slot < 3 ? patchIds[slot] : 0;
+                        Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_vecPlayerPatchEconIndices");
+                        Instance.MarkAgentPatchOverride(player.Slot, player.SteamID, pawn.EntityHandle.Raw, patchIds.Any(id => id != 0));
+                        Instance.ArmAgentPatchExpiry(player.Slot);
+                    }
 				});
 			}
 			catch (Exception)
@@ -495,7 +484,7 @@ namespace WeaponPaints
 			}
 
 			// Check if the specified weapon has a paint/skin change
-			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || value.Paint <= 0) return false;
+			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || !value.HasCustomization) return false;
 			
 			weaponInfo = value; // Assign the out variable when it exists
 			return true;

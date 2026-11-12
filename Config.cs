@@ -5,6 +5,7 @@ namespace WeaponPaints
 {
 	public class Additional
 	{
+        public bool GraffitiEnabled { get; set; } = false;
 		[JsonPropertyName("PetsEnabled")]
 		public bool PetsEnabled { get; set; } = false;
 
@@ -102,6 +103,8 @@ namespace WeaponPaints
 
 		[JsonPropertyName("Additional")]
 		public Additional Additional { get; set; } = new();
+        public int GraffitiCooldownSeconds { get; set; } = 30;
+        public bool ReplaceNativeGraffiti { get; set; } = false;
 		
 		[JsonPropertyName("MenuType")]
 		public string MenuType { get; set; } = "selectable";

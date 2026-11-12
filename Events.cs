@@ -34,9 +34,13 @@ namespace WeaponPaints
 			// A slot can be reused immediately after a disconnect. Never let spawn/item hooks
 			// apply the previous occupant's native item state while MySQL is still loading.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
+            ForgetGraffiti(player.Slot, player.SteamID);
 			GPlayersKnife.TryRemove(player.Slot, out _);
 			GPlayersGlove.TryRemove(player.Slot, out _);
 			GPlayersAgent.TryRemove(player.Slot, out _);
+			GPlayersPatches.TryRemove(player.Slot, out _);
+			GPlayersPatchExpiry.TryRemove(player.Slot, out _);
+            ForgetAgentPatches(player.Slot);
 			GPlayersPin.TryRemove(player.Slot, out _);
 			GPlayersMusic.TryRemove(player.Slot, out _);
 			var loadId = NextPlayerDataLoadId();
@@ -93,6 +97,8 @@ namespace WeaponPaints
 			// reconnecting client inherit stale WeaponInfo and can crash native item hooks.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
+            ForgetGraffiti(player.Slot, player.SteamID);
+			ForgetAgentPatches(player.Slot);
 			RemovePetFor(player.Slot);
 			var weaponSync = WeaponSync;
 			if (weaponSync != null && detachedWeapons != null)
@@ -111,6 +117,8 @@ namespace WeaponPaints
 			if (Config.Additional.AgentEnabled)
 			{
 				GPlayersAgent.TryRemove(player.Slot, out _);
+				GPlayersPatches.TryRemove(player.Slot, out _);
+				GPlayersPatchExpiry.TryRemove(player.Slot, out _);
 			}
 			if (Config.Additional.MusicEnabled)
 			{
@@ -121,7 +129,6 @@ namespace WeaponPaints
 				GPlayersPin.TryRemove(player.Slot, out _);
 			}
 			
-			_temporaryPlayerWeaponWear.TryRemove(player.Slot, out _);
 			CommandsCooldown.Remove(player.Slot);
             RemoveSkinPreview(player.Slot);
 			Players.Remove(player);
@@ -132,10 +139,10 @@ namespace WeaponPaints
 		private void OnMapStart(string mapName)
 		{
             ClearSkinPreviews();
+            ClearGraffiti(false);
             Interlocked.Increment(ref DataGeneration);
             PlayerDataLoading.Clear();
 			InvalidateKnifePaint();
-			_fadeSeed = 0;
 			_nextItemId = MinimumCustomItemId;
 		}
 
@@ -326,9 +333,11 @@ namespace WeaponPaints
                 Interlocked.Increment(ref DataGeneration);
                 PlayerDataLoading.Clear();
                 ClearSkinPreviews();
+                ClearGraffiti(false);
                 InvalidateKnifePaint();
                 ClearDeferredTimers();
                 ClearWeaponRefreshes();
+                ClearAllAgentPatchTimers();
             });
 
 			RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);

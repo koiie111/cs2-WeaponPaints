@@ -1,0 +1,199 @@
+{
+  "run": "20261112-191958",
+  "diagnosticOnly": true,
+  "completedComparison": false,
+  "reason": "Owner ended testing for the day; deliberate guarded stop before candidate/repeat stages.",
+  "savedPrimaryWindows": 12,
+  "savedCounterWindows": 1,
+  "baselineVersion": "3.3a-db6-perf.18",
+  "baselineDllSha256": "e39b88ae21d06d4bdeeab7474e6907818655875670ddd1cc06e9b9d9ec0749a1",
+  "candidateProductionSourceCommit": "ac5157962aa2d1d41e27d990ef0236cfe34e50bb",
+  "candidateDllSha256": "54c1b120f8c70c78d395313204a449e0a2e854735175ede1f9a759210bf0e9a5",
+  "transport": {
+    "kind": "reverse-ssh-to-disposable-mysql",
+    "sshTcpNoDelay": true,
+    "relayTcpNoDelay": true,
+    "localMysqlPort": 33369,
+    "sameTransportAllStages": true
+  },
+  "restoration": {
+    "beforeFileCount": 344,
+    "afterFileCount": 344,
+    "changed": [],
+    "matched": 344,
+    "finalUtc": "2026-11-12T19:43:05.987223+00:00",
+    "originalWeaponPaintsLoaded": true,
+    "helpersRemoved": true
+  },
+  "protectedRestoredPaths": 12,
+  "records": [
+    {
+      "label": "baseline-apply-1",
+      "mode": "apply",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-apply-1-native.json",
+        "sha256": "1f4ff220b7b1307358f054141c5fa63162124a536933c07fa86b94d60a1f29ba"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-apply-1-calls.speedscope.json",
+        "sha256": "edbe545befbfad0865bc379e250cac9443e6f316815a6f8fd22b5a5c2284971b"
+      }
+    },
+    {
+      "label": "baseline-apply-2",
+      "mode": "apply",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-apply-2-native.json",
+        "sha256": "f7005b1752cb0522e26aefe0cec20025bd9068413b3d5ec9c3720537f255604a"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-apply-2-calls.speedscope.json",
+        "sha256": "1498093c40649cb8ce2271bf548d23bcb9cab5691a8bc533b32d4c43e746415d"
+      }
+    },
+    {
+      "label": "baseline-apply-3",
+      "mode": "apply",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-apply-3-native.json",
+        "sha256": "6ccce274a0f64c74a49e7f6deb1884a9d194e1b908ee8f18e544e64ffb8c6318"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-apply-3-calls.speedscope.json",
+        "sha256": "11aaf9972d630cbe509ed5f7c6b9d9fcce8baf3f337ec56807ea83d7d0560c3c"
+      }
+    },
+    {
+      "label": "baseline-apply-control",
+      "mode": "apply",
+      "instrumented": false,
+      "probe": {
+        "file": "profiles\\baseline-apply-control-native.json",
+        "sha256": "1f04594dc7fde630facb293971579b1cc1feba5043666ad598d4a45e0ce3ab06"
+      }
+    },
+    {
+      "label": "baseline-refresh-1",
+      "mode": "refresh",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-refresh-1-native.json",
+        "sha256": "05e1474fb2931a2778f1ffcdcfcb1124a00ec3aec7b967cc3b79e8c3566d21a6"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-refresh-1-calls.speedscope.json",
+        "sha256": "10a27312babba9f9df46fe101d7eeec73c8c62a551ad834a78e7fcc4f9c4295e"
+      }
+    },
+    {
+      "label": "baseline-refresh-2",
+      "mode": "refresh",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-refresh-2-native.json",
+        "sha256": "9fdfd5def5fa31c79071e4d121bb51f36e8d569aba53642ca204344813ad86eb"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-refresh-2-calls.speedscope.json",
+        "sha256": "f4a2347f7218378385f1a9a29287ef7a5d50a98d954bb37306788684ca25035b"
+      }
+    },
+    {
+      "label": "baseline-refresh-3",
+      "mode": "refresh",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-refresh-3-native.json",
+        "sha256": "ee2732030a4fdf5410820ec8cedcc22c8d9d598594949924044a712127b4e1a8"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-refresh-3-calls.speedscope.json",
+        "sha256": "594d9a5b17f5a8d7ff3628e47b873bfbb27c4f267252f0f262cb7c60d6bccd47"
+      }
+    },
+    {
+      "label": "baseline-refresh-control",
+      "mode": "refresh",
+      "instrumented": false,
+      "probe": {
+        "file": "profiles\\baseline-refresh-control-native.json",
+        "sha256": "fc2795c314fc1475b8693470a53ad52ef5b4f655e62bf8b82261ea219d942c01"
+      }
+    },
+    {
+      "label": "baseline-sql-1",
+      "mode": "sql",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-sql-1-native.json",
+        "sha256": "9c9be779c06a948a7767a648a54ca39fa733113a32e0e058bb75b14de29f3737"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-sql-1-calls.speedscope.json",
+        "sha256": "94d8b3f5f03a11bf2b5a4369cb379e82a5c105c843cf4ae91636c3badb98249d"
+      }
+    },
+    {
+      "label": "baseline-sql-2",
+      "mode": "sql",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-sql-2-native.json",
+        "sha256": "b4c82a2e05c80c9cab835e4ffcc88d8406d716f330a4a31ff4b7622b92d29a9b"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-sql-2-calls.speedscope.json",
+        "sha256": "c216c23df7268de840ed4fd9e72941d9777245c798e870559277988afe07117e"
+      }
+    },
+    {
+      "label": "baseline-sql-3",
+      "mode": "sql",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-sql-3-native.json",
+        "sha256": "26ccbbd92296599aef31716e011e6de35ed5454e7843dc4edd13fa6d6fac2dc9"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-sql-3-calls.speedscope.json",
+        "sha256": "da07e0a48614528c011eb2d7a776a5d11a5d285c9887ffcb849d58a78112cba5"
+      }
+    },
+    {
+      "label": "baseline-sql-control",
+      "mode": "sql",
+      "instrumented": false,
+      "probe": {
+        "file": "profiles\\baseline-sql-control-native.json",
+        "sha256": "7b808cbf1be1a423bff066a18aa6112b4e9743c3ef2ea4372b645544cba9b56e"
+      }
+    },
+    {
+      "label": "baseline-counter-1",
+      "mode": "counter",
+      "instrumented": true,
+      "probe": {
+        "file": "profiles\\baseline-counter-1-native.json",
+        "sha256": "ef398b5c3ab701c82d3613834f98c9e91bbb3f2a9f6c4d045638cccc362ae179"
+      },
+      "profiler": {
+        "file": "profiles\\baseline-counter-1-calls.speedscope.json",
+        "sha256": "41d7b20e7cbd4c02ae1710887f10e0eed07eddad41f4a5d38d4777d319aa3497"
+      },
+      "counter": {
+        "file": "profiles\\baseline-counter-1-counter.json",
+        "sha256": "1529dc934ec1fcbe53d9d60e63f2229fdc49034cf4c44a52ee30ac833a1f04c0"
+      },
+      "completedSaves": 80,
+      "verifiedDbMaximum": 20,
+      "sqlFailures": 0
+    }
+  ],
+  "excludedWindows": {
+    "baseline-apply-1": "Adjacent server21 cold preparation READY19:23:34.612UTC overlapped native recording."
+  },
+  "rawExports": "Preserved in private task storage; original configuration backups are never published."
+}
