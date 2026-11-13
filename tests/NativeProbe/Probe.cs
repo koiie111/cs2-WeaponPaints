@@ -224,7 +224,22 @@ public sealed class Probe : BasePlugin
                                 var retained=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==7)!;
                                 if(cancelled!=false || callbacks!=1 || retained.EntityHandle.Raw!=clearedHandle)
                                     throw new Exception("Cancelled candidate refresh ran or completed incorrectly");
-                                error+=" callbacks=PASS clear=PASS cancel=PASS PASS";candidateRefresh=null;root.Remove(bot.Slot);ownedSlots.Remove(bot.Slot);
+                                var rawKnife=bot.GiveNamedItem("weapon_knife");
+                                if(rawKnife==0)throw new Exception("Knife fixture give failed");
+                                var knife=new CBasePlayerWeapon(rawKnife);var knifeHandle=knife.EntityHandle.Raw;
+                                if(!knife.IsValid || knife.OwnerEntity.Raw!=bot.PlayerPawn.Raw)throw new Exception("Knife fixture not acquired");
+                                candidateRefresh.SetKnifeEnabledForProbe(false);
+                                bool? knifeCompletion=null;
+                                candidateRefresh.RefreshForProbe(bot,success=>knifeCompletion=success);
+                                AddTimer(.8f,()=>Safe(()=>{
+                                    if(knifeCompletion!=true)throw new Exception("Refresh with disabled knives did not complete");
+                                    var sameKnife=new CHandle<CBasePlayerWeapon>(knifeHandle).Value;
+                                    if(sameKnife is not {IsValid:true} || sameKnife.OwnerEntity.Raw!=bot.PlayerPawn.Raw ||
+                                       !bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Any(h=>h.Raw==knifeHandle))
+                                        throw new Exception("Knife was replaced while knife customization was disabled");
+                                    error+=" callbacks=PASS clear=PASS cancel=PASS knife-disabled=PASS PASS";
+                                    candidateRefresh=null;root.Remove(bot.Slot);ownedSlots.Remove(bot.Slot);
+                                }),TimerFlags.STOP_ON_MAPCHANGE);
                             }));
                         }),TimerFlags.STOP_ON_MAPCHANGE);
                     }),TimerFlags.STOP_ON_MAPCHANGE);

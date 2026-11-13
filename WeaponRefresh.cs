@@ -88,12 +88,14 @@ public partial class WeaponPaints
         var failedRetirement = false;
         foreach (var handle in snapshot)
         {
-            if (_retiringWeapons.Contains(handle)) { failedRetirement = true; continue; }
             var old = new CHandle<CBasePlayerWeapon>(handle).Value;
             if (old == null || !old.IsValid || old.OwnerEntity.Raw != pawn.EntityHandle.Raw) continue;
             var data = old.As<CCSWeaponBase>().VData;
             if (data == null || data.GearSlot is not (gear_slot_t.GEAR_SLOT_RIFLE or gear_slot_t.GEAR_SLOT_PISTOL or gear_slot_t.GEAR_SLOT_KNIFE)) continue;
             var knife = data.GearSlot == gear_slot_t.GEAR_SLOT_KNIFE;
+            // A full refresh must not replace the player's knife when the
+            // server has explicitly disabled knife customization.
+            if (knife && !Config.Additional.KnifeEnabled) continue;
             var index = (int)old.AttributeManager.Item.ItemDefinitionIndex;
             if (definitions != null && !definitions.Contains(index) && !(knife && definitions.Any(d => d is 42 or 59 || WeaponDefindex.TryGetValue(d,out var name) && (name.Contains("knife") || name.Contains("bayonet"))))) continue;
             var hasKnifeChoice = false;
@@ -105,6 +107,7 @@ public partial class WeaponPaints
             // A row or knife choice can disappear from the newly loaded snapshot.
             // The old weapon still needs replacement to remove that override.
             if (!hasPreference && !hasKnifeChoice && !previousDefinitions.Contains(index) && !(knife && definitions == null)) continue;
+            if (_retiringWeapons.Contains(handle)) { failedRetirement = true; continue; }
             var classname = "weapon_knife";
             if (!knife && !WeaponDefindex.TryGetValue(index,out classname)) continue;
             var settings=old.As<CCSWeaponBase>();

@@ -13,6 +13,10 @@ public partial class WeaponPaints
 {
     internal static long DataGeneration = 1;
     private bool _gBCommandsAllowed = true;
+    private sealed class ProbeAdditional { internal bool KnifeEnabled = true; }
+    private sealed class ProbeConfig { internal ProbeAdditional Additional = new(); }
+    private readonly ProbeConfig Config = new();
+    internal void SetKnifeEnabledForProbe(bool enabled) => Config.Additional.KnifeEnabled = enabled;
     private readonly ConcurrentDictionary<int,long> PlayerDataLoading = new();
     private readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,ConcurrentDictionary<int,object>>> GPlayerWeaponsInfo = new();
     private readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,string>> GPlayersKnife = new();
