@@ -69,6 +69,20 @@ changingPawn.PlayerPawn.Raw++;
 changingPlugin.Flush();
 Check(changingPlugin.Events.SequenceEqual(new[] { "gloves" }), "a stale delayed glove completion never applies weapons to a replacement pawn");
 
+var resetPlayer = Player();
+var resetPlugin = new Plugin { HasGloves = false, DeferredClear = true };
+bool? resetResult = null;
+resetPlugin.RefreshWithCompletion(resetPlayer, ok => resetResult = ok);
+Check(resetPlugin.Events.Count == 0 && resetResult == null, "weapon refresh waits for deferred glove reset");
+resetPlugin.Flush();
+Check(resetResult == true && resetPlugin.Events.SequenceEqual(new[] { "weapons:pistol:knife" }), "deferred reset completes before weapons");
+var resetFailed = Player();
+var resetFailedPlugin = new Plugin { HasGloves = false, DeferredClear = true, FailClear = true };
+bool? resetFailedResult = null;
+resetFailedPlugin.RefreshWithCompletion(resetFailed, ok => resetFailedResult = ok);
+resetFailedPlugin.Flush();
+Check(resetFailedResult == false && resetFailedPlugin.Events.SequenceEqual(new[] { "weapons:pistol:knife" }), "failed glove reset still refreshes weapons and reports partial failure");
+
 var manual = Player();
 var manualPlugin = new Plugin();
 manualPlugin.Refresh(manual);

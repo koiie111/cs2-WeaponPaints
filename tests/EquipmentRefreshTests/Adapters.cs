@@ -43,7 +43,7 @@ namespace WeaponPaints
         public Configuration Config = new();
         public int ClearedGloves;
         internal static long DataGeneration;
-        public bool GlovesEnabled = true, HasGloves = true, FailApply;
+        public bool GlovesEnabled = true, HasGloves = true, FailApply, DeferredClear, FailClear;
         public readonly List<Exception> Logger = new();
         public readonly Queue<Action> Pending = new();
         public readonly List<string> Events = new();
@@ -60,10 +60,15 @@ namespace WeaponPaints
             Events.Add("gloves");
             Pending.Enqueue(() => completed(true));
         }
-        private void ClearPlayerGloves(CCSPlayerController player, Action<bool> completed) { ClearedGloves++; completed(true); }
+        private void ClearPlayerGloves(CCSPlayerController player, Action<bool> completed) {
+            ClearedGloves++;
+            if (DeferredClear) Pending.Enqueue(() => completed(!FailClear));
+            else completed(!FailClear);
+        }
         private void RefreshWeapons(CCSPlayerController player) => Events.Add("weapons:" + player.Active + ":" + player.Last);
         private void RefreshWeaponsWithCompletion(CCSPlayerController player, Action<bool> completed, IReadOnlySet<int>? previousDefinitions = null) { RefreshWeapons(player); completed(true); }
         public void Refresh(CCSPlayerController player) => RefreshPlayerEquipment(player);
+        public void RefreshWithCompletion(CCSPlayerController player, Action<bool> callback) => RefreshPlayerEquipmentWithCompletion(player, callback);
         public void GloveMenu(CCSPlayerController player) => GivePlayerGloves(player);
         public void FlushOne() { if (Pending.TryDequeue(out var callback)) callback(); }
         public void Flush() { while (Pending.TryDequeue(out var callback)) callback(); }
