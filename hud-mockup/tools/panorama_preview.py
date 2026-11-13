@@ -161,7 +161,7 @@ def build_html(src, css_blocks, body, title, font, overrides=""):
   [data-id]{{transform:none !important}}
   .outer{{position:relative}} .app[data-id]{{position:absolute;left:50%;top:50%;margin:0!important;transform:translate(-50%,-50%)!important}}
   .app.compact[data-id]{{transform:translate(-50%,-50%) scale(.8)!important}} .app.small[data-id]{{transform:translate(-50%,-50%) scale(.65)!important}}
-  .main{{position:relative}} .overlay{{position:absolute;left:50%;top:50%;margin-left:-260px;margin-top:-100px}}
+  .modalLayer{{position:relative}} .overlay{{position:absolute;left:50%;top:50%;margin-left:-260px;margin-top:-100px}}
   .hidden,.pv-force-hide{{display:none !important}}
   .pv-force-show{{display:revert !important}}
 {overrides}
@@ -247,6 +247,23 @@ def main():
             render(child, out, a.populate, {})
     body = "".join(out)
     extra = "\n".join(p.read_text(encoding="utf-8") for p in a.css)
+    # Exact decoded client assets are preview-only. The addon points to native s2r resources.
+    mockup_root = addon.parent
+    mapping_path = mockup_root / "fixtures" / "native-images.json"
+    if mapping_path.exists():
+        mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
+        for key, url in mapping.items():
+            relative = url.removeprefix("s2r://")
+            if relative.endswith(".vtex"):
+                relative = relative[:-5] + ".png"
+            elif relative.endswith(".vsvg"):
+                relative = relative[:-5] + ".svg"
+            else:
+                continue
+            image = mockup_root / "preview-assets" / "native" / relative
+            if image.is_file():
+                extra += f'\n.art-{key}{{background-image:url("{image.resolve().as_uri()}");background-size:contain;background-position:center;background-repeat:no-repeat}}'
+
     out_dir = a.out or (addon / "previews")
     out_dir.mkdir(parents=True, exist_ok=True)
 

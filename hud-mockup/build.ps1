@@ -18,10 +18,11 @@ Write-Host "Workshop source: $target"
 if ($Compile) {
     $compiler=Join-Path $Cs2Root 'game\bin\win64\resourcecompiler.exe'
     if (-not (Test-Path -LiteralPath $compiler)) { throw 'Workshop resource compiler not installed' }
-    foreach($file in Get-ChildItem -LiteralPath $target -File -Recurse | Where-Object Extension -in '.xml','.css','.vtex') {
-        & $compiler -i $file.FullName
+    foreach($sourceFile in Get-ChildItem -LiteralPath $source -File -Recurse | Where-Object Extension -in '.xml','.css','.vtex') {
+        $relative=$sourceFile.FullName.Substring($source.Length).TrimStart([IO.Path]::DirectorySeparatorChar)
+        $file=Get-Item -LiteralPath (Join-Path $target $relative)
+        & $compiler -i $file.FullName -f
         if ($LASTEXITCODE -ne 0) { throw "Compilation failed: $($file.FullName)" }
-        $relative=$file.FullName.Substring($target.Length).TrimStart([IO.Path]::DirectorySeparatorChar)
         $compiledRelative=[IO.Path]::ChangeExtension($relative, $(if ($file.Extension -eq '.xml') { '.vxml_c' } elseif ($file.Extension -eq '.vtex') { '.vtex_c' } else { '.vcss_c' }))
         $artifact=Join-Path (Join-Path $Cs2Root "game\csgo_addons\$Addon") $compiledRelative
         if (-not (Test-Path -LiteralPath $artifact) -or (Get-Item -LiteralPath $artifact).Length -eq 0) { throw "Missing compiled resource: $artifact" }

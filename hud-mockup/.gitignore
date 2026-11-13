@@ -5,3 +5,4 @@ previews/*.png
 !previews/weaponpaints.settings.png
 previews/ratio*/
 __pycache__/
+dist/

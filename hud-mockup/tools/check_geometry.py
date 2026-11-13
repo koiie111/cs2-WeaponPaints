@@ -72,7 +72,7 @@ with tempfile.TemporaryDirectory() as tmp:
                 const r = el.getBoundingClientRect();
                 if (r.left < shell.left-1 || r.right > shell.right+1 || r.top < shell.top-1 || r.bottom > shell.bottom+1)
                   issues.push(['outside shell', el.dataset.id || el.textContent, r.x, r.y]);
-                if (el.classList.contains('pv-label') && el.scrollWidth > el.clientWidth+2)
+                if (el.classList.contains('pv-label') && el.scrollWidth > el.clientWidth+2 && getComputedStyle(el).textOverflow !== 'ellipsis')
                   issues.push(['text overflow', el.textContent, el.scrollWidth, el.clientWidth]);
               }
               const groups = '.toolbar,.cardRow,.settingRow,.valueControls,.featureRow,.decorRow,.overlayActions,.presetRow,.top';
@@ -85,9 +85,69 @@ with tempfile.TemporaryDirectory() as tmp:
                     issues.push(['flow overlap', a.dataset.id || a.textContent, b.dataset.id || b.textContent]);
                 }
               }
+              // Field/step panels must be centered within their row, not just their text.
+              for (const row of document.querySelectorAll('.featureRow,.settingRow')) {
+                if (!visible(row)) continue;
+                const r = row.getBoundingClientRect();
+                for (const field of row.querySelectorAll(':scope > .featureInput, :scope > .step, :scope > .settingValue, :scope > .valueControls')) {
+                  if (!visible(field)) continue;
+                  const f = field.getBoundingClientRect();
+                  const topGap = f.top-r.top, bottomGap = r.bottom-f.bottom;
+                  if (Math.abs(topGap-bottomGap)>2 || f.left<r.left-1 || f.right>r.right+1)
+                    issues.push(['row field alignment', row.dataset.id, field.dataset.id, topGap, bottomGap]);
+                }
+              }
+              // Range measures text line boxes rather than only the label panel box.
+              const textRect = el => { const range = document.createRange(); range.selectNodeContents(el); return range.getBoundingClientRect(); };
+              const cx = r => (r.left + r.right) / 2, cy = r => (r.top + r.bottom) / 2;
+              for (const button of document.querySelectorAll('.pv-button')) {
+                if (!visible(button) || button.matches('.settingValue,.valueInput,.featureInput,.plusLink')) continue;
+                const label = button.querySelector(':scope > .buttonText');
+                if (!label || !visible(label)) continue;
+                const box = button.getBoundingClientRect(), glyph = textRect(label);
+                if (Math.abs(cx(box)-cx(glyph)) > 3 || Math.abs(cy(box)-cy(glyph)) > 3)
+                  issues.push(['button text not centered', button.dataset.id, cx(box)-cx(glyph), cy(box)-cy(glyph)]);
+              }
+              const icon = document.querySelector('.backIcon'), crumb = document.querySelector('.crumbText');
+              if (Math.abs(cy(textRect(icon)) - cy(textRect(crumb))) > 3) issues.push(['back glyph baseline']);
+              const nav = [...document.querySelectorAll('.nav')].filter(visible);
+              if (nav.length) {
+                const iconX=nav[0].querySelector('.navIcon').getBoundingClientRect().x;
+                const labelX=nav[0].querySelector('.navText').getBoundingClientRect().x;
+                for (const item of nav) {
+                  const a=item.querySelector('.navIcon'), b=item.querySelector('.navText');
+                  if (Math.abs(a.getBoundingClientRect().x-iconX)>1 || Math.abs(b.getBoundingClientRect().x-labelX)>1 || Math.abs(cy(textRect(a))-cy(textRect(b)))>3) issues.push(['sidebar alignment',item.dataset.id]);
+                }
+              }
+              const searchIcon=document.querySelector('.searchIcon'), searchText=document.querySelector('.searchText');
+              if (visible(searchIcon) && Math.abs(searchText.getBoundingClientRect().left-searchIcon.getBoundingClientRect().right-8)>1) issues.push(['search spacing']);
+              const prev=document.querySelector('[data-id="prev"]'), next=document.querySelector('[data-id="next"]'), number=document.querySelector('.pageNumber');
+              if (visible(prev) && visible(next) && visible(number)) {
+                const a=prev.getBoundingClientRect(),b=next.getBoundingClientRect(),n=textRect(number);
+                if (Math.abs(cx(n)-(cx(a)+cx(b))/2)>2 || Math.abs(cy(n)-cy(a))>2) issues.push(['pager text alignment']);
+              }
+              const title=document.querySelector('.title').getBoundingClientRect(), divider=document.querySelector('.headerDivider').getBoundingClientRect();
+              if (Math.abs(title.left-divider.right-14)>2) issues.push(['header title gap']);
               return issues;
             }""")
             assert not issues, (state, issues)
+        models = states["weapons"]
+        assert [models["vars"][f"item_{i}"] for i in range(7)] == [
+            "AK-47",
+            "AUG",
+            "FAMAS",
+            "Galil AR",
+            "M4A4",
+            "M4A1-S",
+            "SG 553",
+        ]
+        assert models["add"].get("hero", "").find("is-hidden") >= 0
+        page.goto((Path(tmp) / "weaponpaints.weapons.html").as_uri())
+        model_bottom = page.locator('[data-id="item_5"]').bounding_box()
+        model_top = page.locator('[data-id="item_0"]').bounding_box()
+        assert (
+            model_bottom["y"] + model_bottom["height"] - model_top["y"] > 480
+        ), "weapon model rows should fill the grid"
         page.close()
         engine.close()
 print(

@@ -50,7 +50,7 @@ for name, state in states.items():
     for op in ("hide", "show"):
         for id in state.get(op, []):
             assert id in ids, (name, id)
-assert len([i for i in ids if re.fullmatch(r"item_\d+", i)]) == 10
+assert len([i for i in ids if re.fullmatch(r"item_\d+", i)]) == 15
 assert len(panels) < 500
 contract = json.loads((p / "fixtures/contract.json").read_text(encoding="utf8"))
 assert contract["ids"] == ids and set(contract["variables"]) == variables
@@ -63,3 +63,6 @@ print(
 subprocess.run(
     [sys.executable, str(p / "tools/validate_panorama.py"), str(addon)], check=True
 )
+
+
+subprocess.run([sys.executable, str(p / "tools/check_native_images.py")], check=True)

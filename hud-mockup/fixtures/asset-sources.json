@@ -7,7 +7,9 @@
       "paint": "1425",
       "source": "/static/images/skins/skins/crane_flight.webp",
       "origin": "website",
-      "sha256": "c17b9fff4f613502490201cec0d211cb69f9b8b4b27f63e42308a084a3b8bda8"
+      "sha256": "c17b9fff4f613502490201cec0d211cb69f9b8b4b27f63e42308a084a3b8bda8",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 1,
@@ -16,7 +18,9 @@
       "paint": "780",
       "source": "/static/images/skins/csgo/skins/weapon_m4a1-780.png",
       "origin": "website",
-      "sha256": "561c43e0b33c5f2095245331592e16cc7d581a2a1f55909777da3b6c7be67698"
+      "sha256": "561c43e0b33c5f2095245331592e16cc7d581a2a1f55909777da3b6c7be67698",
+      "definition_index": 16,
+      "rarity_color": "#5e98d9"
     },
     {
       "cell": 2,
@@ -25,7 +29,9 @@
       "paint": "1026",
       "source": "/static/images/skins/csgo/skins/weapon_awp-1026.png",
       "origin": "website",
-      "sha256": "047157ce9c7dc5b2adb8f1eb460b12f064bcf599648cddc9568502808bcef2e4"
+      "sha256": "047157ce9c7dc5b2adb8f1eb460b12f064bcf599648cddc9568502808bcef2e4",
+      "definition_index": 9,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 3,
@@ -34,7 +40,9 @@
       "paint": "37",
       "source": "/static/images/skins/csgo/skins/weapon_deagle-37.png",
       "origin": "website",
-      "sha256": "6ef2265195f16d268e9797c229b3c303d559423b6d79669c21e70db79e5cf8fb"
+      "sha256": "6ef2265195f16d268e9797c229b3c303d559423b6d79669c21e70db79e5cf8fb",
+      "definition_index": 1,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 4,
@@ -43,7 +51,9 @@
       "paint": "38",
       "source": "/static/images/skins/csgo/skins/weapon_glock-38.png",
       "origin": "website",
-      "sha256": "249d677bab88093080513a47099847571d187ed1b22e78e369127cc2dd55f99f"
+      "sha256": "249d677bab88093080513a47099847571d187ed1b22e78e369127cc2dd55f99f",
+      "definition_index": 4,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 5,
@@ -52,7 +62,9 @@
       "paint": "818",
       "source": "/static/images/skins/csgo/skins/weapon_usp_silencer-818.png",
       "origin": "website",
-      "sha256": "371925d4e6db9043dc0851fe0f7faf5f4fbaf72ae26873e968e547b15049ae0a"
+      "sha256": "371925d4e6db9043dc0851fe0f7faf5f4fbaf72ae26873e968e547b15049ae0a",
+      "definition_index": 61,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 6,
@@ -61,7 +73,9 @@
       "paint": "630",
       "source": "/static/images/skins/csgo/skins/weapon_mp9-630.png",
       "origin": "website",
-      "sha256": "82345e0d36e00ba4bef17aca0057d0a4fdb7addae363ebb5ec878ce5fce90292"
+      "sha256": "82345e0d36e00ba4bef17aca0057d0a4fdb7addae363ebb5ec878ce5fce90292",
+      "definition_index": 34,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 7,
@@ -70,7 +84,9 @@
       "paint": "298",
       "source": "/static/images/skins/csgo/skins/weapon_nova-298.png",
       "origin": "website",
-      "sha256": "d61903431ab3e50d9f7444393e9f48e4d2567f42aa5fafb9f6975f2fb02e5208"
+      "sha256": "d61903431ab3e50d9f7444393e9f48e4d2567f42aa5fafb9f6975f2fb02e5208",
+      "definition_index": 35,
+      "rarity_color": "#b0c3d9"
     },
     {
       "cell": 8,
@@ -79,7 +95,9 @@
       "paint": "902",
       "source": "/static/images/skins/csgo/skins/weapon_m249-902.png",
       "origin": "website",
-      "sha256": "d4e70b78e4a4ed417c691514b22a53bf830d7107c90741f1c72b30a947ada5b5"
+      "sha256": "d4e70b78e4a4ed417c691514b22a53bf830d7107c90741f1c72b30a947ada5b5",
+      "definition_index": 14,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 9,
@@ -88,7 +106,9 @@
       "paint": "292",
       "source": "/static/images/skins/skins/weapon_taser-292.png",
       "origin": "website",
-      "sha256": "284a64ae00a94762ca7b3086fbdb915f1336b4f0ef341d5c597484f9831e2225"
+      "sha256": "284a64ae00a94762ca7b3086fbdb915f1336b4f0ef341d5c597484f9831e2225",
+      "definition_index": 31,
+      "rarity_color": "#d32ce6"
     }
   ],
   "finishes": [
@@ -99,7 +119,9 @@
       "paint": "1425",
       "source": "/static/images/skins/skins/crane_flight.webp",
       "origin": "website",
-      "sha256": "c17b9fff4f613502490201cec0d211cb69f9b8b4b27f63e42308a084a3b8bda8"
+      "sha256": "c17b9fff4f613502490201cec0d211cb69f9b8b4b27f63e42308a084a3b8bda8",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 1,
@@ -108,7 +130,9 @@
       "paint": "1207",
       "source": "/static/images/skins/skins/weapon_ak47-1207.png",
       "origin": "website",
-      "sha256": "5a965afffe46987a570ff1a54e618cce8950c18890702bcc185d5fba912ac1c5"
+      "sha256": "5a965afffe46987a570ff1a54e618cce8950c18890702bcc185d5fba912ac1c5",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 2,
@@ -117,7 +141,9 @@
       "paint": "1352",
       "source": "/static/images/skins/skins/weapon_ak47-1352.png",
       "origin": "website",
-      "sha256": "a5a8141c3a830e7c6d21e6d864db2dcef310ad1ae94f1b80dd233ba1b85661cc"
+      "sha256": "a5a8141c3a830e7c6d21e6d864db2dcef310ad1ae94f1b80dd233ba1b85661cc",
+      "definition_index": 7,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 3,
@@ -126,7 +152,9 @@
       "paint": "113",
       "source": "/static/images/skins/skins/weapon_ak47-113.png",
       "origin": "website",
-      "sha256": "799007d55da529ead4f46666ede198f97ddaffce2640be8b325f49f4469c011a"
+      "sha256": "799007d55da529ead4f46666ede198f97ddaffce2640be8b325f49f4469c011a",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 4,
@@ -135,7 +163,9 @@
       "paint": "1171",
       "source": "/static/images/skins/skins/weapon_ak47-1171.png",
       "origin": "website",
-      "sha256": "ea93c25fb3ad7f58dd1a98c5b82d3f5eb693e419f4e48dfd183a283d62a02c94"
+      "sha256": "ea93c25fb3ad7f58dd1a98c5b82d3f5eb693e419f4e48dfd183a283d62a02c94",
+      "definition_index": 7,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 5,
@@ -144,7 +174,9 @@
       "paint": "456",
       "source": "/static/images/skins/csgo/skins/weapon_ak47-456.png",
       "origin": "website",
-      "sha256": "e31e04c0a445e77e658d61b89eee4b172289fb806fa97f2a80535ff7631676f5"
+      "sha256": "e31e04c0a445e77e658d61b89eee4b172289fb806fa97f2a80535ff7631676f5",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 6,
@@ -153,7 +185,9 @@
       "paint": "394",
       "source": "/static/images/skins/csgo/skins/weapon_ak47-394.png",
       "origin": "website",
-      "sha256": "81da39e6ae8bd7c5e5abf221da7f18cd1ec985b175b868f11c96e439599ce7f4"
+      "sha256": "81da39e6ae8bd7c5e5abf221da7f18cd1ec985b175b868f11c96e439599ce7f4",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 7,
@@ -162,7 +196,9 @@
       "paint": "44",
       "source": "/static/images/skins/csgo/skins/weapon_ak47-44.png",
       "origin": "website",
-      "sha256": "8b7b8dedf4892c09a0852c1841501c2c514771a914557b356816a7b5eb167736"
+      "sha256": "8b7b8dedf4892c09a0852c1841501c2c514771a914557b356816a7b5eb167736",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 8,
@@ -171,7 +207,9 @@
       "paint": "941",
       "source": "/static/images/skins/csgo/skins/weapon_ak47-941.png",
       "origin": "website",
-      "sha256": "bac3d649357b3a332b4026760081c2bfcfbfd9eb48f9dfa9aa46576f6f8b29e5"
+      "sha256": "bac3d649357b3a332b4026760081c2bfcfbfd9eb48f9dfa9aa46576f6f8b29e5",
+      "definition_index": 7,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 9,
@@ -180,7 +218,9 @@
       "paint": "600",
       "source": "/static/images/skins/csgo/skins/weapon_ak47-600.png",
       "origin": "website",
-      "sha256": "6e4823840934cf36b56f088d0e85db95c983ee9a7443dcd8ddb7bcca55e6920e"
+      "sha256": "6e4823840934cf36b56f088d0e85db95c983ee9a7443dcd8ddb7bcca55e6920e",
+      "definition_index": 7,
+      "rarity_color": "#eb4b4b"
     }
   ],
   "gloves": [
@@ -191,7 +231,9 @@
       "paint": 0,
       "source": "/static/images/skins/gloves/default.png",
       "origin": "website",
-      "sha256": "b568d2ebb700bc4a606c325904e217405f77535d73cb5440f9d56b323c6ceda1"
+      "sha256": "b568d2ebb700bc4a606c325904e217405f77535d73cb5440f9d56b323c6ceda1",
+      "definition_index": 0,
+      "rarity_color": null
     },
     {
       "cell": 1,
@@ -200,7 +242,9 @@
       "paint": "10010",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10010.png",
       "origin": "website",
-      "sha256": "9220a547ff607d0f9135cc6ffe3f2ba7d17cf07e4702688718e3a0c4ef2eaa37"
+      "sha256": "9220a547ff607d0f9135cc6ffe3f2ba7d17cf07e4702688718e3a0c4ef2eaa37",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 2,
@@ -209,7 +253,9 @@
       "paint": "10081",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10081.png",
       "origin": "website",
-      "sha256": "457728aa705f2d03cfca24087dee9ec22ad155fb4b15a2bed1ba21365788f960"
+      "sha256": "457728aa705f2d03cfca24087dee9ec22ad155fb4b15a2bed1ba21365788f960",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 3,
@@ -218,7 +264,9 @@
       "paint": "10036",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10036.png",
       "origin": "website",
-      "sha256": "cd7bcbf7902f6b58e0426396ac5d541dd1304c70a5fb9b2f3cf9eb298be498e2"
+      "sha256": "cd7bcbf7902f6b58e0426396ac5d541dd1304c70a5fb9b2f3cf9eb298be498e2",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 4,
@@ -227,7 +275,9 @@
       "paint": "10084",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10084.png",
       "origin": "website",
-      "sha256": "ab4a9f41a1b007e80d201aa26431da5bca362fbaa87e9445cb4af60893258742"
+      "sha256": "ab4a9f41a1b007e80d201aa26431da5bca362fbaa87e9445cb4af60893258742",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 5,
@@ -236,7 +286,9 @@
       "paint": "10055",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10055.png",
       "origin": "website",
-      "sha256": "45383aecd417ecf593b5ba51f393ecd63580c841d46cd0e88cc86fd7d883eb8b"
+      "sha256": "45383aecd417ecf593b5ba51f393ecd63580c841d46cd0e88cc86fd7d883eb8b",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 6,
@@ -245,7 +297,9 @@
       "paint": "10053",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10053.png",
       "origin": "website",
-      "sha256": "76672e183936729781e015810a65928fe5379af6fe3b95acedd69d6ea70d7a31"
+      "sha256": "76672e183936729781e015810a65928fe5379af6fe3b95acedd69d6ea70d7a31",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 7,
@@ -254,7 +308,9 @@
       "paint": "10054",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10054.png",
       "origin": "website",
-      "sha256": "077bf05e2a24663dd696359605f3456c74d7640e1814a2be61edcaab1efc4442"
+      "sha256": "077bf05e2a24663dd696359605f3456c74d7640e1814a2be61edcaab1efc4442",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 8,
@@ -263,7 +319,9 @@
       "paint": "10082",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10082.png",
       "origin": "website",
-      "sha256": "1926a84a5dd2f2f21c4c5ce896038d970dbe9e7989272cb12e6dc3464605591e"
+      "sha256": "1926a84a5dd2f2f21c4c5ce896038d970dbe9e7989272cb12e6dc3464605591e",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 9,
@@ -272,7 +330,9 @@
       "paint": "10056",
       "source": "/static/images/skins/csgo/gloves/leather_handwraps-10056.png",
       "origin": "website",
-      "sha256": "b7a7e2a828d6ec5c806250ee10e62decf268b76c0a0a9395af54855838da9f23"
+      "sha256": "b7a7e2a828d6ec5c806250ee10e62decf268b76c0a0a9395af54855838da9f23",
+      "definition_index": 5032,
+      "rarity_color": "#eb4b4b"
     }
   ],
   "agents": [
@@ -283,7 +343,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/t_agent_default.png",
       "origin": "website",
-      "sha256": "78cef9fde31c3383a9d1b52e7f2aa5fa05a94007acb3a64381f13266b8ccf788"
+      "sha256": "78cef9fde31c3383a9d1b52e7f2aa5fa05a94007acb3a64381f13266b8ccf788",
+      "definition_index": null,
+      "rarity_color": null
     },
     {
       "cell": 1,
@@ -292,7 +354,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/ct_agent_default.webp",
       "origin": "website",
-      "sha256": "efa190f01e8887dda35ea8bdfce8eb99846a947786c770209e46d80a6e20f987"
+      "sha256": "efa190f01e8887dda35ea8bdfce8eb99846a947786c770209e46d80a6e20f987",
+      "definition_index": null,
+      "rarity_color": null
     },
     {
       "cell": 2,
@@ -301,7 +365,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4619.png",
       "origin": "website",
-      "sha256": "1408cd0cf3ca02c9e1463a963d94af455cfbfc6dca97bcb88bd208858041cb2c"
+      "sha256": "1408cd0cf3ca02c9e1463a963d94af455cfbfc6dca97bcb88bd208858041cb2c",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 3,
@@ -310,7 +376,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4680.png",
       "origin": "website",
-      "sha256": "3c9eb1142999144164df8e84b983dac92f4b6507f6093a75fd588d74202208a2"
+      "sha256": "3c9eb1142999144164df8e84b983dac92f4b6507f6093a75fd588d74202208a2",
+      "definition_index": null,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 4,
@@ -319,7 +387,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4711.png",
       "origin": "website",
-      "sha256": "267ad206d34e8b25fca1fff80284020b460d3b9fe9769df58f17465e64cd2750"
+      "sha256": "267ad206d34e8b25fca1fff80284020b460d3b9fe9769df58f17465e64cd2750",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 5,
@@ -328,7 +398,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4712.png",
       "origin": "website",
-      "sha256": "2e485b9fc09ecba05eca4b96043bce21d0156b77b6c8f0eabbbd44ab06848407"
+      "sha256": "2e485b9fc09ecba05eca4b96043bce21d0156b77b6c8f0eabbbd44ab06848407",
+      "definition_index": null,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 6,
@@ -337,7 +409,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4713.png",
       "origin": "website",
-      "sha256": "4cbb4931e6b4771b67bf40de01f4e8faf82486f44481593c107c2f5052f2e93c"
+      "sha256": "4cbb4931e6b4771b67bf40de01f4e8faf82486f44481593c107c2f5052f2e93c",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 7,
@@ -346,7 +420,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4714.png",
       "origin": "website",
-      "sha256": "caad70d9630512000e8f0dc096dcc70dcc53170ad9482c3dee63721c3ad9c39a"
+      "sha256": "caad70d9630512000e8f0dc096dcc70dcc53170ad9482c3dee63721c3ad9c39a",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 8,
@@ -355,7 +431,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4715.png",
       "origin": "website",
-      "sha256": "2126af72c220aff42963a11d70536d7819077f3a2b3cc7ce8b5447cee4568785"
+      "sha256": "2126af72c220aff42963a11d70536d7819077f3a2b3cc7ce8b5447cee4568785",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 9,
@@ -364,7 +442,9 @@
       "paint": 0,
       "source": "/static/images/skins/agents/agent-4716.png",
       "origin": "website",
-      "sha256": "3578be1a6d3f1e70dac1fa484d3183acccdd8c3582d7e6bfbcf21f60ade49334"
+      "sha256": "3578be1a6d3f1e70dac1fa484d3183acccdd8c3582d7e6bfbcf21f60ade49334",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     }
   ],
   "music": [
@@ -375,7 +455,9 @@
       "paint": "1",
       "source": "/static/images/skins/music/music_kit-1.png",
       "origin": "website",
-      "sha256": "e2c9fd67c6cda1103709f823c422f57d3972e64eef93762219955a692e89ff96"
+      "sha256": "e2c9fd67c6cda1103709f823c422f57d3972e64eef93762219955a692e89ff96",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 1,
@@ -384,7 +466,9 @@
       "paint": "2",
       "source": "/static/images/skins/music/music_kit-2.png",
       "origin": "website",
-      "sha256": "e913b654fae8084bb19b1e1af538899d1851c3a91a52353e5748bc2623ab90de"
+      "sha256": "e913b654fae8084bb19b1e1af538899d1851c3a91a52353e5748bc2623ab90de",
+      "definition_index": null,
+      "rarity_color": null
     },
     {
       "cell": 2,
@@ -393,7 +477,9 @@
       "paint": "3",
       "source": "/static/images/skins/music/music_kit-3.png",
       "origin": "website",
-      "sha256": "164233dba995eb3aea3f87c8eaee8ea831444ac05e38ca0e2fae4ca296d0c0a0"
+      "sha256": "164233dba995eb3aea3f87c8eaee8ea831444ac05e38ca0e2fae4ca296d0c0a0",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 3,
@@ -402,7 +488,9 @@
       "paint": "4",
       "source": "/static/images/skins/music/music_kit-4.png",
       "origin": "website",
-      "sha256": "815fe4573598685980b164f00fc5e4ac0f55013503b159ec2360bfc3e24fcd90"
+      "sha256": "815fe4573598685980b164f00fc5e4ac0f55013503b159ec2360bfc3e24fcd90",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 4,
@@ -411,7 +499,9 @@
       "paint": "5",
       "source": "/static/images/skins/music/music_kit-5.png",
       "origin": "website",
-      "sha256": "2c2be3f4c7458d5cb43494a217369c1eedb3c791174c9e6dd055bd290d74c58d"
+      "sha256": "2c2be3f4c7458d5cb43494a217369c1eedb3c791174c9e6dd055bd290d74c58d",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 5,
@@ -420,7 +510,9 @@
       "paint": "6",
       "source": "/static/images/skins/music/music_kit-6.png",
       "origin": "website",
-      "sha256": "daea28e867ca99eb31acf10b8ce706dac7797bbb55d8e4f0ac7b567259b8068d"
+      "sha256": "daea28e867ca99eb31acf10b8ce706dac7797bbb55d8e4f0ac7b567259b8068d",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 6,
@@ -429,7 +521,9 @@
       "paint": "7",
       "source": "/static/images/skins/music/music_kit-7.png",
       "origin": "website",
-      "sha256": "96099425f3ee0e0c1b1870f693ad5b1e8c5cc6a2ac934d6bc4fa7e8780b26a6e"
+      "sha256": "96099425f3ee0e0c1b1870f693ad5b1e8c5cc6a2ac934d6bc4fa7e8780b26a6e",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 7,
@@ -438,7 +532,9 @@
       "paint": "8",
       "source": "/static/images/skins/music/music_kit-8.png",
       "origin": "website",
-      "sha256": "e52cc840515cf9496536cb3c2832593c43bdc9a8023d7cae1d2bf013c0d960a3"
+      "sha256": "e52cc840515cf9496536cb3c2832593c43bdc9a8023d7cae1d2bf013c0d960a3",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 8,
@@ -447,7 +543,9 @@
       "paint": "9",
       "source": "/static/images/skins/music/music_kit-9.png",
       "origin": "website",
-      "sha256": "e7aa23c1f9841f62fa3d71c243c62a4523845dcbbcee8ab2c717d922c615a556"
+      "sha256": "e7aa23c1f9841f62fa3d71c243c62a4523845dcbbcee8ab2c717d922c615a556",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 9,
@@ -456,7 +554,9 @@
       "paint": "10",
       "source": "/static/images/skins/music/music_kit-10.png",
       "origin": "website",
-      "sha256": "18ed13e2db2a75028b338787cc8c3028e5cce6b5028e7e06e28afb90ec109d6d"
+      "sha256": "18ed13e2db2a75028b338787cc8c3028e5cce6b5028e7e06e28afb90ec109d6d",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     }
   ],
   "pins": [
@@ -467,7 +567,9 @@
       "paint": "875",
       "source": "/static/images/skins/collectibles/collectible-875.png",
       "origin": "website",
-      "sha256": "22ef48663967c71ef4a74a334a55bdee5f1d203c2bbdebc44c82d99d4bd802f7"
+      "sha256": "22ef48663967c71ef4a74a334a55bdee5f1d203c2bbdebc44c82d99d4bd802f7",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 1,
@@ -476,7 +578,9 @@
       "paint": "876",
       "source": "/static/images/skins/collectibles/collectible-876.png",
       "origin": "website",
-      "sha256": "431008c764f52be14f8f7207e1869f2aa4bd2e91a6d8be09eff9b6411f40f068"
+      "sha256": "431008c764f52be14f8f7207e1869f2aa4bd2e91a6d8be09eff9b6411f40f068",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 2,
@@ -485,7 +589,9 @@
       "paint": "877",
       "source": "/static/images/skins/collectibles/collectible-877.png",
       "origin": "website",
-      "sha256": "e73084dc0789654c44666adc11ced9d90c4f2f3ed6de5bc4c46f51bb6e61144b"
+      "sha256": "e73084dc0789654c44666adc11ced9d90c4f2f3ed6de5bc4c46f51bb6e61144b",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 3,
@@ -494,7 +600,9 @@
       "paint": "878",
       "source": "/static/images/skins/collectibles/collectible-878.png",
       "origin": "website",
-      "sha256": "624e736e2a2e47011bc8aefbac15b7156646822ee74ed005c89689586c637fc6"
+      "sha256": "624e736e2a2e47011bc8aefbac15b7156646822ee74ed005c89689586c637fc6",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 4,
@@ -503,7 +611,9 @@
       "paint": "879",
       "source": "/static/images/skins/collectibles/collectible-879.png",
       "origin": "website",
-      "sha256": "b0b8dce2793f0e420c6af2497253b1b926539225d8ed15227728bf80aa13b069"
+      "sha256": "b0b8dce2793f0e420c6af2497253b1b926539225d8ed15227728bf80aa13b069",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 5,
@@ -512,7 +622,9 @@
       "paint": "880",
       "source": "/static/images/skins/collectibles/collectible-880.png",
       "origin": "website",
-      "sha256": "b02cdb16930bf25d0cd59e4e19ea71f92ce28742321b84ff6989bb5512e12a82"
+      "sha256": "b02cdb16930bf25d0cd59e4e19ea71f92ce28742321b84ff6989bb5512e12a82",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 6,
@@ -521,7 +633,9 @@
       "paint": "881",
       "source": "/static/images/skins/collectibles/collectible-881.png",
       "origin": "website",
-      "sha256": "fb204e1bc4e4791e5f6502527ff4dde0fe3fc70becd43b7d8bba3d5e6ca00d8c"
+      "sha256": "fb204e1bc4e4791e5f6502527ff4dde0fe3fc70becd43b7d8bba3d5e6ca00d8c",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 7,
@@ -530,7 +644,9 @@
       "paint": "882",
       "source": "/static/images/skins/collectibles/collectible-882.png",
       "origin": "website",
-      "sha256": "df76ab44431d8ca6e4acaa11de8e7573d3f19f9fc0abc0383c730ae2f826b5f9"
+      "sha256": "df76ab44431d8ca6e4acaa11de8e7573d3f19f9fc0abc0383c730ae2f826b5f9",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 8,
@@ -539,7 +655,9 @@
       "paint": "883",
       "source": "/static/images/skins/collectibles/collectible-883.png",
       "origin": "website",
-      "sha256": "5ae741c04ce41eb0571c935332f76f65d1d4bdf2e8944c4833d7d34b6d5a2374"
+      "sha256": "5ae741c04ce41eb0571c935332f76f65d1d4bdf2e8944c4833d7d34b6d5a2374",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 9,
@@ -548,7 +666,9 @@
       "paint": "884",
       "source": "/static/images/skins/collectibles/collectible-884.png",
       "origin": "website",
-      "sha256": "20eefa1695d2e599f41a50332b91f6b31df290dbcb7dd957e4642d363abf1611"
+      "sha256": "20eefa1695d2e599f41a50332b91f6b31df290dbcb7dd957e4642d363abf1611",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     }
   ],
   "charm": [
@@ -559,7 +679,9 @@
       "paint": "1",
       "source": "/static/images/skins/keychains/keychain-1.png",
       "origin": "website",
-      "sha256": "96a8091f7b288779217c0cdbd417d721f39bcc668c746955f9460de7be63ec62"
+      "sha256": "96a8091f7b288779217c0cdbd417d721f39bcc668c746955f9460de7be63ec62",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 1,
@@ -568,7 +690,9 @@
       "paint": "2",
       "source": "/static/images/skins/keychains/keychain-2.png",
       "origin": "website",
-      "sha256": "c964acb9e6be9df46ab315f7dbf6a4b769a49aaa7f8267ae86e7874f11f0e20c"
+      "sha256": "c964acb9e6be9df46ab315f7dbf6a4b769a49aaa7f8267ae86e7874f11f0e20c",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 2,
@@ -577,7 +701,9 @@
       "paint": "3",
       "source": "/static/images/skins/keychains/keychain-3.png",
       "origin": "website",
-      "sha256": "25872ebddd9d07edc79187a90dbaf4a3aeed9c2fb8b52295e36d6828c8939208"
+      "sha256": "25872ebddd9d07edc79187a90dbaf4a3aeed9c2fb8b52295e36d6828c8939208",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 3,
@@ -586,7 +712,9 @@
       "paint": "4",
       "source": "/static/images/skins/keychains/keychain-4.png",
       "origin": "website",
-      "sha256": "cfb7efe1f79ec0c094912bc49d0c74f742f864b6b255ec049b569f0ec55327f8"
+      "sha256": "cfb7efe1f79ec0c094912bc49d0c74f742f864b6b255ec049b569f0ec55327f8",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 4,
@@ -595,7 +723,9 @@
       "paint": "5",
       "source": "/static/images/skins/keychains/keychain-5.png",
       "origin": "website",
-      "sha256": "c7b6a19add49b49a3210822ec6207f7095387e59151762adbe88313c0f8cab10"
+      "sha256": "c7b6a19add49b49a3210822ec6207f7095387e59151762adbe88313c0f8cab10",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 5,
@@ -604,7 +734,9 @@
       "paint": "6",
       "source": "/static/images/skins/keychains/keychain-6.png",
       "origin": "website",
-      "sha256": "da36954908db60951a5fda29ebd0550a2bd3f57cf35e04c3e926ca9a757cf3da"
+      "sha256": "da36954908db60951a5fda29ebd0550a2bd3f57cf35e04c3e926ca9a757cf3da",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 6,
@@ -613,7 +745,9 @@
       "paint": "7",
       "source": "/static/images/skins/keychains/keychain-7.png",
       "origin": "website",
-      "sha256": "7c96360fc97518a002b30ded7f974a5c47b82243d41083f3fcc3ba16993b8f4c"
+      "sha256": "7c96360fc97518a002b30ded7f974a5c47b82243d41083f3fcc3ba16993b8f4c",
+      "definition_index": null,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 7,
@@ -622,7 +756,9 @@
       "paint": "8",
       "source": "/static/images/skins/keychains/keychain-8.png",
       "origin": "website",
-      "sha256": "c1fea271cf403aa5894783bea22cb1a4a69c9a1bc9b6cb077054024cacad21a6"
+      "sha256": "c1fea271cf403aa5894783bea22cb1a4a69c9a1bc9b6cb077054024cacad21a6",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     },
     {
       "cell": 8,
@@ -631,7 +767,9 @@
       "paint": "9",
       "source": "/static/images/skins/keychains/keychain-9.png",
       "origin": "website",
-      "sha256": "030daa494d8ca3bf89328ae42d54f34e326659d7c4ca1f808abadeb51604f367"
+      "sha256": "030daa494d8ca3bf89328ae42d54f34e326659d7c4ca1f808abadeb51604f367",
+      "definition_index": null,
+      "rarity_color": "#d32ce6"
     },
     {
       "cell": 9,
@@ -640,7 +778,9 @@
       "paint": "10",
       "source": "/static/images/skins/keychains/keychain-10.png",
       "origin": "website",
-      "sha256": "60e251e243556aa6c352fb0ad805aa4994c5b4d93a2e24d37f5a8ee6836b73a4"
+      "sha256": "60e251e243556aa6c352fb0ad805aa4994c5b4d93a2e24d37f5a8ee6836b73a4",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
     }
   ],
   "stickers": [
@@ -651,7 +791,9 @@
       "paint": "1",
       "source": "/static/images/skins/csgo/stickers/sticker-1.png",
       "origin": "website",
-      "sha256": "40348e33ccae23ff0a076258b648aa9fe1c9a7f1fa23f477e7d9ab39a9759699"
+      "sha256": "40348e33ccae23ff0a076258b648aa9fe1c9a7f1fa23f477e7d9ab39a9759699",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 1,
@@ -660,7 +802,9 @@
       "paint": "2",
       "source": "/static/images/skins/csgo/stickers/sticker-2.png",
       "origin": "website",
-      "sha256": "bc72c9585f9f5667bef1125bc88ca4ac81e15ca846051956c3c292963f462d31"
+      "sha256": "bc72c9585f9f5667bef1125bc88ca4ac81e15ca846051956c3c292963f462d31",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 2,
@@ -669,7 +813,9 @@
       "paint": "3",
       "source": "/static/images/skins/csgo/stickers/sticker-3.png",
       "origin": "website",
-      "sha256": "d294b79fba791f5acbd83ba690288c46183155ef1fa9f1d209870180e62ce134"
+      "sha256": "d294b79fba791f5acbd83ba690288c46183155ef1fa9f1d209870180e62ce134",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 3,
@@ -678,7 +824,9 @@
       "paint": "4",
       "source": "/static/images/skins/csgo/stickers/sticker-4.png",
       "origin": "website",
-      "sha256": "79734d368e50fa88c3a50d2a6a806738c19830f000a7cd32beec5aef5763d18c"
+      "sha256": "79734d368e50fa88c3a50d2a6a806738c19830f000a7cd32beec5aef5763d18c",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 4,
@@ -687,7 +835,9 @@
       "paint": "5",
       "source": "/static/images/skins/csgo/stickers/sticker-5.png",
       "origin": "website",
-      "sha256": "0010be1c795c87d9304cb4cb42c4d4bfb6a7749d2646b98aabeff5bbd95f1bf4"
+      "sha256": "0010be1c795c87d9304cb4cb42c4d4bfb6a7749d2646b98aabeff5bbd95f1bf4",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 5,
@@ -696,7 +846,9 @@
       "paint": "6",
       "source": "/static/images/skins/csgo/stickers/sticker-6.png",
       "origin": "website",
-      "sha256": "6cc73e7b24054a042407abacb813c80e045b3e32838cd4868f3deb737a2ffee8"
+      "sha256": "6cc73e7b24054a042407abacb813c80e045b3e32838cd4868f3deb737a2ffee8",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 6,
@@ -705,7 +857,9 @@
       "paint": "7",
       "source": "/static/images/skins/csgo/stickers/sticker-7.png",
       "origin": "website",
-      "sha256": "7a6475e0dbc734cea9619b86da16fdfa7e208cca5f6e02e838f4fcd9a615e4a0"
+      "sha256": "7a6475e0dbc734cea9619b86da16fdfa7e208cca5f6e02e838f4fcd9a615e4a0",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 7,
@@ -714,7 +868,9 @@
       "paint": "8",
       "source": "/static/images/skins/csgo/stickers/sticker-8.png",
       "origin": "website",
-      "sha256": "21d686193cb29f77ee3d94ea54765452cafc42787585382e8677c13582e9d045"
+      "sha256": "21d686193cb29f77ee3d94ea54765452cafc42787585382e8677c13582e9d045",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 8,
@@ -723,7 +879,9 @@
       "paint": "9",
       "source": "/static/images/skins/csgo/stickers/sticker-9.png",
       "origin": "website",
-      "sha256": "649bdc4ea3fff47568fb8386dcf5824b8710c8c01433f2c4f495b1eec7d7a7c8"
+      "sha256": "649bdc4ea3fff47568fb8386dcf5824b8710c8c01433f2c4f495b1eec7d7a7c8",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     },
     {
       "cell": 9,
@@ -732,7 +890,9 @@
       "paint": "10",
       "source": "/static/images/skins/csgo/stickers/sticker-10.png",
       "origin": "website",
-      "sha256": "6efa2bdb0e43c1137fc51c5766169d92b94a8ec6466753d9823933c3f2b22ae4"
+      "sha256": "6efa2bdb0e43c1137fc51c5766169d92b94a8ec6466753d9823933c3f2b22ae4",
+      "definition_index": null,
+      "rarity_color": "#ded6cc"
     }
   ],
   "knives": [
@@ -743,7 +903,9 @@
       "paint": 0,
       "source": "/static/images/skins/csgo/skins/weapon_bayonet.png",
       "origin": "website",
-      "sha256": "601029d01d795d1baf2257eddf8f0fb10aa24d05368a03369254e146974a5784"
+      "sha256": "601029d01d795d1baf2257eddf8f0fb10aa24d05368a03369254e146974a5784",
+      "definition_index": 500,
+      "rarity_color": null
     },
     {
       "cell": 1,
@@ -752,7 +914,9 @@
       "paint": "38",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-38.png",
       "origin": "website",
-      "sha256": "044af1bb979e45d8619d41e895491305e1ba0e5e10b79805311abf6f5731269e"
+      "sha256": "044af1bb979e45d8619d41e895491305e1ba0e5e10b79805311abf6f5731269e",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 2,
@@ -761,7 +925,9 @@
       "paint": "417",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-417.png",
       "origin": "website",
-      "sha256": "91ff283dee9d5248b66c619bb0c6e4124ae6f33a8f03a80919084ce0ebb37ad8"
+      "sha256": "91ff283dee9d5248b66c619bb0c6e4124ae6f33a8f03a80919084ce0ebb37ad8",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 3,
@@ -770,7 +936,9 @@
       "paint": "418",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-418.png",
       "origin": "website",
-      "sha256": "bf73e8f15035cf6c67cf47b588b3a876c74f7162f4794fcdc45d35ff687cd089"
+      "sha256": "bf73e8f15035cf6c67cf47b588b3a876c74f7162f4794fcdc45d35ff687cd089",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 4,
@@ -779,7 +947,9 @@
       "paint": "419",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-419.png",
       "origin": "website",
-      "sha256": "7c24f8d010c256e7b63cfb6693692bca1da45e70feaad8a28cb9744063cfe5ed"
+      "sha256": "7c24f8d010c256e7b63cfb6693692bca1da45e70feaad8a28cb9744063cfe5ed",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 5,
@@ -788,7 +958,9 @@
       "paint": "420",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-420.png",
       "origin": "website",
-      "sha256": "a5038ee634c68583d08936c582cf7ad7b35acfa83688e7e8b77c7c9e188903b7"
+      "sha256": "a5038ee634c68583d08936c582cf7ad7b35acfa83688e7e8b77c7c9e188903b7",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 6,
@@ -797,7 +969,9 @@
       "paint": "421",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-421.png",
       "origin": "website",
-      "sha256": "10dbbef40f427cab1528ad20fbc4201ffe2560362c62f4a8f0566f6160c4c3d9"
+      "sha256": "10dbbef40f427cab1528ad20fbc4201ffe2560362c62f4a8f0566f6160c4c3d9",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 7,
@@ -806,7 +980,9 @@
       "paint": "568",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-568.png",
       "origin": "website",
-      "sha256": "537c5b33c18a020d9d2d1bfc60ef3fb879b8416958528cd1116d23cf4510ec1f"
+      "sha256": "537c5b33c18a020d9d2d1bfc60ef3fb879b8416958528cd1116d23cf4510ec1f",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 8,
@@ -815,7 +991,9 @@
       "paint": "569",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-569.png",
       "origin": "website",
-      "sha256": "c6771d887815082f38f87ae54753246b3568769fb9c6683178e066e8c9c818e9"
+      "sha256": "c6771d887815082f38f87ae54753246b3568769fb9c6683178e066e8c9c818e9",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     },
     {
       "cell": 9,
@@ -824,7 +1002,9 @@
       "paint": "570",
       "source": "/static/images/skins/csgo/skins/weapon_bayonet-570.png",
       "origin": "website",
-      "sha256": "85685f382f55ddb47f52d469062bd06cdfafd5f12f6c66e79056359d0b1b6c86"
+      "sha256": "85685f382f55ddb47f52d469062bd06cdfafd5f12f6c66e79056359d0b1b6c86",
+      "definition_index": 500,
+      "rarity_color": "#eb4b4b"
     }
   ],
   "custom": [
@@ -833,83 +1013,228 @@
       "name": "AK-47 - Дедал",
       "weapon": "weapon_ak47",
       "paint": "daedalos",
-      "source": "/static/images/custom_skins/2-744e08bdf3fb.webp",
-      "origin": "custom_site",
-      "sha256": "744e08bdf3fb5b252caee88a8b4257954f3cb755f96a9494157a1196ea4cdd8d"
+      "source": "daedalos.png",
+      "origin": "website_editor_render",
+      "sha256": "64c64ce3b67364b664bafd3cfe96926a2c5e4bfffb1e6952794267696d449d80",
+      "definition_index": null,
+      "rarity_color": null
+    }
+  ],
+  "rifles": [
+    {
+      "cell": 0,
+      "name": "AK-47",
+      "weapon": "weapon_ak47",
+      "paint": 0,
+      "source": "/static/images/skins/csgo/skins/weapon_ak47.png",
+      "origin": "website",
+      "sha256": "9cb075159a082582cd5fff244e2c28fbd46fd71d02d0f1b1136699860e6982b6",
+      "definition_index": 7,
+      "rarity_color": null
     },
     {
       "cell": 1,
-      "name": "AK-47 - Светоснежка",
-      "weapon": "weapon_ak47",
-      "paint": "ak_12",
-      "source": "/static/images/custom_skins/8-4a5a08f9e24d.webp",
-      "origin": "custom_site",
-      "sha256": "4a5a08f9e24d09cd1c3105a6fb557941116003e83e8a16eae3f4d45ed414d60c"
+      "name": "AUG",
+      "weapon": "weapon_aug",
+      "paint": 0,
+      "source": "/static/images/skins/csgo/skins/weapon_aug.png",
+      "origin": "website",
+      "sha256": "54842230e0d57af1854ba286aaf67a57b5351796dd97990bb796f160d85d5d05",
+      "definition_index": 8,
+      "rarity_color": null
     },
     {
       "cell": 2,
-      "name": "AK-47 - Insane",
-      "weapon": "weapon_ak47",
-      "paint": "ak_insane",
-      "source": "/static/images/custom_skins/11-1516d440b7a4.webp",
-      "origin": "custom_site",
-      "sha256": "1516d440b7a443c79b4716ffabb179507cf668eaa8db4520503c8bcbb59e66bd"
+      "name": "FAMAS",
+      "weapon": "weapon_famas",
+      "paint": 0,
+      "source": "/static/images/skins/csgo/skins/weapon_famas.png",
+      "origin": "website",
+      "sha256": "95faabb0aaecd1578ea0e12e1f87060929e89a3bc847ea67c9e47a888f881ca5",
+      "definition_index": 10,
+      "rarity_color": null
     },
     {
       "cell": 3,
-      "name": "AK-47 - Future",
-      "weapon": "weapon_ak47",
-      "paint": "ak_future_ag2",
-      "source": "/static/images/custom_skins/12-aaf564b172d7.webp",
-      "origin": "custom_site",
-      "sha256": "aaf564b172d76b2dd8f77ef74380f4f6e572d4890eb5bd0edbedd1286ceb1a9d"
+      "name": "Galil AR",
+      "weapon": "weapon_galilar",
+      "paint": 0,
+      "source": "/static/images/skins/csgo/skins/weapon_galilar.png",
+      "origin": "website",
+      "sha256": "b8ad9bf075ceb928eb638463f1f9d92f62cb0769481c3db0f9108386be2c55de",
+      "definition_index": 13,
+      "rarity_color": null
     },
     {
       "cell": 4,
-      "name": "AK-47 - Oni",
-      "weapon": "weapon_ak47",
-      "paint": "ak_oni_ag2",
-      "source": "/static/images/custom_skins/13-d3e283409fea.webp",
-      "origin": "custom_site",
-      "sha256": "d3e283409feaf07db3c8eabc3cbc9749efef6cd4cc2bad53b02768b0ce01b893"
+      "name": "M4A4",
+      "weapon": "weapon_m4a1",
+      "paint": 0,
+      "source": "/static/images/skins/csgo/skins/weapon_m4a1.png",
+      "origin": "website",
+      "sha256": "c2efd70ebf85915a640769defba226a8cb3423718eb2fca56396f3d8267f8c9e",
+      "definition_index": 16,
+      "rarity_color": null
     },
     {
       "cell": 5,
-      "name": "AK-47 - Kuronami",
-      "weapon": "weapon_ak47",
-      "paint": "kuronami",
-      "source": "/static/images/custom_skins/14-edbe084f9e78.webp",
-      "origin": "custom_site",
-      "sha256": "edbe084f9e785f722084144b8d5c35de56bb610a8974d263a07220690ace9d08"
+      "name": "M4A1-S",
+      "weapon": "weapon_m4a1_silencer",
+      "paint": 0,
+      "source": "/static/images/skins/csgo/skins/weapon_m4a1_silencer.png",
+      "origin": "website",
+      "sha256": "caa548f0b09e83f790c2ded87a5eee882d192f709142a07ec1ced15126dfee94",
+      "definition_index": 60,
+      "rarity_color": null
     },
     {
       "cell": 6,
-      "name": "AK-47 - Prime",
-      "weapon": "weapon_ak47",
-      "paint": "prime_ak",
-      "source": "/static/images/custom_skins/15-716f54601792.webp",
-      "origin": "custom_site",
-      "sha256": "716f546017922cd7c531e22360c340d644d1ef88ca07f097132a115d23c931e4"
+      "name": "SG 553",
+      "weapon": "weapon_sg556",
+      "paint": 0,
+      "source": "/static/images/skins/csgo/skins/weapon_sg556.png",
+      "origin": "website",
+      "sha256": "4ff0f6be0d50e3c9cecd6e583c269e51ca68400f93f65a35c079e2d5882371e1",
+      "definition_index": 39,
+      "rarity_color": null
+    }
+  ],
+  "graffiti": [
+    {
+      "cell": 0,
+      "name": "Эйс",
+      "weapon": "graffiti",
+      "paint": 1671,
+      "source": "/images/ace_01_a355fcd8.webp",
+      "origin": "cs2_lib",
+      "sha256": "a355fcd87d3c4c9a7040aeb8f0b46bbc7d3e0d86bfe69f1436cbfc3418809b84",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
+    },
+    {
+      "cell": 1,
+      "name": "Банан",
+      "weapon": "graffiti",
+      "paint": 1672,
+      "source": "/images/banana_8d38fc57.webp",
+      "origin": "cs2_lib",
+      "sha256": "8d38fc57aa72085ba1d7bc142619a757380c2cdd278f10c16380f559c317831e",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
+    },
+    {
+      "cell": 2,
+      "name": "Цербер",
+      "weapon": "graffiti",
+      "paint": 1673,
+      "source": "/images/cerberus_5d474c47.webp",
+      "origin": "cs2_lib",
+      "sha256": "5d474c47ba2476e8343803ff2817394da94bc29e29b4013207133cabf33e7ff7",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
+    },
+    {
+      "cell": 3,
+      "name": "Последняя надежда",
+      "weapon": "graffiti",
+      "paint": 1674,
+      "source": "/images/clutch_01_f8e9f054.webp",
+      "origin": "cs2_lib",
+      "sha256": "f8e9f0540136f48d926d1033f0ae5bf4b1bee99ee3ce62b9c51b346154c808b4",
+      "definition_index": null,
+      "rarity_color": "#d32ce6"
+    },
+    {
+      "cell": 4,
+      "name": "Корона",
+      "weapon": "graffiti",
+      "paint": 1675,
+      "source": "/images/crown_f0c6ba24.webp",
+      "origin": "cs2_lib",
+      "sha256": "f0c6ba246c3152f530c7cafe17adf52a03a2eb34cd2e2e62758e7b58b8b8b41e",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
+    },
+    {
+      "cell": 5,
+      "name": "Страж",
+      "weapon": "graffiti",
+      "paint": 1676,
+      "source": "/images/ct_484d4115.webp",
+      "origin": "cs2_lib",
+      "sha256": "484d4115f46780cb3cae22f9ae2b85023455f99ce0020490e7d8a785333319b9",
+      "definition_index": null,
+      "rarity_color": "#4b69ff"
+    },
+    {
+      "cell": 6,
+      "name": "EZ",
+      "weapon": "graffiti",
+      "paint": 1677,
+      "source": "/images/ez_02_b5a012b6.webp",
+      "origin": "cs2_lib",
+      "sha256": "b5a012b6f65a1fddb8a863c31255339aefec49f8667aab368c1326e14b6ac2db",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     },
     {
       "cell": 7,
-      "name": "AK-47 - NextCS2",
-      "weapon": "weapon_ak47",
-      "paint": "weapon_rif_ak47",
-      "source": "/static/images/custom_skins/16-327eb79bd00b.webp",
-      "origin": "custom_site",
-      "sha256": "327eb79bd00b608435237a670c56e8c7a5c012502ca9f4fcda373c1749f9ce8d"
+      "name": "Огненный змей",
+      "weapon": "graffiti",
+      "paint": 1678,
+      "source": "/images/fireserpent_c1f19ed2.webp",
+      "origin": "cs2_lib",
+      "sha256": "c1f19ed2e812a5fab32fe57ea9240648302aa85d818c545359096d39ae1ab613",
+      "definition_index": null,
+      "rarity_color": "#d32ce6"
+    },
+    {
+      "cell": 8,
+      "name": "Утренний вой",
+      "weapon": "graffiti",
+      "paint": 1679,
+      "source": "/images/howling_dawn_ddf3fbcb.webp",
+      "origin": "cs2_lib",
+      "sha256": "ddf3fbcbff35af814e254e7a7f24d8e57ba2a195d328771084d85c269070c365",
+      "definition_index": null,
+      "rarity_color": "#d32ce6"
+    },
+    {
+      "cell": 9,
+      "name": "Поцелуйчики",
+      "weapon": "graffiti",
+      "paint": 1680,
+      "source": "/images/kisses_85881bf0.webp",
+      "origin": "cs2_lib",
+      "sha256": "85881bf0aa1791b385a89dc99052020ee21b1f682d46f0009bfbd978ff8915e6",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
+    }
+  ],
+  "patches": [
+    {
+      "cell": 0,
+      "name": "Безумный банан",
+      "weapon": "patch",
+      "paint": 4550,
+      "source": "/images/patch_banana_dcdbfd6a.webp",
+      "origin": "cs2_lib",
+      "sha256": "dcdbfd6a2b815c9c388aefdf88d16a6d0c99943ed304b419c3bbb423fa5706c4",
+      "definition_index": null,
+      "rarity_color": "#8847ff"
     }
   ],
   "pet": [
     {
       "cell": 0,
-      "name": "Курица · иллюстрация",
+      "name": "Цыплёнок",
       "weapon": "pet",
-      "paint": "illustration",
-      "source": "/static/images/plus/perk-chicken.webp",
-      "origin": "website",
-      "sha256": "77772566cb640de5fb919a8b0892a47bec87187aeb1364985a04e0d4660e13e9"
+      "paint": "chick",
+      "source": "panorama/images/icons/ui/pet_chick.vsvg_c",
+      "origin": "valve_native_decompiled",
+      "sha256": "625cef050f0492e0100ed06b971e1fc450da7877d4a4fd09e5371e632c2a9804",
+      "definition_index": null,
+      "rarity_color": null
     }
   ]
 }
