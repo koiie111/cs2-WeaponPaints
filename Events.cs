@@ -35,7 +35,7 @@ namespace WeaponPaints
 			// apply the previous occupant's native item state while MySQL is still loading.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
             _gloveOverrides.Remove(player.Slot);
-            _commandRefreshes.Remove(player.Slot);
+            CancelCommandRefresh(player.Slot);
             _externalPlayerApplies.Remove(player.Slot);
             ForgetGraffiti(player.Slot, player.SteamID);
 			GPlayersKnife.TryRemove(player.Slot, out _);
@@ -114,7 +114,7 @@ namespace WeaponPaints
 			// reconnecting client inherit stale WeaponInfo and can crash native item hooks.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
             _gloveOverrides.Remove(player.Slot);
-            _commandRefreshes.Remove(player.Slot);
+            CancelCommandRefresh(player.Slot);
             _externalPlayerApplies.Remove(player.Slot);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
             ForgetGraffiti(player.Slot, player.SteamID);
@@ -160,7 +160,7 @@ namespace WeaponPaints
 		{
             FinishCacheKeys.Clear();
             _gloveOverrides.Clear();
-            _commandRefreshes.Clear();
+            ClearCommandRefreshes();
             _externalPlayerApplies.Clear();
             ClearSkinPreviews();
             ClearGraffiti(false);
@@ -318,12 +318,15 @@ namespace WeaponPaints
 		private void RegisterListeners()
 		{
 			RegisterListener<Listeners.OnMapStart>(OnMapStart);
+            // The disconnect event can lack a valid controller. Release receipts
+            // and the bulk permit by slot even in that case.
+            RegisterListener<Listeners.OnClientDisconnect>(CancelCommandRefresh);
             RegisterListener<Listeners.OnEntityDeleted>(entity => _retiringWeapons.Remove(entity.EntityHandle.Raw));
             RegisterListener<Listeners.OnMapEnd>(() =>
             {
                 Interlocked.Increment(ref DataGeneration);
                 PlayerDataLoading.Clear();
-                _commandRefreshes.Clear();
+                ClearCommandRefreshes();
                 _externalPlayerApplies.Clear();
                 FinishCacheKeys.Clear();
                 _gloveOverrides.Clear();
