@@ -44,6 +44,8 @@ jobs:
         run: dotnet run --project tests/PetRefreshTests/PetRefreshTests.csproj -c Release
       - name: Composition compatibility checks
         run: dotnet run --project tests/CompositionTests/CompositionTests.csproj -c Release
+      - name: Agent and patch application checks
+        run: dotnet run --project tests/AgentRefreshTests/AgentRefreshTests.csproj -c Release
       - name: Agent patch lifecycle checks
         run: dotnet run --project tests/AgentPatchTests/AgentPatchTests.csproj -c Release
       - name: Optimization regression checks

@@ -365,68 +365,6 @@ namespace WeaponPaints
 			UpdateWeaponMeshGroupMask(weapon, isLegacy);
 		}
 
-		private static void GivePlayerAgent(CCSPlayerController player) => ApplyPlayerAgent(player, null);
-        private static void GivePlayerAgentWithCompletion(CCSPlayerController player, Action<bool> completed) => ApplyPlayerAgent(player, completed);
-		private static void ApplyPlayerAgent(CCSPlayerController player, Action<bool>? completed)
-		{
-			GPlayersAgent.TryGetValue(player.Slot, out var value);
-
-			var team = player.TeamNum;
-            var model = AgentModel.Normalize(team == 3 ? value.CT : value.T);
-            if (!AgentModel.IsAllowed(model, team)) model = null;
-            var originalModel = Instance._agentRestore.Find(player.Slot, player.SteamID, player.PlayerPawn.Raw, team);
-            if (model == null && originalModel == null && !Instance.HasAgentPatchOverride(player.Slot, player.SteamID, player.PlayerPawn.Raw)) { completed?.Invoke(true); return; }
-            var patchIds = new uint[3];
-            if (model != null && GPlayersPatchExpiry.TryGetValue(player.Slot, out var expiresAt) && expiresAt > DateTime.UtcNow
-                && GPlayersPatches.TryGetValue(player.Slot, out var patchTeams)
-                && patchTeams.TryGetValue(team, out var selectedPatches))
-                Array.Copy(selectedPatches, patchIds, Math.Min(3, selectedPatches.Length));
-
-			var expectedSteamId = player.SteamID.ToString();
-            var identity = DeferredPlayer.Capture(player);
-
-			try
-			{
-				Server.NextFrame(() =>
-				{
-                    var applied = false;
-                    try
-                    {
-                        if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
-					    var pawn = player.PlayerPawn.Value;
-					    if (pawn == null || !pawn.IsValid) return;
-                        if (model != null)
-                        {
-                            var engineModel = pawn.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState.ModelName;
-                            Instance._agentRestore.Remember(player.Slot, player.SteamID, pawn.EntityHandle.Raw, team, engineModel);
-                            if (Instance._agentRestore.Find(player.Slot, player.SteamID, pawn.EntityHandle.Raw, team) == null)
-                                throw new InvalidOperationException("Cannot capture the original agent model");
-                            pawn.SetModel($"agents/models/{model}.vmdl");
-                        }
-                        else if (originalModel != null)
-                        {
-                            pawn.SetModel(originalModel);
-                            Instance._agentRestore.Forget(player.Slot);
-                        }
-                        var nativePatches = pawn.PlayerPatchEconIndices;
-                        for (var slot = 0; slot < nativePatches.Length; slot++)
-                            nativePatches[slot] = slot < 3 ? patchIds[slot] : 0;
-                        Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_vecPlayerPatchEconIndices");
-                        Instance.MarkAgentPatchOverride(player.Slot, player.SteamID, pawn.EntityHandle.Raw, patchIds.Any(id => id != 0));
-                        Instance.ArmAgentPatchExpiry(player.Slot);
-                        applied = true;
-                    }
-					catch (Exception error) { Instance.Logger.LogWarning(error, "Unable to apply agent or patches"); }
-                    finally { completed?.Invoke(applied); }
-				});
-			}
-			catch (Exception error)
-			{
-				Instance.Logger.LogWarning(error, "Unable to schedule agent update");
-                completed?.Invoke(false);
-			}
-		}
-
 		private void GiveOnItemPickup(CCSPlayerController player)
 		{
 			if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive) return;
