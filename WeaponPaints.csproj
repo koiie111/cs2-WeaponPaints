@@ -17,11 +17,17 @@
 
   <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="hud-mockup/tools/**/*.cs" />
+    <Compile Remove="interop/**/*.cs" />
+    <None Include="hud-mockup/catalog/stock.json" Link="data/hud-stock-v2.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="hud-mockup/catalog/cosmetic-metadata.json" Link="data/hud-cosmetic-v2.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="hud-mockup/catalog/hud-live-contract-v6.json" Link="data/hud-live-contract-v6.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="data/graffiti.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="interop/CustomWeapons.Hud.Api/CustomWeapons.Hud.Api.csproj" Private="false" />
     <Reference Include="MenuManagerApi">
       <HintPath>3rd_party\MenuManagerApi.dll</HintPath>
     </Reference>

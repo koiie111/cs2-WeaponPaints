@@ -32,8 +32,11 @@ public partial class WeaponPaints
         if (Config.Additional.GraffitiEnabled && _graffitiCatalog.Count == 0)
             throw new InvalidOperationException("Graffiti catalogue is missing");
         AddCommand("css_spray", "Spray the selected website graffiti", SprayGraffiti);
-        AddCommand("css_graffiti", "Select graffiti on the website", (player, command) =>
-            command.ReplyToCommand($"[WeaponPaints] Граффити: {Config.Website}. После «Применить»: !wp, затем !spray."));
+        AddCommand("css_graffiti", "Select graffiti", (player, command) =>
+        {
+            if (RouteHudAlias(player, Hud.HudSection.Graffiti)) return;
+            command.ReplyToCommand($"[WeaponPaints] Граффити: {Config.Website}. После «Применить»: !wp, затем !spray.");
+        });
         RegisterListener<Listeners.OnEntitySpawned>(entity =>
         {
             if (!Config.Additional.GraffitiEnabled || !Config.ReplaceNativeGraffiti || entity.DesignerName != "player_spray_decal") return;

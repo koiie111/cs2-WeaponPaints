@@ -113,6 +113,30 @@ wp.Command(player); WP.GPlayerWeaponsInfo[1][2].Clear();
 wp.Sync.Complete(true); await wp.Active!; Server.Flush();
 Check(wp.PreviousDefinitions?.Contains(7) == true, "removed weapon row is retained for equipment reset");
 wp.FinishEquipment(true); WP.GPlayerWeaponsInfo.Clear();
+WP.CommandsCooldown.Clear(); WP.PlayerDataLoading.Clear(); wp.Sync.Reset(); wp.HudOutcomes.Clear();
+wp._gBCommandsAllowed=false; wp.HudCommand(player);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Deferred"}) && wp.Sync.Calls==0, "HUD reports deferred when refresh is not allowed");
+wp._gBCommandsAllowed=true; wp.HudOutcomes.Clear(); wp.Config.Additional.SkinEnabled=false; wp.HudCommand(player);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Deferred"}) && wp.Sync.Calls==0, "HUD reports deferred when skin pipeline is disabled");
+wp.Config.Additional.SkinEnabled=true; wp.Config.Additional.CommandWpEnabled=false; wp.HudOutcomes.Clear(); player.Messages.Clear(); wp.Sync.Reset(); wp.HudCommand(player);
+Check(wp.Sync.Calls==1, "HUD refresh must not depend on the optional chat command");
+wp.Sync.Complete(true); await wp.Active!; Server.Flush();
+Check(wp.HudOutcomes.Count==0, "HUD cannot report success before native completion");
+wp.FinishEquipment(true); Check(wp.HudOutcomes.SequenceEqual(new[]{"Applied"}) && !player.Messages.Contains("done"), "HUD completion must report applied once without legacy chat");
+wp.Sync.Reset(); wp.HudOutcomes.Clear(); wp.HudCommand(player); wp.Sync.Complete(false); await wp.Active!; Server.Flush();
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Failed"}), "HUD must report refresh failure separately");
+wp.Config.Additional.SkinEnabled=false; wp.Config.Additional.AgentEnabled=false; wp.HudOutcomes.Clear(); wp.Events.Clear(); wp.Sync.Reset();
+wp.HudCosmetic(player); Check(wp.Sync.Calls==1, "cosmetic-only HUD refresh must work with skins disabled");
+wp.Sync.Complete(true); await wp.Active!; Server.Flush();
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Applied"}) && !wp.Events.Contains("equipment") && !wp.Events.Contains("agent"),
+    "cosmetic-only refresh must skip equipment and disabled agents");
+wp.Config.Additional.SkinEnabled=true; wp.Config.Additional.AgentEnabled=true;
+wp.HudOutcomes.Clear(); wp.Sync.Reset(); wp.HudCommand(player); wp.HudCommand(player);
+wp.Sync.Complete(true); await wp.Active!; Server.Flush(); wp.Sync.Reset(); wp.FinishEquipment(true);
+Check(wp.HudOutcomes.Count==0 && wp.Sync.Calls==1, "coalesced HUD refresh must await the newest snapshot");
+wp.Sync.Complete(true); await wp.Active!; Server.Flush(); wp.FinishEquipment(true);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Applied","Applied"}), "coalesced HUD callbacks must complete exactly once each");
+wp.Config.Additional.CommandWpEnabled=true;
 Console.WriteLine("PASS: command loading, coalescing guard, game-frame dispatch, subsystem order and stale identity");
 
 namespace CounterStrikeSharp.API {
@@ -125,7 +149,7 @@ namespace CounterStrikeSharp.API.Core {
 }
 namespace CounterStrikeSharp.API.Modules.Commands { public class CommandInfo {} }
 namespace WeaponPaints {
- public class Additional { public bool CommandWpEnabled=true,SkinEnabled=true,PetsEnabled=true,MusicEnabled=true,PinsEnabled=true; }
+ public class Additional { public bool CommandWpEnabled=true,SkinEnabled=true,PetsEnabled=true,MusicEnabled=true,PinsEnabled=true,AgentEnabled=true; }
  public class ConfigData { public Additional Additional=new();public int CmdRefreshCooldownSeconds=3; }
  public class FakeSync {
   private TaskCompletionSource<bool> source=new(TaskCreationOptions.RunContinuationsAsynchronously);public int Calls;
@@ -165,6 +189,9 @@ namespace WeaponPaints {
   private void GivePlayerPin(CCSPlayerController p)=>Events.Add("pin");
   private void AddOneShot(float delay,Action action)=>Server.NextFrame(action);
   public void Command(CCSPlayerController p)=>OnCommandRefresh(p,new());
+  public readonly List<string> HudOutcomes=[];
+  public void HudCommand(CCSPlayerController p)=>RequestPlayerRefresh(p,false,fromHud:true,completed:result=>HudOutcomes.Add(result.ToString()));
+  public void HudCosmetic(CCSPlayerController p)=>RequestPlayerRefresh(p,false,fromHud:true,completed:result=>HudOutcomes.Add(result.ToString()),cosmeticOnly:true);
   public void ExternalSettled(int slot,long loadId=777)=>OnExternalPlayerLoadSettled(slot,loadId);
   public void ExternalApplying(int slot,long loadId)=>_externalPlayerApplies[slot]=loadId;
  }

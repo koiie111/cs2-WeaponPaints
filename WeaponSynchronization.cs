@@ -8,7 +8,7 @@ using System.Text;
 
 namespace WeaponPaints;
 
-internal class WeaponSynchronization
+internal partial class WeaponSynchronization
 {
 	private const int PlayerSkinLockTimeoutSeconds = 2;
 	private const int PlayerSkinWriteAttempts = 4;
@@ -39,6 +39,8 @@ internal class WeaponSynchronization
 		_database = database;
 		_config = config;
 	}
+
+
 
 	internal async Task<bool> GetPlayerData(PlayerInfo? player, long loadId, long generation)
 	{

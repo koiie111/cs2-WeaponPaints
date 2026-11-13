@@ -1,0 +1,5 @@
+# Cosmetic identity metadata
+
+`cosmetic-metadata.json` links economy IDs to explicit plugin/site identifiers. Agents are matched by exact `cs2-lib` `agents/models/` model key and then verified against both the site and the plugin agent list, including team. Music and pin identifiers are the intersection of site and plugin catalog IDs. Patch and graffiti kit/tint IDs are checked against the economy data. Pet choices and hat IDs come from the site pet catalogue and `save_pet.php`; no image path or display-name inference is used. Source SHA-256 values are embedded in the JSON.
+
+Rebuild using `python hud-mockup/tools/generate_cosmetic_metadata.py --site <skins5-directory> --economy <items.json> --plugin-data <website/data>`. `dotnet run --project tests/HudCosmeticCatalogTests/HudCosmeticCatalogTests.csproj -c Release` checks representative identities, team restrictions, runtime-list intersection, pet coverage and unknown-item rejection. At runtime load the file once and intersect agent, music and pin values with the plugin's actually loaded lists when constructing the policy.

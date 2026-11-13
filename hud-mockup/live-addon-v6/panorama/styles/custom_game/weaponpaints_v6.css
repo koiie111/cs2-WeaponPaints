@@ -1,0 +1,346 @@
+
+.outer { font-family: Stratum2; width: 100%; height: 100%; z-index: 99999; }
+.app { width: 1480px; height: 820px; horizontal-align: center; vertical-align: center; visibility: collapse; }
+.app.show { visibility: visible; }
+.app.compact { ui-scale: 80%; }
+.app.small { ui-scale: 65%; }
+.shell { width: 1480px; height: 820px; flow-children: right; background-color: #111d2af5; border: 1px solid #344b5c; }
+.nav.active { background-color: #203e50; border-left: 3px solid #79c7ef; }
+.nav:hover { background-color: #213a4b; }
+.close .buttonText { color: #b4c7d2; font-size: 17px; horizontal-align: center; vertical-align: center; }
+.back { width: fit-children; height: 40px; flow-children: right; vertical-align: center; }
+.crumbText { color: #8da6b5; font-size: 13px; margin-top: 0px; width: fit-children; vertical-align: center; text-overflow: shrink min( 9px ) ellipsis; }
+.team .buttonText { color: #bad0dc; font-size: 12px; }
+.pane { visibility: collapse; }
+.is-hidden { visibility: collapse; }
+.home.show, .catalog.show, .settings.show { visibility: visible; }
+.mosaic.small { width: 327px; }
+.toolbar { width: 1161px; height: 48px; flow-children: right; }
+.tab { width: 170px; height: 36px; padding: 0px; border-bottom: 2px solid #324b5c; }
+.tab.active { border-bottom: 2px solid #78c7ee; }
+.tab .buttonText { color: #adc3cf; font-size: 12px; font-weight: bold; }
+.search { width: 310px; height: 34px; margin-left: 195px; padding: 0px; background-color: #263b4a; flow-children: right; }
+.sort { width: 230px; height: 34px; margin-left: 20px; padding: 0px; background-color: #263b4a; }
+.grid { width: 1161px; height: 310px; flow-children: down; }
+.cardRow { width: 1161px; height: 150px; flow-children: right; margin-bottom: 8px; }
+.item { width: 224px; height: 150px; margin-right: 8px; background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #1c3040 ) ); border: 1px solid #31495a; }
+.rarity { width: 224px; height: 3px; vertical-align: bottom; background-color: #718998; }
+.selectedMark { visibility: collapse; color: #83d4f7; font-size: 18px; margin: 8px; }
+.item.selected .selectedMark { visibility: visible; color: #56d99b; }
+.itemImage { width: 186px; height: 112px; horizontal-align: center; }
+.itemName { color: #ecf4f8; font-size: 13px; font-weight: bold; margin: 103px 12px 0px 12px; width: 200px; text-overflow: shrink min( 10px ) ellipsis; }
+.itemSub { color: #7893a3; font-size: 10px; margin: 123px 12px 0px 12px; width: 200px; text-overflow: shrink min( 9px ) ellipsis; }
+.catalogFooter { width: 1161px; height: 45px; flow-children: right; padding-top: 10px; }
+.muted { color: #829ba9; font-size: 12px; }
+.catalogFooter .muted { width: 1000px; }
+.page { width: 30px; height: 26px; background-color: #263b4a; padding: 0px; }
+.pageNumber { width: 70px; text-align: center; height: 26px; vertical-align: center; color: #c8dbe5; font-size: 14px; }
+.previewName { color: #f0f7fb; font-size: 22px; font-weight: bold; margin-top: 30px; margin-bottom: 10px; }
+.sectionTitle { color: #eff7fb; font-size: 20px; font-weight: bold; }
+.settingsRight .muted { margin-top: 5px; margin-bottom: 10px; }
+.settingValue { width: 220px; height: 34px; margin-top: 11px; padding: 9px; background-color: #263e4e; }
+.settingValue .buttonText { color: #cde4ef; font-size: 12px; horizontal-align: left; vertical-align: center; }
+.valueControls { width: 220px; height: 34px; margin-top: 11px; flow-children: right; }
+.step { width: 34px; height: 34px; vertical-align: center; padding: 0px; background-color: #304d5e; }
+.step .buttonText { color: #cde4ef; font-size: 14px; }
+.valueInput { width: 152px; height: 34px; padding: 9px; background-color: #263e4e; }
+.valueInput .buttonText { color: #cde4ef; font-size: 12px; horizontal-align: left; vertical-align: center; }
+.preset { width: 53px; height: 25px; padding: 0px; margin-right: 5px; background-color: #304d5e; }
+.preset .buttonText { color: #cde4ef; font-size: 10px; }
+.decorRow { width: 550px; height: 55px; flow-children: right; margin-top: 10px; }
+.decorSlot { width: 62px; height: 45px; margin-right: 8px; background-color: #263e4e; }
+.decorSlot .buttonText { color: #9ebac9; font-size: 15px; horizontal-align: center; vertical-align: center; }
+.feature { width: 550px; height: 510px; flow-children: down; visibility: collapse; }
+.feature.show { visibility: visible; }
+.featureRow { width: 550px; height: 45px; flow-children: right; margin-bottom: 6px; background-color: #1e3240; }
+.featureLabel { width: 275px; color: #a6bdc9; font-size: 13px; margin: 0px 10px; vertical-align: center; }
+.featureInput { width: 150px; height: 34px; vertical-align: center; padding: 9px; background-color: #263e4e; }
+.featureInput .buttonText { color: #cde4ef; font-size: 12px; horizontal-align: left; vertical-align: center; }
+.applyRow { width: 550px; height: 70px; flow-children: right; }
+.apply { width: 220px; height: 44px; padding: 0px; background-color: #73bfe5; }
+.apply .buttonText { color: #0a2635; font-size: 12px; font-weight: bold; }
+.apply.disabled { background-color: #465966; }
+.plus { width: 310px; margin-left: 10px; height: 66px; padding: 10px; flow-children: down; background-color: #263d4d; visibility: collapse; }
+.plus.show { visibility: visible; }
+.plusTitle { color: #9bdaf8; font-size: 11px; font-weight: bold; }
+.plusLink .buttonText { color: #87ccee; font-size: 11px; horizontal-align: left; vertical-align: center; }
+.modalLayer { width: 1480px; height: 820px; visibility: collapse; }
+.modalLayer.show { visibility: visible; }
+.modalBackdrop { width: 1480px; height: 820px; background-color: #00000066; }
+.overlay { horizontal-align: center; vertical-align: center; width: 520px; height: 200px; padding: 25px; flow-children: down; background-color: #1b2935; border: 1px solid #445462; visibility: collapse; }
+.overlay.show { visibility: visible; }
+.stateText { color: #acc2ce; font-size: 14px; margin-top: 18px; }
+.overlayActions { flow-children: right; margin-top: 25px; }
+.stateButton { width: 140px; height: 34px; padding: 0px; margin-right: 10px; background-color: #42677d; }
+.stateButton .buttonText { color: #e9f6fc; font-size: 12px; }
+.art { background-size: contain; background-position: 50% 50%; background-repeat: no-repeat; }
+.side { width: 260px; height: 820px; flow-children: down; padding: 32px 20px; background-color: #0c1722; }
+.brand { color: #e6f5ff; font-size: 18px; font-weight: bold; margin-bottom: 34px; letter-spacing: 1px; }
+.title, .tileTitle, .heroTitle, .nav .buttonText { letter-spacing: 1px; }
+.nav .buttonText { color: #a4b7c4; font-size: 15px; font-weight: bold; horizontal-align: left; vertical-align: center; margin-left: 0px; }
+.nav { width: 220px; height: 44px; padding: 0px; flow-children: right; border-left: 3px solid #00000000; }
+.main { width: 1220px; height: 820px; padding: 20px 32px; flow-children: down; }
+.top { width: 1156px; height: 64px; flow-children: right; }
+.close { width: 36px; height: 36px; background-color: #253744; horizontal-align: right; margin-left: 15px; vertical-align: center; padding: 0px; }
+.title { color: #eef7fc; font-size: 23px; font-weight: bold; margin-top: 0px; width: fill-parent-flow( 1.0 ); margin-left: 0px; vertical-align: center; text-overflow: shrink min( 12px ) ellipsis; }
+.team { width: 190px; height: 35px; margin-top: 0px; padding: 0px; background-color: #253947; vertical-align: center; }
+.home { width: 1156px; height: 700px; flow-children: down; }
+.mosaicTop { width: 1156px; height: 460px; flow-children: right; }
+.mosaicStack { width: 555px; height: 460px; flow-children: down; }
+.mosaicBottom { width: 1156px; height: 190px; flow-children: right; margin-top: 12px; }
+.mosaicBottom .mosaic.small { width: 280px; height: 190px; }
+.mosaic { height: 100%; background-color: gradient( linear, 0% 0%, 100% 100%, from( #303d49 ), to( #24323e ) ); border: 1px solid #314654; margin-right: 12px; }
+.categoryStripe { width: 100%; height: 3px; vertical-align: bottom; background-color: #719dde; }
+.tileTitle { margin: 0px 22px 22px 22px; color: #f0f7fb; font-size: 24px; font-weight: bold; vertical-align: bottom; }
+.tileImage { width: 340px; height: 204px; horizontal-align: center; vertical-align: center; }
+.mosaic.large .tileImage { width: 570px; height: 342px; }
+.mosaic.large .tileTitle { font-size: 32px; }
+.mosaic.large { width: 589px; height: 460px; margin-right: 12px; background-color: gradient( linear, 0% 0%, 100% 100%, from( #364351 ), to( #563e47 ) ); }
+.mosaic.wide { width: 555px; height: 224px; margin-right: 0px; margin-bottom: 12px; background-color: gradient( linear, 0% 0%, 100% 100%, from( #33414c ), to( #404157 ) ); }
+.mosaic.wide .tileImage { width: 310px; height: 186px; horizontal-align: right; margin-right: 30px; }
+.mosaicBottom .tileImage { width: 220px; height: 132px; margin-top: 0px; }
+.catalog { width: 1161px; height: 660px; flow-children: down; }
+.hero { width: 1161px; height: 225px; flow-children: right; background-color: #243d4e; margin-bottom: 12px; }
+.heroCopy { width: 451px; padding: 18px 28px; flow-children: down; height: 225px; background-color: #111e29; }
+.heroArt { width: 710px; height: 225px; overflow: clip; }
+.heroImage { width: 560px; height: 336px; horizontal-align: center; margin-top: -55px; }
+.heroValue { color: #9eb1be; font-size: 12px; margin-top: 5px; }
+.heroTitle { color: #f3f8fb; font-size: 26px; font-weight: bold; margin-top: 8px; }
+.heroSub { color: #a4bac8; font-size: 13px; margin-top: 12px; }
+.configure { width: 145px; height: 32px; margin-top: 8px; padding: 0px; background-color: #76bfe5; }
+.configure .buttonText { color: #112939; font-size: 12px; font-weight: bold; }
+.settings { width: 1161px; height: 660px; flow-children: right; }
+.previewColumn { width: 585px; height: 620px; flow-children: down; background-color: #1c3040; padding: 24px; }
+.previewImage { width: 530px; height: 318px; margin-top: 55px; }
+.settingsRight { width: 550px; height: 620px; margin-left: 24px; flow-children: down; padding-top: 0px; }
+.settingRow { width: 550px; height: 53px; flow-children: right; border-bottom: 1px solid #31495a; border: 1px solid #3b4b58; margin-bottom: 6px; padding-left: 12px; }
+.settingLabel { color: #a2b4bf; font-size: 13px; width: 275px; margin-top: 17px; font-weight: bold; }
+.settingValue, .valueControls { margin-top: 9px; }
+.presetRow { width: 550px; height: 32px; flow-children: right; margin-top: 0px; }
+.navIcon { width: 32px; height: fit-children; margin-left: 10px; color: #a4b7c4; font-size: 15px; text-align: center; vertical-align: center; }
+.navText { width: 166px; color: #a4b7c4; font-size: 15px; font-weight: bold; vertical-align: center; }
+.headerDivider { width: 1px; height: 24px; margin-left: 14px; margin-right: 14px; vertical-align: center; background-color: #50616d; }
+.backIcon { width: 28px; color: #80c9ef; font-size: 24px; vertical-align: center; text-align: center; }
+.buttonText { horizontal-align: center; vertical-align: center; }
+.searchIcon { width: 18px; height: 22px; font-size: 18px; color: #aac1ce; vertical-align: center; margin-left: 12px; text-align: center; }
+.searchText { font-size: 12px; color: #aac1ce; vertical-align: center; margin-left: 8px; }
+.sort .buttonText { color: #aac1ce; font-size: 12px; }
+.page .buttonText { color: #c8dbe5; font-size: 14px; horizontal-align: center; vertical-align: center; }
+.thirdRow { visibility: collapse; }
+.thirdRow.show { visibility: visible; }
+.grid.tall { height: 510px; }
+.grid.modelGrid .item.accent-0 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263b49 ), to( #49343f ) ); }
+.grid.modelGrid .item.accent-1 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263b49 ), to( #393651 ) ); }
+.grid.modelGrid .item.accent-2 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263b49 ), to( #303e54 ) ); }
+.grid.modelGrid .item.accent-3 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263b49 ), to( #2d4548 ) ); }
+.grid.modelGrid .item.accent-4 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263b49 ), to( #484237 ) ); }
+.grid.tall .cardRow { height: 245px; margin-bottom: 8px; }
+.grid.tall .item { height: 245px; }
+.grid.tall .itemImage { width: 210px; height: 126px; margin-top: 22px; }
+.grid.tall .itemName { margin: 185px 12px 0px 12px; }
+.grid.tall .itemSub { margin: 210px 12px 0px 12px; }
+.item.selected { border: 2px solid #4bbf8a; }
+.item:hover { brightness: 1.18; }
+.featureContext { width: 550px; height: 68px; flow-children: right; margin-bottom: 8px; background-color: #283f4e; }
+.featureIcon { width: 95px; height: 57px; vertical-align: center; }
+.featureCopy { width: 430px; height: 55px; flow-children: down; vertical-align: center; padding: 8px; }
+.featureType { color: #9ab4c1; font-size: 11px; }
+.featureName { width: 410px; color: #eff7fb; font-size: 14px; font-weight: bold; margin-top: 6px; text-overflow: shrink min( 10px ) ellipsis; }
+.art-catalog-0 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_ak47_crane_flight_light_png.vtex"); }
+.art-catalog-1 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_m4a1_am_circuitboard_silver_light_png.vtex"); }
+.art-catalog-2 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_awp_aa_awp_fade_light_png.vtex"); }
+.art-catalog-3 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_deagle_aa_flames_light_png.vtex"); }
+.art-catalog-4 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_glock_aa_fade_light_png.vtex"); }
+.art-catalog-5 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_usp_silencer_am_ddpat_purple_light_png.vtex"); }
+.art-catalog-6 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_mp9_aa_hide-mp9_light_png.vtex"); }
+.art-catalog-7 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_nova_am_army_shine_light_png.vtex"); }
+.art-catalog-8 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_m249_aq_m249_aztec_light_png.vtex"); }
+.art-catalog-9 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_taser_cu_overpass_dragon_zeus_light_png.vtex"); }
+.art-finishes-0 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_ak47_crane_flight_light_png.vtex"); }
+.art-finishes-1 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_ak47_explosive_light_png.vtex"); }
+.art-finishes-2 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_ak47_puffer_custom_light_png.vtex"); }
+.art-finishes-3 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_ak47_t_bus_light_png.vtex"); }
+.art-finishes-4 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_ak_porcelain_light_png.vtex"); }
+.art-finishes-5 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_am_bamboo_jungle_light_png.vtex"); }
+.art-finishes-6 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_aq_ak47_cartel_light_png.vtex"); }
+.art-finishes-7 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_aq_oiled_light_png.vtex"); }
+.art-finishes-8 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_cu_ak-47_phantom_disruptor_light_png.vtex"); }
+.art-finishes-9 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_ak47_cu_ak47_anarchy_light_png.vtex"); }
+.art-gloves-0 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/ct_gloves_png.vtex"); }
+.art-gloves-1 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_camo_grey_light_png.vtex"); }
+.art-gloves-2 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_fabric_houndstooth_orange_light_png.vtex"); }
+.art-gloves-3 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_fabric_orange_camo_light_png.vtex"); }
+.art-gloves-4 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_caution_light_png.vtex"); }
+.art-gloves-5 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_ducttape_light_png.vtex"); }
+.art-gloves-6 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_blue_skulls_light_png.vtex"); }
+.art-gloves-7 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_geometric_blue_light_png.vtex"); }
+.art-gloves-8 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_giraffe_light_png.vtex"); }
+.art-gloves-9 { background-image: url("s2r://panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_green_camo_light_png.vtex"); }
+.art-agents-0 { background-image: url("s2r://panorama/images/econ/characters/customplayer_tm_leet_varianta_png.vtex"); }
+.art-agents-1 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_sas_png.vtex"); }
+.art-agents-2 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_st6_variantj_png.vtex"); }
+.art-agents-3 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_st6_variantl_png.vtex"); }
+.art-agents-4 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_swat_variante_png.vtex"); }
+.art-agents-5 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_swat_variantf_png.vtex"); }
+.art-agents-6 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_swat_variantg_png.vtex"); }
+.art-agents-7 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_swat_varianth_png.vtex"); }
+.art-agents-8 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_swat_varianti_png.vtex"); }
+.art-agents-9 { background-image: url("s2r://panorama/images/econ/characters/customplayer_ctm_swat_variantj_png.vtex"); }
+.art-music-0 { background-image: url("s2r://panorama/images/econ/music_kits/valve_cs2_01_png.vtex"); }
+.art-music-1 { background-image: url("s2r://panorama/images/econ/music_kits/valve_02_png.vtex"); }
+.art-music-2 { background-image: url("s2r://panorama/images/econ/music_kits/danielsadowski_01_png.vtex"); }
+.art-music-3 { background-image: url("s2r://panorama/images/econ/music_kits/noisia_01_png.vtex"); }
+.art-music-4 { background-image: url("s2r://panorama/images/econ/music_kits/robertallaire_01_png.vtex"); }
+.art-music-5 { background-image: url("s2r://panorama/images/econ/music_kits/seanmurray_01_png.vtex"); }
+.art-music-6 { background-image: url("s2r://panorama/images/econ/music_kits/feedme_01_png.vtex"); }
+.art-music-7 { background-image: url("s2r://panorama/images/econ/music_kits/dren_01_png.vtex"); }
+.art-music-8 { background-image: url("s2r://panorama/images/econ/music_kits/austinwintory_01_png.vtex"); }
+.art-music-9 { background-image: url("s2r://panorama/images/econ/music_kits/sasha_01_png.vtex"); }
+.art-pins-0 { background-image: url("s2r://panorama/images/econ/status_icons/dreamhack_2013_champion_png.vtex"); }
+.art-pins-1 { background-image: url("s2r://panorama/images/econ/status_icons/dreamhack_2013_finalist_png.vtex"); }
+.art-pins-2 { background-image: url("s2r://panorama/images/econ/status_icons/dreamhack_2013_semifinalist_png.vtex"); }
+.art-pins-3 { background-image: url("s2r://panorama/images/econ/status_icons/dreamhack_2013_quarterfinalist_png.vtex"); }
+.art-pins-4 { background-image: url("s2r://panorama/images/econ/status_icons/katowice_2014_champion_png.vtex"); }
+.art-pins-5 { background-image: url("s2r://panorama/images/econ/status_icons/katowice_2014_finalist_png.vtex"); }
+.art-pins-6 { background-image: url("s2r://panorama/images/econ/status_icons/katowice_2014_semifinalist_png.vtex"); }
+.art-pins-7 { background-image: url("s2r://panorama/images/econ/status_icons/katowice_2014_quarterfinalist_png.vtex"); }
+.art-pins-8 { background-image: url("s2r://panorama/images/econ/status_icons/cologne_trophy_champion_png.vtex"); }
+.art-pins-9 { background-image: url("s2r://panorama/images/econ/status_icons/cologne_trophy_finalist_png.vtex"); }
+.art-charm-0 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_ava_png.vtex"); }
+.art-charm-1 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_banana_png.vtex"); }
+.art-charm-2 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_cat_png.vtex"); }
+.art-charm-3 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_catbeach_png.vtex"); }
+.art-charm-4 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_chicken_png.vtex"); }
+.art-charm-5 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_guerilla_png.vtex"); }
+.art-charm-6 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_howl_png.vtex"); }
+.art-charm-7 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_kev_png.vtex"); }
+.art-charm-8 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_monster_png.vtex"); }
+.art-charm-9 { background-image: url("s2r://panorama/images/econ/keychains/missinglink/kc_missinglink_sam_catchup_png.vtex"); }
+.art-stickers-0 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_gologo1_png.vtex"); }
+.art-stickers-1 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_gologo1_holo_png.vtex"); }
+.art-stickers-2 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_gologo2_png.vtex"); }
+.art-stickers-3 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_gologo2_holo_png.vtex"); }
+.art-stickers-4 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_snowflake2_png.vtex"); }
+.art-stickers-5 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_snowflake3_png.vtex"); }
+.art-stickers-6 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_bears_png.vtex"); }
+.art-stickers-7 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_bears_holo_png.vtex"); }
+.art-stickers-8 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_mountain_png.vtex"); }
+.art-stickers-9 { background-image: url("s2r://panorama/images/econ/stickers/dreamhack/dh_mountain_holo_png.vtex"); }
+.art-knives-0 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_bayonet_png.vtex"); }
+.art-knives-1 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_aa_fade_light_png.vtex"); }
+.art-knives-2 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_blackpearl_marbleized_light_png.vtex"); }
+.art-knives-3 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase1_light_png.vtex"); }
+.art-knives-4 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase2_light_png.vtex"); }
+.art-knives-5 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase3_light_png.vtex"); }
+.art-knives-6 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase4_light_png.vtex"); }
+.art-knives-7 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_emerald_marbleized_light_png.vtex"); }
+.art-knives-8 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_gamma_doppler_phase1_light_png.vtex"); }
+.art-knives-9 { background-image: url("s2r://panorama/images/econ/default_generated/weapon_bayonet_am_gamma_doppler_phase2_light_png.vtex"); }
+.art-custom-0 { background-image: url("s2r://materials/weaponpaints/custom_v6.vtex"); }
+.art-rifles-0 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_ak47_png.vtex"); }
+.art-rifles-1 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_aug_png.vtex"); }
+.art-rifles-2 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_famas_png.vtex"); }
+.art-rifles-3 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_galilar_png.vtex"); }
+.art-rifles-4 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_m4a1_png.vtex"); }
+.art-rifles-5 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_m4a1_silencer_png.vtex"); }
+.art-rifles-6 { background-image: url("s2r://panorama/images/econ/weapons/base_weapons/weapon_sg556_png.vtex"); }
+.art-graffiti-0 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/ace_01_png.vtex"); }
+.art-graffiti-1 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/banana_png.vtex"); }
+.art-graffiti-2 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/cerberus_png.vtex"); }
+.art-graffiti-3 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/clutch_01_png.vtex"); }
+.art-graffiti-4 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/crown_png.vtex"); }
+.art-graffiti-5 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/ct_png.vtex"); }
+.art-graffiti-6 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/ez_02_png.vtex"); }
+.art-graffiti-7 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/fireserpent_png.vtex"); }
+.art-graffiti-8 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/howling_dawn_png.vtex"); }
+.art-graffiti-9 { background-image: url("s2r://panorama/images/econ/stickers/valve_sprays/kisses_png.vtex"); }
+.art-patches-0 { background-image: url("s2r://panorama/images/econ/patches/case01/patch_banana_png.vtex"); }
+.art-pet-0 { background-image: url("s2r://panorama/images/icons/ui/pet_chick.vsvg"); }
+.item.tier-ded6cc, .mosaic.tier-ded6cc, .heroArt.tier-ded6cc, .previewColumn.tier-ded6cc { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #505c64 ) ); }
+.tier-ded6cc .rarity, .tier-ded6cc .categoryStripe { background-color: #ded6cc; }
+.item.tier-b0c3d9, .mosaic.tier-b0c3d9, .heroArt.tier-b0c3d9, .previewColumn.tier-b0c3d9 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #435767 ) ); }
+.tier-b0c3d9 .rarity, .tier-b0c3d9 .categoryStripe { background-color: #b0c3d9; }
+.item.tier-5e98d9, .mosaic.tier-5e98d9, .heroArt.tier-5e98d9, .previewColumn.tier-5e98d9 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #2c4b67 ) ); }
+.tier-5e98d9 .rarity, .tier-5e98d9 .categoryStripe { background-color: #5e98d9; }
+.item.tier-4b69ff, .mosaic.tier-4b69ff, .heroArt.tier-4b69ff, .previewColumn.tier-4b69ff { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #273e72 ) ); }
+.tier-4b69ff .rarity, .tier-4b69ff .categoryStripe { background-color: #4b69ff; }
+.item.tier-8847ff, .mosaic.tier-8847ff, .heroArt.tier-8847ff, .previewColumn.tier-8847ff { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #383472 ) ); }
+.tier-8847ff .rarity, .tier-8847ff .categoryStripe { background-color: #8847ff; }
+.item.tier-d32ce6, .mosaic.tier-d32ce6, .heroArt.tier-d32ce6, .previewColumn.tier-d32ce6 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #4d2d6b ) ); }
+.tier-d32ce6 .rarity, .tier-d32ce6 .categoryStripe { background-color: #d32ce6; }
+.item.tier-eb4b4b, .mosaic.tier-eb4b4b, .heroArt.tier-eb4b4b, .previewColumn.tier-eb4b4b { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #54353f ) ); }
+.tier-eb4b4b .rarity, .tier-eb4b4b .categoryStripe { background-color: #eb4b4b; }
+.item.tier-e4ae39, .mosaic.tier-e4ae39, .heroArt.tier-e4ae39, .previewColumn.tier-e4ae39 { background-color: gradient( linear, 0% 0%, 100% 100%, from( #263845 ), to( #52513a ) ); }
+.tier-e4ae39 .rarity, .tier-e4ae39 .categoryStripe { background-color: #e4ae39; }
+.offer { width: 470px; height: 110px; flow-children: down; visibility: collapse; }
+.offer.show { visibility: visible; }
+.offerItem { color: #eff7fb; font-size: 14px; }
+.offerPrice { color: #eff7fb; font-size: 13px; margin-top: 8px; }
+.offerUrl { color: #87ccee; font-size: 12px; margin-top: 6px; }
+
+/* Native-only v3: the shell must obscure the game world, as in the approved UI. */
+.shell { background-color: #111d2a; }
+
+/* Keep the entire contained hero art inside its 225px clipping parent. */
+.heroImage { width: 560px; height: 216px; margin-top: 0px; vertical-align: center; }
+/* A 90% default is a single safe preset, not aspect-ratio detection. */
+.app { ui-scale: 90%; }
+/* Opt-in for users who have room for the original 100% layout. */
+.app.normal { ui-scale: 100%; }
+
+/* Keep pager buttons symmetric; the label consumes remaining flow space. */
+.catalogFooter .muted { width: fill-parent-flow( 1.0 ); }
+.catalogFooter .page { width: 40px; height: 26px; }
+.catalogFooter .pageNumber { width: 70px; height: fit-children; vertical-align: center; text-align: center; }
+
+/* Native buttons can apply alignment independent of flow; pin icon/text left. */
+.search { padding-left: 12px; }
+.searchIcon { margin-left: 0px; horizontal-align: left; }
+.searchText { margin-left: 6px; horizontal-align: left; }
+
+/* Preserve a 12px inset at both ends and center numeric values. */
+.featureRow { padding: 0px 12px; }
+.featureLabel { width: fill-parent-flow( 1.0 ); margin: 0px; }
+.settingRow { padding-right: 12px; }
+.settingLabel { width: fill-parent-flow( 1.0 ); }
+.featureInput .buttonText, .valueInput .buttonText {
+    width: fit-children;
+    height: fit-children;
+    horizontal-align: center;
+    vertical-align: center;
+    text-align: center;
+}
+
+/* Stock client vector resources; Panel backgrounds avoid font-baseline drift. */
+.backIcon {
+    width: 16px;
+    height: 16px;
+    margin-right: 12px;
+    vertical-align: center;
+    background-image: url("s2r://panorama/images/icons/ui/back.vsvg");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    wash-color: #80c9ef;
+}
+.searchIcon {
+    width: 16px;
+    height: 16px;
+    vertical-align: center;
+    background-image: url("s2r://panorama/images/icons/ui/search.vsvg");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    wash-color: #aac1ce;
+}
+
+/* Keep the action row reachable when an offer or a long message is visible. */
+.overlay { height: fit-children; min-height: 200px; max-height: 780px; }
+.stateText { width: 100%; white-space: normal; text-overflow: shrink min( 10px ) ellipsis; }
+.offer { width: 100%; height: fit-children; }
+.offerItem, .offerPrice, .offerUrl { width: 100%; white-space: normal; text-overflow: shrink min( 10px ) ellipsis; }
+.overlayActions { width: 100%; height: fit-children; }
+
+.decorSlot.active { border: 1px solid #79c7ef; }
+.page.disabled { opacity: 0.45; }
+.app.rendering .main { opacity: 0; }

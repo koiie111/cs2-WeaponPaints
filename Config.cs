@@ -73,8 +73,19 @@ namespace WeaponPaints
 		public bool ShowSkinImage { get; set; } = true;
 	}
 
+    public sealed class PanoramaHudOptions
+    {
+        public bool Enabled { get; set; } = false;
+        public string DefaultScale { get; set; } = "normal";
+        public string CustomWeaponsIntegration { get; set; } = "required";
+        public bool DiagnosticsEnabled { get; set; } = false;
+        // CustomWeapons uses its configured ServerId, which may differ from the public server number.
+        public int CustomWeaponsServerId { get; set; } = 1;
+    }
+
 	public class WeaponPaintsConfig : BasePluginConfig
 	{
+        [JsonPropertyName("PanoramaHud")] public PanoramaHudOptions PanoramaHud { get; set; } = new();
         [JsonPropertyName("ConfigVersion")] public override int Version { get; set; } = 10;
 
         [JsonPropertyName("SkinsLanguage")]

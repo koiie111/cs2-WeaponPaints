@@ -7,6 +7,7 @@ namespace WeaponPaints;
 
 public partial class WeaponPaints
 {
+    private enum HudRefreshOutcome { Applied, Deferred, Failed }
     private sealed class CommandRefreshState(int slot, ulong steamId, uint controller, long generation)
     {
         internal readonly int Slot = slot;
@@ -16,6 +17,9 @@ public partial class WeaponPaints
         internal long Run;
         internal bool Repeat;
         internal bool WaitingExternal;
+        internal bool IncludeEquipment = true;
+        internal bool Quiet;
+        internal readonly List<Action<HudRefreshOutcome>> Completions = [];
     }
     // Only touched from the game thread. Loading and applying are separate:
     // HasChangedPaint must not see PlayerDataLoading during native application.
@@ -26,15 +30,18 @@ public partial class WeaponPaints
 
     private void OnCommandRefresh(CCSPlayerController? player, CommandInfo command) => RequestPlayerRefresh(player, true);
 
-    private void RequestPlayerRefresh(CCSPlayerController? player, bool enforceCooldown)
+    private void RequestPlayerRefresh(CCSPlayerController? player, bool enforceCooldown, bool fromHud = false,
+        Action<HudRefreshOutcome>? completed = null, bool cosmeticOnly = false)
     {
-        if (!Config.Additional.CommandWpEnabled || !Config.Additional.SkinEnabled || !_gBCommandsAllowed ||
-            !Utility.IsPlayerValid(player) || player == null || player.UserId == null || player.IsBot) return;
+        if ((!fromHud && !Config.Additional.CommandWpEnabled) || (!Config.Additional.SkinEnabled && !(fromHud && cosmeticOnly)) || !_gBCommandsAllowed ||
+            !Utility.IsPlayerValid(player) || player == null || player.UserId == null || player.IsBot)
+        { completed?.Invoke(HudRefreshOutcome.Deferred); return; }
         var now = DateTime.UtcNow;
         if (enforceCooldown && CommandsCooldown.TryGetValue(player.Slot, out var until) && now < until)
         {
             if (!string.IsNullOrEmpty(Localizer["wp_command_cooldown"])) player.Print(Localizer["wp_command_cooldown"]);
             player.Print($"{{yellow}}Повторите через {Math.Max(1, (int)Math.Ceiling((until - now).TotalSeconds))} сек.");
+            completed?.Invoke(HudRefreshOutcome.Deferred);
             return;
         }
         if (_commandRefreshes.TryGetValue(player.Slot, out var running))
@@ -42,23 +49,34 @@ public partial class WeaponPaints
             if (running.SteamId == player.SteamID && running.Controller == player.EntityHandle.Raw && running.Generation == DataGeneration)
             {
                 running.Repeat = true;
+                running.IncludeEquipment |= !cosmeticOnly;
+                if (!fromHud) running.Quiet = false;
+                if (completed != null) running.Completions.Add(completed);
                 if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
-                player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущего применения.");
+                if (!fromHud) player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущего применения.");
                 return;
             }
             _commandRefreshes.Remove(player.Slot);
+            CompleteHudRefreshCallbacks(running, HudRefreshOutcome.Deferred);
         }
         // A connect or administrator refresh owns this slot. Keep one request
         // until that operation releases its marker; never overwrite its load.
         if (PlayerDataLoading.ContainsKey(player.Slot) || _externalPlayerApplies.ContainsKey(player.Slot))
         {
             if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
-            _commandRefreshes[player.Slot] = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration) { WaitingExternal = true };
-            player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущей загрузки.");
+            var waiting = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration) { WaitingExternal = true };
+            waiting.IncludeEquipment = !cosmeticOnly;
+            waiting.Quiet = fromHud;
+            if (completed != null) waiting.Completions.Add(completed);
+            _commandRefreshes[player.Slot] = waiting;
+            if (!fromHud) player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущей загрузки.");
             return;
         }
         if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
         var state = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration);
+        state.IncludeEquipment = !cosmeticOnly;
+        state.Quiet = fromHud;
+        if (completed != null) state.Completions.Add(completed);
         _commandRefreshes[player.Slot] = state;
         StartCommandRefresh(player, state);
     }
@@ -71,7 +89,7 @@ public partial class WeaponPaints
         if (state.Generation != DataGeneration || !Utility.IsPlayerValid(player) || player == null ||
             player.SteamID != state.SteamId || player.EntityHandle.Raw != state.Controller)
         {
-            _commandRefreshes.Remove(slot); return;
+            _commandRefreshes.Remove(slot); CompleteHudRefreshCallbacks(state, HudRefreshOutcome.Deferred); return;
         }
         state.WaitingExternal = false;
         // The deferred load itself reads the newest state, so requests that
@@ -128,7 +146,7 @@ public partial class WeaponPaints
                         var owner = Utilities.GetPlayerFromSlot(state.Slot);
                         var deferred = owner != null && (!owner.PawnIsAlive || owner.PlayerPawn.Raw != previousPawn || owner.Team != previousTeam);
                         FinishCommandRefresh(state, run, failures.Count == 0 && !deferred, failures, deferred);
-                    }, previousDefinitions);
+                    }, previousDefinitions, skipEquipment: !state.IncludeEquipment);
                 }
                 catch (Exception error)
                 {
@@ -145,7 +163,7 @@ public partial class WeaponPaints
         var player = Utilities.GetPlayerFromSlot(state.Slot);
         if (!Utility.IsPlayerValid(player) || player == null || player.SteamID != state.SteamId || player.EntityHandle.Raw != state.Controller)
         {
-            _commandRefreshes.Remove(state.Slot); return;
+            _commandRefreshes.Remove(state.Slot); CompleteHudRefreshCallbacks(state, HudRefreshOutcome.Deferred); return;
         }
         if (state.Repeat)
         {
@@ -153,13 +171,16 @@ public partial class WeaponPaints
             if (PlayerDataLoading.ContainsKey(state.Slot))
             {
                 _commandRefreshes.Remove(state.Slot);
-                player.Print("{yellow}Другое обновление ещё загружается. Повторите !wp после его завершения.");
+                CompleteHudRefreshCallbacks(state, HudRefreshOutcome.Deferred);
+                if (!state.Quiet) player.Print("{yellow}Другое обновление ещё загружается. Повторите !wp после его завершения.");
                 return;
             }
             StartCommandRefresh(player, state);
             return;
         }
         _commandRefreshes.Remove(state.Slot);
+        CompleteHudRefreshCallbacks(state, deferred ? HudRefreshOutcome.Deferred : success ? HudRefreshOutcome.Applied : HudRefreshOutcome.Failed);
+        if (state.Quiet) return;
         if (deferred)
         {
             player.Print("{yellow}Настройки загружены, применение отложено до следующего возрождения.");
@@ -172,5 +193,16 @@ public partial class WeaponPaints
             return;
         }
         if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"])) player.Print(Localizer["wp_command_refresh_done"]);
+    }
+
+    private void CompleteHudRefreshCallbacks(CommandRefreshState state, HudRefreshOutcome outcome)
+    {
+        var callbacks = state.Completions.ToArray();
+        state.Completions.Clear();
+        foreach (var callback in callbacks)
+        {
+            try { callback(outcome); }
+            catch (Exception error) { Logger.LogWarning(error, "HUD refresh completion failed"); }
+        }
     }
 }
