@@ -164,6 +164,15 @@ public sealed class Probe : BasePlugin
                 var infoType=type.Assembly.GetType("WeaponPaints.WeaponInfo")!;var info=Activator.CreateInstance(infoType)!;
                 infoType.GetProperty("Paint")!.SetValue(info,44);infoType.GetProperty("Wear")!.SetValue(info,.01f);
                 infoType.GetProperty("CompositionVersion")!.SetValue(info,1);
+                infoType.GetProperty("StatTrak")!.SetValue(info,true);
+                infoType.GetProperty("StatTrakCount")!.SetValue(info,17);
+                infoType.GetProperty("Nametag")!.SetValue(info,"wp-probe");
+                var charmType=type.Assembly.GetType("WeaponPaints.KeyChainInfo")!;
+                var charm=Activator.CreateInstance(charmType)!;
+                charmType.GetProperty("Id")!.SetValue(charm,37u);charmType.GetProperty("Sticker")!.SetValue(charm,4551u);
+                charmType.GetProperty("Seed")!.SetValue(charm,100000u);charmType.GetProperty("OffsetX")!.SetValue(charm,1.25f);
+                charmType.GetProperty("OffsetY")!.SetValue(charm,.25f);charmType.GetProperty("OffsetZ")!.SetValue(charm,5.5f);
+                infoType.GetProperty("KeyChain")!.SetValue(info,charm);
                 var stickerType=type.Assembly.GetType("WeaponPaints.StickerInfo")!;
                 var stickers=(IList)infoType.GetProperty("Stickers")!.GetValue(info)!;
                 for(var index=0;index<5;index++){var sticker=Activator.CreateInstance(stickerType)!;stickerType.GetProperty("Id")!.SetValue(sticker,index==0?23u:0u);stickerType.GetProperty("Scale")!.SetValue(sticker,1f);stickers.Add(sticker);}
@@ -177,6 +186,8 @@ public sealed class Probe : BasePlugin
                     stickerType.GetProperty("Id")!.SetValue(stickers[1],16u);stickerType.GetProperty("Schema")!.SetValue(stickers[1],1u);
                     stickerType.GetProperty("OffsetX")!.SetValue(stickers[1],-.17183096f);
                     stickerType.GetProperty("OffsetY")!.SetValue(stickers[1],.002451175f);
+                    charmType.GetProperty("Sticker")!.SetValue(charm,4552u);charmType.GetProperty("Seed")!.SetValue(charm,99999u);
+                    infoType.GetProperty("StatTrakCount")!.SetValue(info,18);infoType.GetProperty("Nametag")!.SetValue(info,"wp-check");
                     var old=gun.EntityHandle.Raw;bool? firstCompletion=null,secondCompletion=null;
                     candidateRefresh.RefreshForProbe(bot,success=>firstCompletion=success);
                     // Arrive after the first pass has begun retiring the gun, so
@@ -206,8 +217,17 @@ public sealed class Probe : BasePlugin
                            Math.Abs(values.GetValueOrDefault(attributeIds["sticker slot 1 offset x"])-(-.17183096f))>.000001f ||
                            Math.Abs(values.GetValueOrDefault(attributeIds["sticker slot 1 offset y"])-.002451175f)>.000001f)
                             throw new Exception(error+" incorrect sticker attributes");
+                        uint UInt(string name)=>BitConverter.SingleToUInt32Bits(values.GetValueOrDefault(attributeIds[name]));
+                        if(UInt("keychain slot 0 id")!=37 || UInt("keychain slot 0 sticker")!=4552 || UInt("keychain slot 0 seed")!=99999 ||
+                           Math.Abs(values.GetValueOrDefault(attributeIds["keychain slot 0 offset x"])-1.25f)>.000001f ||
+                           Math.Abs(values.GetValueOrDefault(attributeIds["keychain slot 0 offset y"])-.25f)>.000001f ||
+                           Math.Abs(values.GetValueOrDefault(attributeIds["keychain slot 0 offset z"])-5.5f)>.000001f ||
+                           UInt("kill eater")!=18 || current.AttributeManager.Item.EntityQuality!=9 || current.AttributeManager.Item.CustomName!="wp-check")
+                            throw new Exception("Slab, StatTrak, name or coordinates did not update");
                         var previous=current.EntityHandle.Raw;
                         stickerType.GetProperty("Id")!.SetValue(stickers[0],0u);stickerType.GetProperty("Id")!.SetValue(stickers[1],0u);
+                        infoType.GetProperty("KeyChain")!.SetValue(info,null);infoType.GetProperty("StatTrak")!.SetValue(info,false);
+                        infoType.GetProperty("Nametag")!.SetValue(info,"");
                         bool? clearCompletion=null;
                         candidateRefresh.RefreshForProbe(bot,success=>clearCompletion=success);
                         AddTimer(.8f,()=>Safe(()=>{
@@ -215,8 +235,11 @@ public sealed class Probe : BasePlugin
                             var cleared=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==7)!;
                             var attrs=ReadAttributes(cleared);
                             if(cleared.EntityHandle.Raw==previous || BitConverter.SingleToUInt32Bits(attrs.GetValueOrDefault(attributeIds["sticker slot 0 id"]))!=0 ||
-                               BitConverter.SingleToUInt32Bits(attrs.GetValueOrDefault(attributeIds["sticker slot 1 id"]))!=0)
-                                throw new Exception("Removed stickers survived refresh");
+                               BitConverter.SingleToUInt32Bits(attrs.GetValueOrDefault(attributeIds["sticker slot 1 id"]))!=0 ||
+                               attrs.ContainsKey(attributeIds["keychain slot 0 id"]) || attrs.ContainsKey(attributeIds["keychain slot 0 sticker"]) ||
+                               attrs.ContainsKey(attributeIds["kill eater"]) || cleared.AttributeManager.Item.EntityQuality==9 ||
+                               !string.IsNullOrEmpty(cleared.AttributeManager.Item.CustomName))
+                                throw new Exception("Removed stickers, slab, StatTrak or name survived refresh");
                             var clearedHandle=cleared.EntityHandle.Raw;bool? cancelled=null;var callbacks=0;
                             candidateRefresh.RefreshForProbe(bot,success=>{cancelled=success;callbacks++;});
                             candidateRefresh.StopForProbe();
@@ -237,7 +260,7 @@ public sealed class Probe : BasePlugin
                                     if(sameKnife is not {IsValid:true} || sameKnife.OwnerEntity.Raw!=bot.PlayerPawn.Raw ||
                                        !bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Any(h=>h.Raw==knifeHandle))
                                         throw new Exception("Knife was replaced while knife customization was disabled");
-                                    error+=" callbacks=PASS clear=PASS cancel=PASS knife-disabled=PASS PASS";
+                                    error+=" callbacks=PASS clear=PASS slab-stattrak=PASS cancel=PASS knife-disabled=PASS PASS";
                                     candidateRefresh=null;root.Remove(bot.Slot);ownedSlots.Remove(bot.Slot);
                                 }),TimerFlags.STOP_ON_MAPCHANGE);
                             }));
