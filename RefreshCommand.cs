@@ -26,16 +26,16 @@ public partial class WeaponPaints
 
     private void OnCommandRefresh(CCSPlayerController? player, CommandInfo command) => RequestPlayerRefresh(player, true);
 
-    private void RequestPlayerRefresh(CCSPlayerController? player, bool enforceCooldown)
+    private bool RequestPlayerRefresh(CCSPlayerController? player, bool enforceCooldown)
     {
         if (!Config.Additional.CommandWpEnabled || !Config.Additional.SkinEnabled || !_gBCommandsAllowed ||
-            !Utility.IsPlayerValid(player) || player == null || player.UserId == null || player.IsBot) return;
+            !Utility.IsPlayerValid(player) || player == null || player.UserId == null || player.IsBot || WeaponSync == null) return false;
         var now = DateTime.UtcNow;
         if (enforceCooldown && CommandsCooldown.TryGetValue(player.Slot, out var until) && now < until)
         {
             if (!string.IsNullOrEmpty(Localizer["wp_command_cooldown"])) player.Print(Localizer["wp_command_cooldown"]);
             player.Print($"{{yellow}}Повторите через {Math.Max(1, (int)Math.Ceiling((until - now).TotalSeconds))} сек.");
-            return;
+            return false;
         }
         if (_commandRefreshes.TryGetValue(player.Slot, out var running))
         {
@@ -44,7 +44,7 @@ public partial class WeaponPaints
                 running.Repeat = true;
                 if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
                 player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущего применения.");
-                return;
+                return true;
             }
             _commandRefreshes.Remove(player.Slot);
         }
@@ -55,12 +55,13 @@ public partial class WeaponPaints
             if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
             _commandRefreshes[player.Slot] = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration) { WaitingExternal = true };
             player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущей загрузки.");
-            return;
+            return true;
         }
         if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
         var state = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration);
         _commandRefreshes[player.Slot] = state;
         StartCommandRefresh(player, state);
+        return true;
     }
 
     private void OnExternalPlayerLoadSettled(int slot, long loadId)

@@ -106,62 +106,6 @@ public partial class WeaponPaints
 		});
 	}
 
-	private void OnCommandSkinRefresh(CCSPlayerController? player, CommandInfo command)
-	{
-		if (!Config.Additional.CommandWpEnabled || !Config.Additional.SkinEnabled || !_gBCommandsAllowed) return;
-		if (player != null)
-		{
-			return;
-		}
-
-		var args = command.GetArg(1);
-			
-		if (string.IsNullOrEmpty(args))
-		{
-			Console.WriteLine("[WeaponPaints] Usage: wp_refresh <steamid64|all>");
-			Console.WriteLine("[WeaponPaints] Examples:");
-			Console.WriteLine("[WeaponPaints]   wp_refresh all - Refresh skins for all players");
-			Console.WriteLine("[WeaponPaints]   wp_refresh 76561198012345678 - Refresh skins by SteamID64");
-			return;
-		}
-
-		var targetPlayers = new List<CCSPlayerController>();
-
-		if (args.Equals("all", StringComparison.OrdinalIgnoreCase))
-		{
-			targetPlayers = Utilities.GetPlayers().Where(p => 
-				p != null && p.IsValid && !p.IsBot && p.UserId != null).ToList();
-			
-			if (targetPlayers.Count == 0)
-			{
-				Console.WriteLine("[WeaponPaints] No players connected to refresh.");
-				return;
-			}
-			
-			Console.WriteLine($"[WeaponPaints] Refreshing skins for {targetPlayers.Count} players...");
-		}
-		else
-		{
-			var foundPlayer = Utilities.GetPlayers().FirstOrDefault(p => 
-				p != null && p.IsValid && !p.IsBot && p.UserId != null && 
-				 p.SteamID.ToString() == args);
-
-			if (foundPlayer == null)
-			{
-				Console.WriteLine($"[WeaponPaints] Player with SteamID64 '{args}' not found.");
-				return;
-			}
-
-			targetPlayers.Add(foundPlayer);
-			Console.WriteLine($"[WeaponPaints] Refreshing skins for {foundPlayer.PlayerName}...");
-		}
-
-        foreach (var targetPlayer in targetPlayers)
-            RequestPlayerRefresh(targetPlayer, false);
-        Console.WriteLine("[WeaponPaints] Refresh requests queued.");
-	}
-
-
 	private void OnCommandStattrak(CCSPlayerController? player, CommandInfo commandInfo)
 	{
 		if (!Config.Additional.SkinEnabled || !_gBCommandsAllowed || player == null || !player.IsValid

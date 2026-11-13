@@ -113,17 +113,62 @@ wp.Command(player); WP.GPlayerWeaponsInfo[1][2].Clear();
 wp.Sync.Complete(true); await wp.Active!; Server.Flush();
 Check(wp.PreviousDefinitions?.Contains(7) == true, "removed weapon row is retained for equipment reset");
 wp.FinishEquipment(true); WP.GPlayerWeaponsInfo.Clear();
+// Exercise the production RCON handler with the production refresh coordinator.
+WP.PlayerDataLoading.Clear(); WP.CommandsCooldown.Clear(); Utilities.Players.Clear();
+player=new CCSPlayerController{Slot=1,SteamID=76561198000000001,UserId=1};Utilities.Players[1]=player;
+wp=new WP();
+var target=player.SteamID.ToString();
+var protocolReplies=new Dictionary<string,string>();
+void Reply(string expected, params string[] args) {
+ var before=wp.Sync.Calls;
+ var response=wp.Rcon(null,args);
+ Check(response.Replies.SequenceEqual(new[]{expected}),"one RCON response: "+expected);
+ if ((args.Length==2 && args[1]==target) || expected=="WP_REFRESH_V1 invalid -") protocolReplies[expected.Split(' ')[1]]=response.Replies.Single();
+ Check(wp.Sync.Calls==before,"rejected command cannot start SQL");
+}
+Reply("WP_REFRESH_V1 invalid -","wp_refresh");
+Reply("WP_REFRESH_V1 invalid -","wp_refresh",target,"extra");
+Reply("WP_REFRESH_V1 invalid -","wp_refresh",target+";quit");
+Reply("WP_REFRESH_V1 invalid -","wp_refresh",target[..16]+" ");
+Reply("WP_REFRESH_V1 invalid -","wp_refresh",target[..16]+"\n");
+Check(wp.Rcon(player,"wp_refresh",target).Replies.SequenceEqual(new[]{"WP_REFRESH_V1 forbidden -"}),"player cannot invoke server-only refresh");
+wp.Config.Additional.CommandWpEnabled=false;Reply("WP_REFRESH_V1 disabled "+target,"wp_refresh",target);wp.Config.Additional.CommandWpEnabled=true;
+wp.Config.Additional.SkinEnabled=false;Reply("WP_REFRESH_V1 disabled "+target,"wp_refresh",target);wp.Config.Additional.SkinEnabled=true;
+wp._gBCommandsAllowed=false;Reply("WP_REFRESH_V1 busy "+target,"wp_refresh",target);wp._gBCommandsAllowed=true;
+Reply("WP_REFRESH_V1 not_found 76561190000000000","wp_refresh","76561190000000000");
+Utilities.Players.Clear();Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);Utilities.Players[1]=player;
+player.IsBot=true;Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);player.IsBot=false;
+player.UserId=null;Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);player.UserId=1;
+wp.SyncAvailable=false;Reply("WP_REFRESH_V1 unavailable "+target,"wp_refresh",target);wp.SyncAvailable=true;
+WP.CommandsCooldown[1]=DateTime.UtcNow.AddMinutes(1);
+Check(wp.Rcon(null,"wp_refresh",target).Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued "+target}),"RCON ACK bypasses chat cooldown");
+protocolReplies["queued"]=wp.Rcon(null,"wp_refresh",target).Replies.Single();
+Check(wp.Sync.Calls==1 && wp.Events.Count==0,"ACK is immediate acceptance, before SQL/application");
+Check(wp.Rcon(null,"wp_refresh",target).Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued "+target})&&wp.Sync.Calls==1,"in-flight requests ACK and coalesce");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.Sync.Reset();wp.FinishEquipment(true);
+Check(wp.Sync.Calls==1,"coalesced RCON request reads latest SQL again");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
+Utilities.Players.Clear();Reply("WP_REFRESH_V1 not_found all","wp_refresh","all");
+Utilities.Players[1]=player;wp.Sync.Reset();
+Check(wp.Rcon(null,"wp_refresh","ALL").Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued all"}),"manual all remains supported");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
+Console.WriteLine("WP_PROTOCOL_FIXTURE_JSON="+System.Text.Json.JsonSerializer.Serialize(protocolReplies));
+Console.WriteLine("PASS: RCON protocol, rejections, targeted ACK, cooldown bypass and coalescing");
 Console.WriteLine("PASS: command loading, coalescing guard, game-frame dispatch, subsystem order and stale identity");
 
 namespace CounterStrikeSharp.API {
  public static class Server { private static readonly Queue<Action> Frames=new(); public static void NextFrame(Action a)=>Frames.Enqueue(a); public static void Flush(){while(Frames.TryDequeue(out var a))a();} }
- public static class Utilities { public static readonly Dictionary<int,CCSPlayerController> Players=new();public static CCSPlayerController? GetPlayerFromSlot(int slot)=>Players.GetValueOrDefault(slot); }
+ public static class Utilities { public static readonly Dictionary<int,CCSPlayerController> Players=new();public static List<CCSPlayerController> GetPlayers()=>Players.Values.ToList();public static CCSPlayerController? GetPlayerFromSlot(int slot)=>Players.GetValueOrDefault(slot); }
 }
 namespace CounterStrikeSharp.API.Core {
  public class Handle { public uint Raw=100; }
  public class CCSPlayerController { public int Slot,Team=2;public ulong SteamID;public uint Index=1;public int? UserId;public Handle EntityHandle=new(),PlayerPawn=new() { Raw=200 };public object? InventoryServices=new();public bool IsValid=true,IsBot,PawnIsAlive=true;public string? PlayerName="test",IpAddress="127.0.0.1:1";public List<string> Messages=new();public void Print(string message)=>Messages.Add(message); }
 }
-namespace CounterStrikeSharp.API.Modules.Commands { public class CommandInfo {} }
+namespace CounterStrikeSharp.API.Modules.Commands { public class CommandInfo {
+ public string[] Args=["wp_refresh"]; public int ArgCount=>Args.Length; public List<string> Replies=new();
+ public string GetArg(int index)=>index<Args.Length?Args[index]:"";
+ public void ReplyToCommand(string reply)=>Replies.Add(reply);
+ } }
 namespace WeaponPaints {
  public class Additional { public bool CommandWpEnabled=true,SkinEnabled=true,PetsEnabled=true,MusicEnabled=true,PinsEnabled=true; }
  public class ConfigData { public Additional Additional=new();public int CmdRefreshCooldownSeconds=3; }
@@ -145,7 +190,7 @@ namespace WeaponPaints {
   public static Dictionary<int,Dictionary<int,int>> GPlayersMusic=new(),GPlayersPin=new();
   public static Dictionary<int, Dictionary<int, Dictionary<int, object>>> GPlayerWeaponsInfo = new();
   public static Dictionary<int,DateTime> CommandsCooldown=new();public static long DataGeneration=1;private static long next;
-  public FakeSync Sync=new();private FakeSync WeaponSync=>Sync; public List<string> Events=new();public Task? Active;public bool WaitPet,FailAgent,WaitAgent;
+  public FakeSync Sync=new();public bool SyncAvailable=true;private FakeSync? WeaponSync=>SyncAvailable?Sync:null; public List<string> Events=new();public Task? Active;public bool WaitPet,FailAgent,WaitAgent;
   public Microsoft.Extensions.Logging.ILogger Logger=>Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
   private readonly Dictionary<string,string> Localizer=new(){{"wp_command_cooldown","cooldown"},{"wp_command_refresh_done","done"}};
   private static long NextPlayerDataLoadId()=>++next;
@@ -165,6 +210,7 @@ namespace WeaponPaints {
   private void GivePlayerPin(CCSPlayerController p)=>Events.Add("pin");
   private void AddOneShot(float delay,Action action)=>Server.NextFrame(action);
   public void Command(CCSPlayerController p)=>OnCommandRefresh(p,new());
+  public CounterStrikeSharp.API.Modules.Commands.CommandInfo Rcon(CCSPlayerController? caller, params string[] args){var info=new CounterStrikeSharp.API.Modules.Commands.CommandInfo{Args=args};OnCommandSkinRefresh(caller,info);return info;}
   public void ExternalSettled(int slot,long loadId=777)=>OnExternalPlayerLoadSettled(slot,loadId);
   public void ExternalApplying(int slot,long loadId)=>_externalPlayerApplies[slot]=loadId;
  }
