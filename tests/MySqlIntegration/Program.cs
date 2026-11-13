@@ -58,12 +58,20 @@ try{
  Check(await sql.ExecuteScalarAsync<string>("SELECT weapon_nametag FROM wp_player_skins WHERE steamid=@id AND weapon_team=3 AND weapon_defindex=7",new{id})=="CT","batch update preserves cosmetics");
  await sync.SyncStatTrakToDatabase(player,skins);
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==200,"disconnect StatTrak snapshot");
- // Simulate kills earned while SQL is in flight, then a website paint change.
+ // Run the actual death handler while a real SQL snapshot is waiting to publish.
+ skins[ct][7].StatTrakCount=300;
  var beforePublish=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
  var allowPublish=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
  Server.BeforeDispatch=async()=>{beforePublish.TrySetResult();await allowPublish.Task;};
  var counterReload=Load();await beforePublish.Task.WaitAsync(TimeSpan.FromSeconds(10));
- skins[t][7].StatTrakCount=207;skins[ct][7].StatTrakCount=311;allowPublish.TrySetResult();
+ var gun=new CounterStrikeSharp.API.Core.CBasePlayerWeapon();gun.AttributeManager.Item.ItemDefinitionIndex=7;
+ var attacker=new CounterStrikeSharp.API.Core.CCSPlayerController { Slot=1,Team=t,PlayerPawn=new(){Value=new(){WeaponServices=new(){ActiveWeapon=new(){Value=gun}}}} };
+ var victim=new CounterStrikeSharp.API.Core.CCSPlayerController { Slot=2,Team=ct };
+ var death=new CounterStrikeSharp.API.Core.EventPlayerDeath { Attacker=attacker,Userid=victim };
+ for(var i=0;i<7;i++)WP.Instance.TestDeath(death);
+ attacker.Team=ct; for(var i=0;i<11;i++)WP.Instance.TestDeath(death);
+ Check(skins[t][7].StatTrakCount==207&&skins[ct][7].StatTrakCount==311,"actual death handler counts kills during real SQL refresh");
+ allowPublish.TrySetResult();
  Check(await counterReload&&WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount==207&&WP.GPlayerWeaponsInfo[1][ct][7].StatTrakCount==311,"kills during refresh survive per-team snapshot publication");
  Server.BeforeDispatch=null;
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_paint_id=777,weapon_stattrak=0 WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
