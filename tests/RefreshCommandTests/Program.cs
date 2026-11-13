@@ -70,6 +70,21 @@ player.InventoryServices=new();WP.GPlayersMusic.Clear();WP.GPlayersPin.Clear();
 WP.CommandsCooldown.Clear();wp.Sync.Reset();player.Messages.Clear();wp.WaitPet=true;wp.Command(player);
 wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);wp.FinishPet(false);
 Check(player.Messages.Any(m=>m.Contains("питомец"))&&!player.Messages.Contains("done"),"failed pet load is reported without claiming complete success");wp.WaitPet=false;
+foreach (var change in new[] { "pawn", "team", "dead" }) {
+ WP.CommandsCooldown.Clear(); WP.PlayerDataLoading.Clear(); wp.Sync.Reset(); wp.Events.Clear(); player.Messages.Clear();
+ wp.Command(player); wp.Sync.Complete(true); await wp.Active!;
+ if (change == "pawn") player.PlayerPawn.Raw++;
+ else if (change == "team") player.Team = 3;
+ else player.PawnIsAlive = false;
+ Server.Flush();
+ Check(wp.Events.Count == 0 && player.Messages.Any(m => m.Contains("отложено")) && !player.Messages.Contains("done"), "SQL completion defers after " + change);
+ player.Team = 2; player.PawnIsAlive = true;
+}
+WP.CommandsCooldown.Clear(); WP.PlayerDataLoading.Clear(); wp.Sync.Reset(); wp.Events.Clear(); player.Messages.Clear(); wp.WaitPet = true;
+wp.Command(player); wp.Sync.Complete(true); await wp.Active!; Server.Flush(); wp.FinishEquipment(true);
+player.PlayerPawn.Raw++; wp.FinishPet(false);
+Check(player.Messages.Any(m => m.Contains("отложено")) && !player.Messages.Contains("done"), "old asynchronous completion defers after pawn replacement");
+wp.WaitPet = false;
 var barrierCalls=0;IReadOnlyList<string>? failed=null;
 var barrier=new CosmeticRefreshBarrier(new[]{"one","two"},result=>{barrierCalls++;failed=result;});
 barrier.Report("one",false);barrier.Report("one",true);barrier.Report("two",true);barrier.Report("two",false);
@@ -100,7 +115,7 @@ namespace CounterStrikeSharp.API {
 }
 namespace CounterStrikeSharp.API.Core {
  public class Handle { public uint Raw=100; }
- public class CCSPlayerController { public int Slot,Team=2;public ulong SteamID;public uint Index=1;public int? UserId;public Handle EntityHandle=new();public object? InventoryServices=new();public bool IsValid=true,IsBot,PawnIsAlive=true;public string? PlayerName="test",IpAddress="127.0.0.1:1";public List<string> Messages=new();public void Print(string message)=>Messages.Add(message); }
+ public class CCSPlayerController { public int Slot,Team=2;public ulong SteamID;public uint Index=1;public int? UserId;public Handle EntityHandle=new(),PlayerPawn=new() { Raw=200 };public object? InventoryServices=new();public bool IsValid=true,IsBot,PawnIsAlive=true;public string? PlayerName="test",IpAddress="127.0.0.1:1";public List<string> Messages=new();public void Print(string message)=>Messages.Add(message); }
 }
 namespace CounterStrikeSharp.API.Modules.Commands { public class CommandInfo {} }
 namespace WeaponPaints {

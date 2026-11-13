@@ -84,6 +84,7 @@ public partial class WeaponPaints
     {
         var run = ++state.Run;
         var previousTeam = player.Team;
+        var previousPawn = player.PlayerPawn.Raw;
         var previousDefinitions = GPlayerWeaponsInfo.TryGetValue(player.Slot, out var oldTeams) && oldTeams.TryGetValue(previousTeam, out var oldWeapons)
             ? oldWeapons.Keys.ToHashSet() : new HashSet<int>();
         var sync = WeaponSync;
@@ -110,9 +111,20 @@ public partial class WeaponPaints
                 {
                     FinishCommandRefresh(state, run, false); return;
                 }
+                // The SQL snapshot is still published for the next spawn, but
+                // never use a completed request to mutate a different pawn/team.
+                if (!current.PawnIsAlive || current.PlayerPawn.Raw != previousPawn || current.Team != previousTeam)
+                {
+                    FinishCommandRefresh(state, run, false, deferred: true); return;
+                }
                 try
                 {
-                    RefreshAllCosmetics(current, failures => FinishCommandRefresh(state, run, failures.Count == 0, failures), current.Team == previousTeam ? previousDefinitions : null);
+                    RefreshAllCosmetics(current, failures =>
+                    {
+                        var owner = Utilities.GetPlayerFromSlot(state.Slot);
+                        var deferred = owner != null && (!owner.PawnIsAlive || owner.PlayerPawn.Raw != previousPawn || owner.Team != previousTeam);
+                        FinishCommandRefresh(state, run, failures.Count == 0 && !deferred, failures, deferred);
+                    }, previousDefinitions);
                 }
                 catch (Exception error)
                 {
@@ -123,7 +135,7 @@ public partial class WeaponPaints
         });
     }
 
-    private void FinishCommandRefresh(CommandRefreshState state, long run, bool success, IReadOnlyList<string>? failures = null)
+    private void FinishCommandRefresh(CommandRefreshState state, long run, bool success, IReadOnlyList<string>? failures = null, bool deferred = false)
     {
         if (!IsCurrentCommandRefresh(state, run)) return;
         var player = Utilities.GetPlayerFromSlot(state.Slot);
@@ -144,6 +156,11 @@ public partial class WeaponPaints
             return;
         }
         _commandRefreshes.Remove(state.Slot);
+        if (deferred)
+        {
+            player.Print("{yellow}Настройки загружены, применение отложено до следующего возрождения.");
+            return;
+        }
         if (!success)
         {
             var detail = failures is { Count: > 0 } ? string.Join(", ", failures) : "загрузка настроек";
