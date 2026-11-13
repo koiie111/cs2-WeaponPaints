@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../StatTrakEvents.cs" Link="StatTrakEvents.cs" />
+    <Compile Include="../../WeaponAppearanceLookup.cs" Link="WeaponAppearanceLookup.cs" />
     <Compile Include="../../WeaponSynchronization.cs" Link="WeaponSynchronization.cs" />
     <Compile Include="../../Database.cs" Link="Database.cs" />
     <Compile Include="../../PlayerInfo.cs" Link="PlayerInfo.cs" />

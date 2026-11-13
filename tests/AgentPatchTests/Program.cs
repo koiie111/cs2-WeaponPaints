@@ -3,6 +3,14 @@ using CounterStrikeSharp.API.Core;
 using WP=WeaponPaints.WeaponPaints;
 var plugin=new WP();var checks=0;
 void Check(bool condition,string name){if(!condition)throw new Exception(name);checks++;}
+var models=new WeaponPaints.AgentRestoreTracker();
+models.Remember(1,123,456,2,"default-t.vmdl");
+models.Remember(1,123,456,2,"overridden-agent.vmdl");
+Check(models.Find(1,123,456,2)=="default-t.vmdl","repeated agent changes retain original model");
+Check(models.Find(1,123,457,2)==null&&models.Find(1,124,456,2)==null&&models.Find(1,123,456,3)==null,"other pawn account or team cannot restore stale model");
+models.Remember(1,123,457,3,"default-ct.vmdl");
+Check(models.Find(1,123,457,3)=="default-ct.vmdl","new pawn records its own default");
+models.Forget(1);Check(models.Find(1,123,457,3)==null,"disconnect clears saved model");
 var player=new CCSPlayerController{Slot=1,SteamID=76561198000000001,EntityHandle=new(){Raw=11},PlayerPawn=new(){Raw=101,Value=new Pawn()}};
 Utilities.Players[1]=player;
 var pawn=player.PlayerPawn.Value!;

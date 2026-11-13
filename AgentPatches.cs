@@ -12,18 +12,20 @@ public partial class WeaponPaints
     private readonly Dictionary<int, PatchTimer> _patchExpiryTimers = new();
     private readonly PetWorkVersions _patchLoadVersions = new();
     private readonly Dictionary<int, (ulong SteamId, uint Pawn)> _agentPatchOverrides = new();
+    private readonly AgentRestoreTracker _agentRestore = new();
     internal bool HasAgentPatchOverride(int slot, ulong steamId, uint pawn) => _agentPatchOverrides.TryGetValue(slot, out var applied) && applied == (steamId, pawn);
     internal void MarkAgentPatchOverride(int slot, ulong steamId, uint pawn, bool applied)
     {
         if (applied) _agentPatchOverrides[slot] = (steamId, pawn);
         else _agentPatchOverrides.Remove(slot);
     }
-    internal void ForgetAgentPatches(int slot) { ClearAgentPatchTimer(slot); _agentPatchOverrides.Remove(slot); _patchLoadVersions.Remove(slot); }
+    internal void ForgetAgentPatches(int slot) { ClearAgentPatchTimer(slot); _agentPatchOverrides.Remove(slot); _patchLoadVersions.Remove(slot); _agentRestore.Forget(slot); }
 
     private void ClearAllAgentPatchTimers()
     {
         foreach (var slot in _patchExpiryTimers.Keys.ToArray()) ClearAgentPatchTimer(slot);
         _agentPatchOverrides.Clear();
+        _agentRestore.Clear();
         _patchLoadVersions.InvalidateAll();
     }
 

@@ -29,11 +29,12 @@ foreach (var missing in new[] { "disabled", "no choice" })
     var plugin = new Plugin { GlovesEnabled = missing != "disabled", HasGloves = missing != "no choice" };
     plugin.Refresh(player);
     Check(plugin.Pending.Count == 0 && plugin.Events.SequenceEqual(new[] { "weapons:pistol:knife" }), "No glove data still refreshes weapons immediately");
+    Check(plugin.ClearedGloves == 1, "No glove data clears the owned glove override");
     plugin.GloveMenu(player);
     Check(player.Commands.Count == 0 && plugin.Pending.Count == 0, "No unmatched toggle without gloves");
 }
 
-foreach (var change in new[] { "controller", "account", "pawn", "map", "dead", "invalid", "disconnect" })
+foreach (var change in new[] { "controller", "account", "pawn", "team", "map", "dead", "invalid", "disconnect" })
 {
     var player = Player();
     var plugin = new Plugin();
@@ -43,6 +44,7 @@ foreach (var change in new[] { "controller", "account", "pawn", "map", "dead", "
         case "controller": player.EntityHandle.Raw++; break;
         case "account": player.SteamID++; break;
         case "pawn": player.PlayerPawn.Raw++; break;
+        case "team": player.TeamNum = 3; break;
         case "map": Plugin.DataGeneration++; break;
         case "dead": player.PawnIsAlive = false; break;
         case "invalid": player.IsValid = false; break;
@@ -51,6 +53,36 @@ foreach (var change in new[] { "controller", "account", "pawn", "map", "dead", "
     plugin.Flush();
     Check(plugin.Events.Count == 0 && player.Commands.Count == 0, "Cancel stale equipment work: " + change);
 }
+
+var waiting = Player();
+var waitingPlugin = new Plugin();
+waitingPlugin.Refresh(waiting);
+waitingPlugin.FlushOne();
+Check(waitingPlugin.Events.SequenceEqual(new[] { "gloves" }), "weapon refresh waits for the delayed glove bodygroup completion");
+waitingPlugin.Flush();
+Check(waitingPlugin.Events.Last() == "weapons:pistol:knife", "weapon refresh follows completed glove bodygroup");
+
+var changingPawn = Player();
+var changingPlugin = new Plugin();
+changingPlugin.Refresh(changingPawn);
+changingPlugin.FlushOne();
+changingPawn.PlayerPawn.Raw++;
+changingPlugin.Flush();
+Check(changingPlugin.Events.SequenceEqual(new[] { "gloves" }), "a stale delayed glove completion never applies weapons to a replacement pawn");
+
+var resetPlayer = Player();
+var resetPlugin = new Plugin { HasGloves = false, DeferredClear = true };
+bool? resetResult = null;
+resetPlugin.RefreshWithCompletion(resetPlayer, ok => resetResult = ok);
+Check(resetPlugin.Events.Count == 0 && resetResult == null, "weapon refresh waits for deferred glove reset");
+resetPlugin.Flush();
+Check(resetResult == true && resetPlugin.Events.SequenceEqual(new[] { "weapons:pistol:knife" }), "deferred reset completes before weapons");
+var resetFailed = Player();
+var resetFailedPlugin = new Plugin { HasGloves = false, DeferredClear = true, FailClear = true };
+bool? resetFailedResult = null;
+resetFailedPlugin.RefreshWithCompletion(resetFailed, ok => resetFailedResult = ok);
+resetFailedPlugin.Flush();
+Check(resetFailedResult == false && resetFailedPlugin.Events.SequenceEqual(new[] { "weapons:pistol:knife" }), "failed glove reset still refreshes weapons and reports partial failure");
 
 var manual = Player();
 var manualPlugin = new Plugin();
@@ -80,5 +112,5 @@ var spam = Player();
 var spamPlugin = new Plugin();
 for (var n = 0; n < 100; n++) spamPlugin.Refresh(spam);
 spamPlugin.Flush();
-Check(spam.Commands.Count == 0 && spamPlugin.Events.Count == 200 && spamPlugin.Events.Where((_, n) => n % 2 == 1).All(value => value == "weapons:pistol:knife"), "Repeated refreshes keep pistol active and last slot stable");
+Check(spam.Commands.Count == 0 && spamPlugin.Events.Count == 200 && spamPlugin.Events.Count(value => value == "gloves") == 100 && spamPlugin.Events.Count(value => value == "weapons:pistol:knife") == 100, "Repeated refreshes keep pistol active and last slot stable");
 Console.WriteLine($"PASS: {checks} production equipment scheduling checks (managed engine boundaries)");

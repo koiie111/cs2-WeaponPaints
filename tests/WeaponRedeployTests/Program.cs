@@ -42,7 +42,7 @@ last.Plugin.Start(last.Player, 300, 500, () => { }); Server.Flush();
 Check(last.Player.Commands[0] == "slot1", "Prefer the captured last weapon among alternates");
 last.Plugin.FlushTimers();
 
-foreach (var change in new[] { "manual", "death", "controller", "account", "pawn", "map", "loading", "removed", "transferred", "disconnect" })
+foreach (var change in new[] { "manual", "death", "controller", "account", "pawn", "team", "map", "loading", "removed", "transferred", "disconnect" })
 {
     var f = Setup(gear_slot_t.GEAR_SLOT_PISTOL, gear_slot_t.GEAR_SLOT_KNIFE); var done = 0;
     f.Plugin.Start(f.Player, 300, 400, () => done++); Server.Flush();
@@ -54,6 +54,7 @@ foreach (var change in new[] { "manual", "death", "controller", "account", "pawn
         case "controller": f.Player.EntityHandle.Raw++; break;
         case "account": f.Player.SteamID++; break;
         case "pawn": f.Player.PlayerPawn.Raw++; break;
+        case "team": f.Player.TeamNum = 3; break;
         case "map": Plugin.DataGeneration++; break;
         case "loading": Plugin.PlayerDataLoading[0] = 1; break;
         case "removed": f.Target.IsValid = false; break;

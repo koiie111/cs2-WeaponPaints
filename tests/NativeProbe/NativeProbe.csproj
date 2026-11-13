@@ -7,6 +7,13 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CounterStrikeSharp.API" Version="1.0.376" />
+    <Compile Include="../../WeaponNetwork.cs" Link="WeaponNetwork.cs" />
+    <Compile Include="../../GloveNetwork.cs" Link="GloveNetwork.cs" />
+    <Compile Include="../../WeaponRefresh.cs" Link="WeaponRefresh.cs" />
+    <Compile Include="../../WeaponRedeploy.cs" Link="WeaponRedeploy.cs" />
+    <Compile Include="../../WeaponRetirement.cs" Link="WeaponRetirement.cs" />
+    <Compile Include="../../DeferredPlayer.cs" Link="DeferredPlayer.cs" />
+    <Compile Include="../../PlayerWorkStamp.cs" Link="PlayerWorkStamp.cs" />
     <None Update="attribute-ids.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../fixtures/composition-roundtrip.json" Link="composition-roundtrip.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

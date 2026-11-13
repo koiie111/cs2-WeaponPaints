@@ -63,17 +63,17 @@ namespace WeaponPaints
 				// Random skins
 				weapon.FallbackPaintKit = GetRandomPaint(weaponDefIndex);
 				weapon.FallbackSeed = 0;
-				weapon.FallbackWear = 0.01f;
+				weapon.FallbackWear = FinishCacheKeys.Resolve(weaponDefIndex, new WeaponInfo { Paint = weapon.FallbackPaintKit, Seed = 0, Wear = 0.01f });
 			
 				weapon.AttributeManager.Item.NetworkedDynamicAttributes.Attributes.RemoveAll();
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weapon.FallbackPaintKit);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture seed", 0);
-				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture wear", 0.01f);
+				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture wear", weapon.FallbackWear);
 			
 				weapon.AttributeManager.Item.AttributeList.Attributes.RemoveAll();
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture prefab", weapon.FallbackPaintKit);
 				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture seed", 0);
-				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture wear", 0.01f);
+				CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "set item texture wear", weapon.FallbackWear);
 			
 				fallbackPaintKit = weapon.FallbackPaintKit;
 			
@@ -82,6 +82,7 @@ namespace WeaponPaints
 			
 				isLegacyModel = Catalog.IsLegacy(weaponDefIndex, fallbackPaintKit);
 				UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
+				NotifyWeaponAppearanceChanged(weapon);
 				return;
 			}
 
@@ -100,7 +101,7 @@ namespace WeaponPaints
 			
 			weapon.FallbackSeed = weaponInfo.Seed;
 			
-			weapon.FallbackWear = weaponInfo.Wear;
+			weapon.FallbackWear = FinishCacheKeys.Resolve(weaponDefIndex, weaponInfo);
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture prefab", weapon.FallbackPaintKit);
             CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture seed", weapon.FallbackSeed);
             CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "set item texture wear", weapon.FallbackWear);
@@ -126,6 +127,7 @@ namespace WeaponPaints
 
 			isLegacyModel = Catalog.IsLegacy(weaponDefIndex, fallbackPaintKit);
 			UpdatePlayerWeaponMeshGroupMask(player, weapon, isLegacyModel);
+			NotifyWeaponAppearanceChanged(weapon);
 		}
 		
 		private void SetStickers(CCSPlayerController? player, CBasePlayerWeapon weapon)
@@ -224,6 +226,8 @@ namespace WeaponPaints
 		}
 
 
+        private readonly Dictionary<int, (ulong SteamId, uint Pawn)> _gloveOverrides = new();
+
         private bool TryGetGlovePaint(CCSPlayerController player, out ushort gloveId, out WeaponInfo? weaponInfo)
         {
             gloveId = 0;
@@ -233,13 +237,13 @@ namespace WeaponPaints
                 gloveId != 0 && HasChangedPaint(player, gloveId, out weaponInfo) && weaponInfo != null;
         }
 
-        private void ApplyPlayerGloves(CCSPlayerController player)
+        private void ApplyPlayerGloves(CCSPlayerController player, Action<bool> completed)
         {
-            if (!TryGetGlovePaint(player, out var gloveId, out var weaponInfo) || weaponInfo == null) return;
+            if (!TryGetGlovePaint(player, out var gloveId, out var weaponInfo) || weaponInfo == null) { completed(false); return; }
             var identity = DeferredPlayer.Capture(player);
             var expectedSteamId = player.SteamID.ToString();
             var pawn = player.PlayerPawn.Value;
-            if (pawn == null || !pawn.IsValid) return;
+            if (pawn == null || !pawn.IsValid) { completed(false); return; }
             var item = pawn.EconGloves;
 
             item.ItemDefinitionIndex = gloveId;
@@ -257,14 +261,37 @@ namespace WeaponPaints
             CAttributeListSetOrAddAttributeValueByName.Invoke(item.AttributeList.Handle, "set item texture wear", weaponInfo.Wear);
 
             item.Initialized = true;
+            _gloveOverrides[player.Slot] = (player.SteamID, pawn.EntityHandle.Raw);
+            GloveNetwork.Notify(pawn);
 
             SetBodygroup(pawn, "first_or_third_person", 0);
-            Instance.AddOneShot(0.2f, () =>
+            AddOneShot(0.2f, () =>
             {
-                if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
-                var currentPawn = player.PlayerPawn.Value;
-                if (currentPawn != null && currentPawn.IsValid)
-                    SetBodygroup(currentPawn, "first_or_third_person", 1);
+                if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive ||
+                    current.SteamID.ToString() != expectedSteamId || current.PlayerPawn.Value is not { IsValid: true } live)
+                { completed(false); return; }
+                try { SetBodygroup(live, "first_or_third_person", 1); }
+                catch (Exception error) { Logger.LogWarning(error, "Unable to finish glove bodygroup update"); completed(false); return; }
+                completed(true);
+            });
+        }
+
+        private void ClearPlayerGloves(CCSPlayerController player, Action<bool> completed)
+        {
+            var pawn = player.PlayerPawn.Value;
+            if (pawn == null || !pawn.IsValid) { completed(false); return; }
+            if (!_gloveOverrides.TryGetValue(player.Slot, out var owner) || owner != (player.SteamID, pawn.EntityHandle.Raw))
+            { completed(true); return; }
+            _gloveOverrides.Remove(player.Slot);
+            GloveNetwork.Clear(pawn);
+            SetBodygroup(pawn, "first_or_third_person", 0);
+            var identity = DeferredPlayer.Capture(player);
+            AddOneShot(.2f, () => {
+                if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive ||
+                    current.PlayerPawn.Value is not { IsValid: true } live) { completed(false); return; }
+                try { SetBodygroup(live, "first_or_third_person", 1); }
+                catch (Exception error) { Logger.LogWarning(error, "Unable to finish glove reset"); completed(false); return; }
+                completed(true);
             });
         }
 
@@ -338,74 +365,6 @@ namespace WeaponPaints
 			UpdateWeaponMeshGroupMask(weapon, isLegacy);
 		}
 
-		private static void GivePlayerAgent(CCSPlayerController player)
-		{
-			GPlayersAgent.TryGetValue(player.Slot, out var value);
-
-			var team = player.TeamNum;
-            var model = AgentModel.Normalize(team == 3 ? value.CT : value.T);
-            if (!AgentModel.IsAllowed(model, team)) model = null;
-            if (model == null && !Instance.HasAgentPatchOverride(player.Slot, player.SteamID, player.PlayerPawn.Raw)) return;
-            var patchIds = new uint[3];
-            if (model != null && GPlayersPatchExpiry.TryGetValue(player.Slot, out var expiresAt) && expiresAt > DateTime.UtcNow
-                && GPlayersPatches.TryGetValue(player.Slot, out var patchTeams)
-                && patchTeams.TryGetValue(team, out var selectedPatches))
-                Array.Copy(selectedPatches, patchIds, Math.Min(3, selectedPatches.Length));
-
-			var expectedSteamId = player.SteamID.ToString();
-            var identity = DeferredPlayer.Capture(player);
-
-			try
-			{
-				Server.NextFrame(() =>
-				{
-					if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId || player.TeamNum != team) return;
-					var pawn = player.PlayerPawn.Value;
-					if (pawn != null && pawn.IsValid)
-                    {
-                        if (model != null) pawn.SetModel($"agents/models/{model}.vmdl");
-                        var nativePatches = pawn.PlayerPatchEconIndices;
-                        for (var slot = 0; slot < nativePatches.Length; slot++)
-                            nativePatches[slot] = slot < 3 ? patchIds[slot] : 0;
-                        Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_vecPlayerPatchEconIndices");
-                        Instance.MarkAgentPatchOverride(player.Slot, player.SteamID, pawn.EntityHandle.Raw, patchIds.Any(id => id != 0));
-                        Instance.ArmAgentPatchExpiry(player.Slot);
-                    }
-				});
-			}
-			catch (Exception)
-			{
-			}
-		}
-
-		private static void GivePlayerMusicKit(CCSPlayerController player)
-		{
-			if (player.IsBot) return;
-			if (!GPlayersMusic.TryGetValue(player.Slot, out var musicInfo) ||
-			    !musicInfo.TryGetValue(player.Team, out var musicId) || musicId == 0) return;
-			
-			if (player.InventoryServices == null) return;
-
-			player.MusicKitID = musicId;
-			// player.MvpNoMusic = false;
-			player.InventoryServices.MusicID = musicId;
-			Utilities.SetStateChanged(player, "CCSPlayerController", "m_iMusicKitID");
-			// Utilities.SetStateChanged(player, "CCSPlayerController", "m_bMvpNoMusic");
-			Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInventoryServices");
-			// player.MusicKitMVPs = musicId;
-			// Utilities.SetStateChanged(player, "CCSPlayerController", "m_iMusicKitMVPs");
-		}
-
-		private static void GivePlayerPin(CCSPlayerController player)
-		{
-			if (!GPlayersPin.TryGetValue(player.Slot, out var pinInfo) ||
-			    !pinInfo.TryGetValue(player.Team, out var pinId)) return;
-			if (player.InventoryServices == null) return;
-			
-			player.InventoryServices.Rank[5] = pinId > 0 ? (MedalRank_t)pinId : MedalRank_t.MEDAL_RANK_NONE;
-			Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInventoryServices");
-		}
-		
 		private void GiveOnItemPickup(CCSPlayerController player)
 		{
 			if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive) return;
@@ -471,25 +430,6 @@ namespace WeaponPaints
 			return true;
 		}
 		
-		private static bool HasChangedPaint(CCSPlayerController player, int weaponDefIndex, out WeaponInfo? weaponInfo)
-		{
-			weaponInfo = null;
-			if (PlayerDataLoading.ContainsKey(player.Slot)) return false;
-
-			// Check if player has weapons info for their slot and team
-			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamInfo) || 
-			    !teamInfo.TryGetValue(player.Team, out var teamWeapons))
-			{
-				return false;
-			}
-
-			// Check if the specified weapon has a paint/skin change
-			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || !value.HasCustomization) return false;
-			
-			weaponInfo = value; // Assign the out variable when it exists
-			return true;
-		}
-
 		private static float ViewAsFloat(uint value)
 		{
 			return BitConverter.Int32BitsToSingle((int)value);

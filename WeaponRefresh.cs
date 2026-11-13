@@ -9,7 +9,9 @@ public partial class WeaponPaints
     {
         internal readonly DeferredPlayer Identity = identity;
         internal int Revision;
+        internal HashSet<int> PreviousDefinitions = new();
         internal HashSet<int>? Definitions = defindex.HasValue ? [defindex.Value] : null;
+        internal readonly List<Action<bool>> Completions = new();
         internal void Include(int? value) { Revision++; if (!value.HasValue) Definitions = null; else Definitions?.Add(value.Value); }
     }
     private sealed record RefreshItem(uint Handle, string Classname, int Clip1, int Clip2, int[] Reserve, bool Active, bool Last,
@@ -20,53 +22,80 @@ public partial class WeaponPaints
     {
         foreach (var (identity, handle) in _holsteredWeapons) RestoreHolsteredWeapon(identity, handle);
         _holsteredWeapons.Clear();
+        var cancelled = _weaponRefreshes.Values.ToArray();
         _weaponRefreshes.Clear();
         _retiringWeapons.Clear();
+        foreach (var request in cancelled) CompleteWeaponRefresh(request, false);
     }
-    private void RefreshWeapons(CCSPlayerController? player, int? defindex = null)
+    private void RefreshWeapons(CCSPlayerController? player, int? defindex = null) => QueueWeaponRefresh(player, defindex, null);
+    private void RefreshWeaponsWithCompletion(CCSPlayerController? player, Action<bool> completed, IReadOnlySet<int>? previousDefinitions = null) => QueueWeaponRefresh(player, null, completed, previousDefinitions);
+    private void CompleteWeaponRefresh(RefreshRequest request, bool success)
     {
-        if (!_gBCommandsAllowed || player == null || !player.IsValid || !player.PawnIsAlive) return;
+        foreach (var callback in request.Completions)
+            try { callback(success); } catch (Exception error) { Logger.LogError(error, "Weapon refresh completion failed"); }
+        request.Completions.Clear();
+    }
+    private void QueueWeaponRefresh(CCSPlayerController? player, int? defindex, Action<bool>? completed, IReadOnlySet<int>? previousDefinitions = null)
+    {
+        if (!_gBCommandsAllowed || player == null || !player.IsValid || !player.PawnIsAlive) { completed?.Invoke(false); return; }
         var identity = DeferredPlayer.Capture(player);
-        if (_weaponRefreshes.TryGetValue(player.Slot, out var existing) && existing.Identity == identity) { existing.Include(defindex); return; }
+        if (_weaponRefreshes.TryGetValue(player.Slot, out var existing))
+        {
+            if (existing.Identity == identity) { existing.Include(defindex); if (previousDefinitions != null) existing.PreviousDefinitions.UnionWith(previousDefinitions); if (completed != null) existing.Completions.Add(completed); return; }
+            _weaponRefreshes.Remove(player.Slot); CompleteWeaponRefresh(existing, false);
+        }
         var request = new RefreshRequest(identity, defindex);
+        if (previousDefinitions != null) request.PreviousDefinitions.UnionWith(previousDefinitions);
+        if (completed != null) request.Completions.Add(completed);
         _weaponRefreshes[player.Slot] = request;
+        ScheduleWeaponRefresh(request);
+    }
+    private void ScheduleWeaponRefresh(RefreshRequest request)
+    {
+        var identity = request.Identity;
         Server.NextFrame(() =>
         {
             if (!_weaponRefreshes.TryGetValue(identity.Slot, out var current) || !ReferenceEquals(current, request)) return;
             var revision = request.Revision;
-            void Finish()
+            void Finish(bool success)
             {
                 if (!_weaponRefreshes.TryGetValue(identity.Slot,out var pending) || !ReferenceEquals(pending,request)) return;
                 _weaponRefreshes.Remove(identity.Slot);
-                if (request.Revision != revision && identity.TryResolve(out var owner))
+                if (request.Revision != revision && identity.TryResolve(out var owner) && owner.PawnIsAlive)
                 {
-                    if (request.Definitions == null) RefreshWeapons(owner);
-                    else foreach (var definition in request.Definitions) RefreshWeapons(owner, definition);
+                    var next = new RefreshRequest(identity, null) { Definitions = request.Definitions?.ToHashSet(), PreviousDefinitions = request.PreviousDefinitions };
+                    next.Completions.AddRange(request.Completions); request.Completions.Clear();
+                    _weaponRefreshes[identity.Slot] = next; ScheduleWeaponRefresh(next);
+                    return;
                 }
+                CompleteWeaponRefresh(request, success && request.Revision == revision);
             }
-            if (!identity.TryResolve(out var owner) || !owner.PawnIsAlive || PlayerDataLoading.ContainsKey(owner.Slot)) { Finish(); return; }
-            try { ApplyWeaponRefresh(owner, request.Definitions, Finish); }
-            catch (Exception ex) { Finish(); Logger.LogError(ex, "Weapon refresh failed"); }
+            if (!identity.TryResolve(out var owner) || !owner.PawnIsAlive || PlayerDataLoading.ContainsKey(owner.Slot)) { Finish(false); return; }
+            try { ApplyWeaponRefresh(owner, request.Definitions, request.PreviousDefinitions, Finish); }
+            catch (Exception ex) { Finish(false); Logger.LogError(ex, "Weapon refresh failed"); }
         });
     }
-    private void ApplyWeaponRefresh(CCSPlayerController player, HashSet<int>? definitions, Action completed)
+    private void ApplyWeaponRefresh(CCSPlayerController player, HashSet<int>? definitions, HashSet<int> previousDefinitions, Action<bool> completed)
     {
         var pawn = player.PlayerPawn.Value;
         var services = pawn?.WeaponServices;
-        if (!_gBCommandsAllowed || pawn == null || !pawn.IsValid || services == null || pawn.ItemServices == null) { completed(); return; }
+        if (!_gBCommandsAllowed || pawn == null || !pawn.IsValid || services == null || pawn.ItemServices == null) { completed(false); return; }
         var identity = DeferredPlayer.Capture(player);
         var plans = new List<RefreshItem>();
         var preferredActive = services.ActiveWeapon.Raw;
         var preferredLast = services.LastWeapon.Raw;
         var snapshot = services.MyWeapons.Select(h => h.Raw).ToArray();
+        var failedRetirement = false;
         foreach (var handle in snapshot)
         {
-            if (_retiringWeapons.Contains(handle)) continue;
             var old = new CHandle<CBasePlayerWeapon>(handle).Value;
             if (old == null || !old.IsValid || old.OwnerEntity.Raw != pawn.EntityHandle.Raw) continue;
             var data = old.As<CCSWeaponBase>().VData;
             if (data == null || data.GearSlot is not (gear_slot_t.GEAR_SLOT_RIFLE or gear_slot_t.GEAR_SLOT_PISTOL or gear_slot_t.GEAR_SLOT_KNIFE)) continue;
             var knife = data.GearSlot == gear_slot_t.GEAR_SLOT_KNIFE;
+            // A full refresh must not replace the player's knife when the
+            // server has explicitly disabled knife customization.
+            if (knife && !Config.Additional.KnifeEnabled) continue;
             var index = (int)old.AttributeManager.Item.ItemDefinitionIndex;
             if (definitions != null && !definitions.Contains(index) && !(knife && definitions.Any(d => d is 42 or 59 || WeaponDefindex.TryGetValue(d,out var name) && (name.Contains("knife") || name.Contains("bayonet"))))) continue;
             var hasKnifeChoice = false;
@@ -75,7 +104,10 @@ public partial class WeaponPaints
                 hasKnifeChoice = knifeChoice == "weapon_knife" || KnifeDefindexes.Value.ContainsKey(knifeChoice);
             }
             var hasPreference = GPlayerWeaponsInfo.TryGetValue(player.Slot,out var teams) && teams.TryGetValue(player.Team,out var items) && items.ContainsKey(index);
-            if (!hasPreference && !hasKnifeChoice) continue;
+            // A row or knife choice can disappear from the newly loaded snapshot.
+            // The old weapon still needs replacement to remove that override.
+            if (!hasPreference && !hasKnifeChoice && !previousDefinitions.Contains(index) && !(knife && definitions == null)) continue;
+            if (_retiringWeapons.Contains(handle)) { failedRetirement = true; continue; }
             var classname = "weapon_knife";
             if (!knife && !WeaponDefindex.TryGetValue(index,out classname)) continue;
             var settings=old.As<CCSWeaponBase>();
@@ -92,11 +124,12 @@ public partial class WeaponPaints
             }
             catch(Exception ex)
             {
+                failedRetirement = true;
                 _retiringWeapons.Remove(handle);
                 Logger.LogWarning(ex,"Unable to retire refresh item {Classname}",classname);
             }
         }
-        if(plans.Count==0){completed();return;}
+        if(plans.Count==0){completed(!failedRetirement);return;}
         var attempts=0;
         uint redeployActive=0;
         void FinishSelection()
@@ -106,9 +139,11 @@ public partial class WeaponPaints
             // is still selected. Never overwrite a different manual selection.
             Server.NextFrame(() =>
             {
+                var success = false;
                 try
                 {
                     if (!identity.TryResolve(out var owner) || !owner.PawnIsAlive) return;
+                    success = !failedRetirement;
                     var currentPawn = owner.PlayerPawn.Value;
                     var currentServices = currentPawn?.WeaponServices;
                     var last = new CHandle<CBasePlayerWeapon>(preferredLast).Value;
@@ -117,15 +152,16 @@ public partial class WeaponPaints
                     currentServices.LastWeapon.Raw = preferredLast;
                     Utilities.SetStateChanged(currentPawn, nameof(CBasePlayerPawn), "m_pWeaponServices");
                 }
-                finally { completed(); }
+                catch (Exception ex) { success = false; Logger.LogError(ex, "Unable to restore weapon selection"); }
+                finally { completed(success); }
             });
         }
         void GiveRemoved()
         {
-            if (!identity.TryResolve(out var current) || !current.PawnIsAlive) { completed(); return; }
+            if (!identity.TryResolve(out var current) || !current.PawnIsAlive) { completed(false); return; }
             var currentPawn=current.PlayerPawn.Value;
             var currentServices=currentPawn?.WeaponServices;
-            if(currentPawn==null || currentServices==null || currentPawn.ItemServices==null){completed();return;}
+            if(currentPawn==null || currentServices==null || currentPawn.ItemServices==null){completed(false);return;}
             attempts++;
             for(var n=plans.Count-1;n>=0;n--)
             {
@@ -160,8 +196,10 @@ public partial class WeaponPaints
                     // A failed acquisition may leave an unowned newly-created entity.
                     if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))
                     {
-                        if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)RetireRefreshWeapon(currentPawn,replacement);
-                        else replacement.Remove();
+                        try {
+                            if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)RetireRefreshWeapon(currentPawn,replacement);
+                            else replacement.Remove();
+                        } catch(Exception cleanup) { Logger.LogWarning(cleanup,"Unable to remove failed replacement"); }
                     }
                     Logger.LogWarning(ex,"Weapon replacement attempt {Attempt} failed",attempts);
                 }
@@ -171,7 +209,7 @@ public partial class WeaponPaints
                 else FinishSelection();
                 return;
             }
-            if(attempts>=8){Logger.LogError("Weapon refresh exhausted retries for slot {Slot}; remaining item classes: {Items}",identity.Slot,string.Join(",",plans.Select(p=>p.Classname)));completed();return;}
+            if(attempts>=8){Logger.LogError("Weapon refresh exhausted retries for slot {Slot}; remaining item classes: {Items}",identity.Slot,string.Join(",",plans.Select(p=>p.Classname)));completed(false);return;}
             Server.NextFrame(GiveRemoved);
         }
         Server.NextFrame(GiveRemoved);

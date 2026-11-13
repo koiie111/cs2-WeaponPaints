@@ -47,5 +47,7 @@
   "keychain slot 0 offset z": 302,
   "keychain slot 0 seed": 306,
   "keychain slot 0 highlight": 314,
-  "keychain slot 0 sticker": 321
+  "keychain slot 0 sticker": 321,
+  "kill eater": 80,
+  "kill eater score type": 81
 }

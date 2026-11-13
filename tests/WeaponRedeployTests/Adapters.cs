@@ -41,7 +41,7 @@ namespace CounterStrikeSharp.API.Core
     }
     public sealed class CCSPlayerController(uint raw) : Entity(raw)
     {
-        public int Slot;
+        public int Slot, TeamNum = 2;
         public ulong SteamID = 10;
         public bool PawnIsAlive = true, IsBot;
         public CHandle<CCSPlayerPawn> PlayerPawn = new(0);

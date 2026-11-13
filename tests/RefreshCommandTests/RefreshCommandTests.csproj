@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <ItemGroup><Compile Include="../../RefreshCommand.cs" Link="RefreshCommand.cs"/><Compile Include="../../CosmeticRefresh.cs" Link="CosmeticRefresh.cs"/><Compile Include="../../CosmeticRefreshBarrier.cs" Link="CosmeticRefreshBarrier.cs"/><Compile Include="../../PlayerInfo.cs" Link="PlayerInfo.cs"/><PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0"/></ItemGroup>
+</Project>

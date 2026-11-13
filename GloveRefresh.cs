@@ -13,15 +13,27 @@ public partial class WeaponPaints
         // pair of lastinv commands races those replacements and can select a knife
         // instead of the pistol held when !wp started. Apply gloves first, then let
         // weapon refresh capture the actual active/last handles without any toggle.
-        GivePlayerGloves(player, current => RefreshWeapons(current), false);
+        GivePlayerGloves(player, (current, _) => RefreshWeapons(current), false);
     }
 
-    private void GivePlayerGloves(CCSPlayerController player, Action<CCSPlayerController>? completed, bool switchWeapon)
+    private void RefreshPlayerEquipmentWithCompletion(CCSPlayerController player, Action<bool> completed, IReadOnlySet<int>? previousDefinitions = null)
     {
-        if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive) return;
+        GivePlayerGloves(player, (current, glovesOk) =>
+            RefreshWeaponsWithCompletion(current, weaponsOk => completed(glovesOk && weaponsOk), previousDefinitions), false, () => completed(false));
+    }
+
+    private void GivePlayerGloves(CCSPlayerController player, Action<CCSPlayerController, bool>? completed, bool switchWeapon, Action? cancelled = null)
+    {
+        if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive) { cancelled?.Invoke(); return; }
         if (!TryGetGlovePaint(player, out _, out _))
         {
-            completed?.Invoke(player);
+            if (!Config.Additional.GloveEnabled) { completed?.Invoke(player, true); return; }
+            var clearIdentity = DeferredPlayer.Capture(player);
+            try { ClearPlayerGloves(player, ok => {
+                if (!clearIdentity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive) { cancelled?.Invoke(); return; }
+                completed?.Invoke(current, ok);
+            }); }
+            catch (Exception ex) { Logger.LogWarning(ex, "Unable to clear player gloves"); completed?.Invoke(player, false); }
             return;
         }
 
@@ -29,16 +41,15 @@ public partial class WeaponPaints
         if (switchWeapon) player.ExecuteClientCommand("lastinv");
         AddOneShot(0.08f, () =>
         {
-            if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive) return;
-            try { ApplyPlayerGloves(current); }
-            catch (Exception ex) { Logger.LogWarning(ex, "Unable to apply player gloves"); }
-            finally
+            if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive) { cancelled?.Invoke(); return; }
+            void Finish(bool success)
             {
-                // Standalone glove menus keep their established visual refresh.
-                // Complete their toggle even if the selection was cleared meanwhile.
-                if (switchWeapon) current.ExecuteClientCommand("lastinv");
-                completed?.Invoke(current);
+                if (!identity.TryResolve(out var owner) || !Utility.IsPlayerValid(owner) || !owner.PawnIsAlive) { cancelled?.Invoke(); return; }
+                if (switchWeapon) owner.ExecuteClientCommand("lastinv");
+                completed?.Invoke(owner, success);
             }
+            try { ApplyPlayerGloves(current, Finish); }
+            catch (Exception ex) { Logger.LogWarning(ex, "Unable to apply player gloves"); Finish(false); }
         });
     }
 }

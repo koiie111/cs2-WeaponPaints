@@ -31,6 +31,15 @@ try{
  var skins=WP.GPlayerWeaponsInfo[1];Check(skins[t][7].Paint==44&&skins[ct][7].Paint==55&&skins[t][7].Nametag==unicode,"skin overrides and UTF8");
  Check(skins[t][7].KeyChain!.Seed==uint.MaxValue&&skins[t][7].Stickers[0].Id==uint.MaxValue,"uint32 cosmetics parser");
  Check(skins[ct][7].KeyChain!.Id==0&&skins[ct][7].Stickers.Count==5&&skins[ct][7].Stickers.All(x=>x.Id==0),"malformed cosmetics fallback");
+ // Website saves a second sticker while the player remains connected. The
+ // subsequent refresh must replace the whole published cosmetic snapshot.
+ await sql.ExecuteAsync("ALTER TABLE wp_player_skins ADD COLUMN weapon_composition_version INT NOT NULL DEFAULT 0");
+ await sql.ExecuteAsync("INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_paint_id,weapon_seed,weapon_composition_version,weapon_sticker_0,weapon_sticker_1) VALUES (@id,2,7,44,661,1,'23;0;-0.33771758989401;0.0012166297970735;0;1;0','16;1;-0.17183095905784;0.0024511751654942;0;1;0')",new{id});
+ Check(await Load(),"website sticker update reload succeeds");
+ var updated=WP.GPlayerWeaponsInfo[1][t][7].Stickers;
+ Check(updated.Count==5 && updated[0].Id==23 && updated[1].Id==16 && updated[1].Schema==1 && Math.Abs(updated[1].OffsetX-(-0.17183096f))<0.000001f,"website sticker update reaches connected player's T snapshot without reconnect");
+ await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
+ await sql.ExecuteAsync("ALTER TABLE wp_player_skins DROP COLUMN weapon_composition_version");
  for(var mask=0;mask<64;mask++) {
   config.Additional.KnifeEnabled=(mask&1)!=0;config.Additional.GloveEnabled=(mask&2)!=0;config.Additional.AgentEnabled=(mask&4)!=0;config.Additional.MusicEnabled=(mask&8)!=0;config.Additional.SkinEnabled=(mask&16)!=0;config.Additional.PinsEnabled=(mask&32)!=0;
   Check(await Load() && WP.GPlayersKnife.ContainsKey(1)==config.Additional.KnifeEnabled && WP.GPlayersGlove.ContainsKey(1)==config.Additional.GloveEnabled && WP.GPlayersAgent.ContainsKey(1)==config.Additional.AgentEnabled && WP.GPlayersMusic.ContainsKey(1)==config.Additional.MusicEnabled && WP.GPlayerWeaponsInfo.ContainsKey(1)==config.Additional.SkinEnabled && WP.GPlayersPin.ContainsKey(1)==config.Additional.PinsEnabled,"feature flags mask "+mask);
@@ -49,12 +58,20 @@ try{
  Check(await sql.ExecuteScalarAsync<string>("SELECT weapon_nametag FROM wp_player_skins WHERE steamid=@id AND weapon_team=3 AND weapon_defindex=7",new{id})=="CT","batch update preserves cosmetics");
  await sync.SyncStatTrakToDatabase(player,skins);
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==200,"disconnect StatTrak snapshot");
- // Simulate kills earned while SQL is in flight, then a website paint change.
+ // Run the actual death handler while a real SQL snapshot is waiting to publish.
+ skins[ct][7].StatTrakCount=300;
  var beforePublish=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
  var allowPublish=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
  Server.BeforeDispatch=async()=>{beforePublish.TrySetResult();await allowPublish.Task;};
  var counterReload=Load();await beforePublish.Task.WaitAsync(TimeSpan.FromSeconds(10));
- skins[t][7].StatTrakCount=207;skins[ct][7].StatTrakCount=311;allowPublish.TrySetResult();
+ var gun=new CounterStrikeSharp.API.Core.CBasePlayerWeapon();gun.AttributeManager.Item.ItemDefinitionIndex=7;
+ var attacker=new CounterStrikeSharp.API.Core.CCSPlayerController { Slot=1,Team=t,PlayerPawn=new(){Value=new(){WeaponServices=new(){ActiveWeapon=new(){Value=gun}}}} };
+ var victim=new CounterStrikeSharp.API.Core.CCSPlayerController { Slot=2,Team=ct };
+ var death=new CounterStrikeSharp.API.Core.EventPlayerDeath { Attacker=attacker,Userid=victim };
+ for(var i=0;i<7;i++)WP.Instance.TestDeath(death);
+ attacker.Team=ct; for(var i=0;i<11;i++)WP.Instance.TestDeath(death);
+ Check(skins[t][7].StatTrakCount==207&&skins[ct][7].StatTrakCount==311,"actual death handler counts kills during real SQL refresh");
+ allowPublish.TrySetResult();
  Check(await counterReload&&WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount==207&&WP.GPlayerWeaponsInfo[1][ct][7].StatTrakCount==311,"kills during refresh survive per-team snapshot publication");
  Server.BeforeDispatch=null;
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_paint_id=777,weapon_stattrak=0 WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
@@ -188,6 +205,10 @@ try{
  Check(await Load(),"graffiti selection loads with the regular identity-guarded snapshot");
  Check(WP.PlayerGraffiti.TryGetValue(player.Slot,out var graffiti)&&graffiti==(1671,0),"native graffiti kit and tint round trip");
  Check(!WP.HasGraffitiSubscription(player.Slot),"saved graffiti gives no permission without active 4ill+");
+ await sql.ExecuteAsync("UPDATE wp_player_graffiti SET graffiti_id=1672,tint_id=4 WHERE steamid=@id",new{id});
+ Check(await Load()&&WP.PlayerGraffiti[player.Slot]==(1672,4),"website graffiti change replaces both kit and tint on refresh");
+ await sql.ExecuteAsync("UPDATE wp_player_graffiti SET graffiti_id=1671,tint_id=0 WHERE steamid=@id",new{id});
+ Check(await Load()&&WP.PlayerGraffiti[player.Slot]==(1671,0),"subsequent graffiti selection replaces the previous choice");
  await sql.ExecuteAsync("INSERT INTO plus_active VALUES (@id,'2030-01-01 03:00:00')",new{id});
  Check(await Load()&&WP.HasGraffitiSubscription(player.Slot)&&WP.PlayerGraffitiExpiry[player.Slot]==new DateTime(2030,1,1,0,0,0,DateTimeKind.Utc),"graffiti permission shares joined read and converts MSK expiry to UTC");
  WP.PlayerGraffitiExpiry[player.Slot]=DateTime.UtcNow.AddSeconds(-1);
