@@ -40,6 +40,8 @@ jobs:
         run: dotnet build WeaponPaints.csproj --no-restore -c Release -o build/WeaponPaints
       - name: Pet lifecycle regression checks
         run: dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release
+      - name: Pet refresh and entitlement checks
+        run: dotnet run --project tests/PetRefreshTests/PetRefreshTests.csproj -c Release
       - name: Composition compatibility checks
         run: dotnet run --project tests/CompositionTests/CompositionTests.csproj -c Release
       - name: Agent patch lifecycle checks
