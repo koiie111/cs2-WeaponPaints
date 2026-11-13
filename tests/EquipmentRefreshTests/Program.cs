@@ -53,6 +53,22 @@ foreach (var change in new[] { "controller", "account", "pawn", "map", "dead", "
     Check(plugin.Events.Count == 0 && player.Commands.Count == 0, "Cancel stale equipment work: " + change);
 }
 
+var waiting = Player();
+var waitingPlugin = new Plugin();
+waitingPlugin.Refresh(waiting);
+waitingPlugin.FlushOne();
+Check(waitingPlugin.Events.SequenceEqual(new[] { "gloves" }), "weapon refresh waits for the delayed glove bodygroup completion");
+waitingPlugin.Flush();
+Check(waitingPlugin.Events.Last() == "weapons:pistol:knife", "weapon refresh follows completed glove bodygroup");
+
+var changingPawn = Player();
+var changingPlugin = new Plugin();
+changingPlugin.Refresh(changingPawn);
+changingPlugin.FlushOne();
+changingPawn.PlayerPawn.Raw++;
+changingPlugin.Flush();
+Check(changingPlugin.Events.SequenceEqual(new[] { "gloves" }), "a stale delayed glove completion never applies weapons to a replacement pawn");
+
 var manual = Player();
 var manualPlugin = new Plugin();
 manualPlugin.Refresh(manual);
@@ -81,5 +97,5 @@ var spam = Player();
 var spamPlugin = new Plugin();
 for (var n = 0; n < 100; n++) spamPlugin.Refresh(spam);
 spamPlugin.Flush();
-Check(spam.Commands.Count == 0 && spamPlugin.Events.Count == 200 && spamPlugin.Events.Where((_, n) => n % 2 == 1).All(value => value == "weapons:pistol:knife"), "Repeated refreshes keep pistol active and last slot stable");
+Check(spam.Commands.Count == 0 && spamPlugin.Events.Count == 200 && spamPlugin.Events.Count(value => value == "gloves") == 100 && spamPlugin.Events.Count(value => value == "weapons:pistol:knife") == 100, "Repeated refreshes keep pistol active and last slot stable");
 Console.WriteLine($"PASS: {checks} production equipment scheduling checks (managed engine boundaries)");

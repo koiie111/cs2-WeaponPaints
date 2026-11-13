@@ -58,6 +58,10 @@ jobs:
         run: dotnet run --project tests/FinishCacheTests/FinishCacheTests.csproj -c Release
       - name: Command refresh coordination checks
         run: dotnet run --project tests/RefreshCommandTests/RefreshCommandTests.csproj -c Release
+      - name: StatTrak event checks
+        run: dotnet run --project tests/StatTrakEventTests/StatTrakEventTests.csproj -c Release
+      - name: Music and pin controller checks
+        run: dotnet run --project tests/ControllerCosmeticsTests/ControllerCosmeticsTests.csproj -c Release
       - name: Weapon appearance network checks
         run: dotnet run --project tests/WeaponNetworkTests/WeaponNetworkTests.csproj -c Release
       - name: Measurement integrity checks

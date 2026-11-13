@@ -237,13 +237,13 @@ namespace WeaponPaints
                 gloveId != 0 && HasChangedPaint(player, gloveId, out weaponInfo) && weaponInfo != null;
         }
 
-        private void ApplyPlayerGloves(CCSPlayerController player)
+        private void ApplyPlayerGloves(CCSPlayerController player, Action<bool> completed)
         {
-            if (!TryGetGlovePaint(player, out var gloveId, out var weaponInfo) || weaponInfo == null) return;
+            if (!TryGetGlovePaint(player, out var gloveId, out var weaponInfo) || weaponInfo == null) { completed(false); return; }
             var identity = DeferredPlayer.Capture(player);
             var expectedSteamId = player.SteamID.ToString();
             var pawn = player.PlayerPawn.Value;
-            if (pawn == null || !pawn.IsValid) return;
+            if (pawn == null || !pawn.IsValid) { completed(false); return; }
             var item = pawn.EconGloves;
 
             item.ItemDefinitionIndex = gloveId;
@@ -265,27 +265,33 @@ namespace WeaponPaints
             GloveNetwork.Notify(pawn);
 
             SetBodygroup(pawn, "first_or_third_person", 0);
-            Instance.AddOneShot(0.2f, () =>
+            AddOneShot(0.2f, () =>
             {
-                if (!identity.TryResolve(out player) || !Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
-                var currentPawn = player.PlayerPawn.Value;
-                if (currentPawn != null && currentPawn.IsValid)
-                    SetBodygroup(currentPawn, "first_or_third_person", 1);
+                if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive ||
+                    current.SteamID.ToString() != expectedSteamId || current.PlayerPawn.Value is not { IsValid: true } live)
+                { completed(false); return; }
+                try { SetBodygroup(live, "first_or_third_person", 1); }
+                catch (Exception error) { Logger.LogWarning(error, "Unable to finish glove bodygroup update"); completed(false); return; }
+                completed(true);
             });
         }
 
-        private void ClearPlayerGloves(CCSPlayerController player)
+        private void ClearPlayerGloves(CCSPlayerController player, Action<bool> completed)
         {
             var pawn = player.PlayerPawn.Value;
-            if (pawn == null || !pawn.IsValid || !_gloveOverrides.TryGetValue(player.Slot, out var owner) ||
-                owner != (player.SteamID, pawn.EntityHandle.Raw)) return;
+            if (pawn == null || !pawn.IsValid) { completed(false); return; }
+            if (!_gloveOverrides.TryGetValue(player.Slot, out var owner) || owner != (player.SteamID, pawn.EntityHandle.Raw))
+            { completed(true); return; }
             _gloveOverrides.Remove(player.Slot);
             GloveNetwork.Clear(pawn);
             SetBodygroup(pawn, "first_or_third_person", 0);
             var identity = DeferredPlayer.Capture(player);
             AddOneShot(.2f, () => {
-                if (identity.TryResolve(out var current) && current.PlayerPawn.Value is { IsValid: true } live)
-                    SetBodygroup(live, "first_or_third_person", 1);
+                if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive ||
+                    current.PlayerPawn.Value is not { IsValid: true } live) { completed(false); return; }
+                try { SetBodygroup(live, "first_or_third_person", 1); }
+                catch (Exception error) { Logger.LogWarning(error, "Unable to finish glove reset"); completed(false); return; }
+                completed(true);
             });
         }
 
@@ -421,35 +427,6 @@ namespace WeaponPaints
 			}
 		}
 
-		private static void GivePlayerMusicKit(CCSPlayerController player)
-		{
-			if (player.IsBot || !_config.Additional.MusicEnabled) return;
-            ushort musicId = 0;
-            if (GPlayersMusic.TryGetValue(player.Slot, out var musicInfo))
-                musicInfo.TryGetValue(player.Team, out musicId);
-			if (player.InventoryServices == null) return;
-
-			player.MusicKitID = musicId;
-			// player.MvpNoMusic = false;
-			player.InventoryServices.MusicID = musicId;
-			Utilities.SetStateChanged(player, "CCSPlayerController", "m_iMusicKitID");
-			// Utilities.SetStateChanged(player, "CCSPlayerController", "m_bMvpNoMusic");
-			Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInventoryServices");
-			// player.MusicKitMVPs = musicId;
-			// Utilities.SetStateChanged(player, "CCSPlayerController", "m_iMusicKitMVPs");
-		}
-
-		private static void GivePlayerPin(CCSPlayerController player)
-		{
-			if (!_config.Additional.PinsEnabled || player.InventoryServices == null) return;
-            ushort pinId = 0;
-            if (GPlayersPin.TryGetValue(player.Slot, out var pinInfo))
-                pinInfo.TryGetValue(player.Team, out pinId);
-			
-			player.InventoryServices.Rank[5] = pinId > 0 ? (MedalRank_t)pinId : MedalRank_t.MEDAL_RANK_NONE;
-			Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInventoryServices");
-		}
-		
 		private void GiveOnItemPickup(CCSPlayerController player)
 		{
 			if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive) return;
@@ -515,25 +492,6 @@ namespace WeaponPaints
 			return true;
 		}
 		
-		private static bool HasChangedPaint(CCSPlayerController player, int weaponDefIndex, out WeaponInfo? weaponInfo)
-		{
-			weaponInfo = null;
-			if (PlayerDataLoading.ContainsKey(player.Slot)) return false;
-
-			// Check if player has weapons info for their slot and team
-			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamInfo) || 
-			    !teamInfo.TryGetValue(player.Team, out var teamWeapons))
-			{
-				return false;
-			}
-
-			// Check if the specified weapon has a paint/skin change
-			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || !value.HasCustomization) return false;
-			
-			weaponInfo = value; // Assign the out variable when it exists
-			return true;
-		}
-
 		private static float ViewAsFloat(uint value)
 		{
 			return BitConverter.Int32BitsToSingle((int)value);

@@ -27,10 +27,13 @@ public partial class WeaponPaints
         if (!Utility.IsPlayerValid(player) || !player.PawnIsAlive) { cancelled?.Invoke(); return; }
         if (!TryGetGlovePaint(player, out _, out _))
         {
-            var success = true;
-            try { if (Config.Additional.GloveEnabled) ClearPlayerGloves(player); }
-            catch (Exception ex) { success = false; Logger.LogWarning(ex, "Unable to clear player gloves"); }
-            completed?.Invoke(player, success);
+            if (!Config.Additional.GloveEnabled) { completed?.Invoke(player, true); return; }
+            var clearIdentity = DeferredPlayer.Capture(player);
+            try { ClearPlayerGloves(player, ok => {
+                if (!clearIdentity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive) { cancelled?.Invoke(); return; }
+                completed?.Invoke(current, ok);
+            }); }
+            catch (Exception ex) { Logger.LogWarning(ex, "Unable to clear player gloves"); completed?.Invoke(player, false); }
             return;
         }
 
@@ -39,16 +42,14 @@ public partial class WeaponPaints
         AddOneShot(0.08f, () =>
         {
             if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current) || !current.PawnIsAlive) { cancelled?.Invoke(); return; }
-            var success = true;
-            try { ApplyPlayerGloves(current); }
-            catch (Exception ex) { success = false; Logger.LogWarning(ex, "Unable to apply player gloves"); }
-            finally
+            void Finish(bool success)
             {
-                // Standalone glove menus keep their established visual refresh.
-                // Complete their toggle even if the selection was cleared meanwhile.
-                if (switchWeapon) current.ExecuteClientCommand("lastinv");
-                completed?.Invoke(current, success);
+                if (!identity.TryResolve(out var owner) || !Utility.IsPlayerValid(owner) || !owner.PawnIsAlive) { cancelled?.Invoke(); return; }
+                if (switchWeapon) owner.ExecuteClientCommand("lastinv");
+                completed?.Invoke(owner, success);
             }
+            try { ApplyPlayerGloves(current, Finish); }
+            catch (Exception ex) { Logger.LogWarning(ex, "Unable to apply player gloves"); Finish(false); }
         });
     }
 }

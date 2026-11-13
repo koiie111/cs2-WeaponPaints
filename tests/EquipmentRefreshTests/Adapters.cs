@@ -53,17 +53,19 @@ namespace WeaponPaints
             return GlovesEnabled && HasGloves;
         }
         private void AddOneShot(float delay, Action callback) { Pending.Enqueue(callback); }
-        private void ApplyPlayerGloves(CCSPlayerController player)
+        private void ApplyPlayerGloves(CCSPlayerController player, Action<bool> completed)
         {
-            if (!HasGloves) return;
+            if (!HasGloves) { completed(false); return; }
             if (FailApply) throw new Exception("Injected native boundary failure");
             Events.Add("gloves");
+            Pending.Enqueue(() => completed(true));
         }
-        private void ClearPlayerGloves(CCSPlayerController player) => ClearedGloves++;
+        private void ClearPlayerGloves(CCSPlayerController player, Action<bool> completed) { ClearedGloves++; completed(true); }
         private void RefreshWeapons(CCSPlayerController player) => Events.Add("weapons:" + player.Active + ":" + player.Last);
         private void RefreshWeaponsWithCompletion(CCSPlayerController player, Action<bool> completed, IReadOnlySet<int>? previousDefinitions = null) { RefreshWeapons(player); completed(true); }
         public void Refresh(CCSPlayerController player) => RefreshPlayerEquipment(player);
         public void GloveMenu(CCSPlayerController player) => GivePlayerGloves(player);
+        public void FlushOne() { if (Pending.TryDequeue(out var callback)) callback(); }
         public void Flush() { while (Pending.TryDequeue(out var callback)) callback(); }
     }
 }
