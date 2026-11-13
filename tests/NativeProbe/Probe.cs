@@ -240,7 +240,20 @@ public sealed class Probe : BasePlugin
                                attrs.ContainsKey(attributeIds["kill eater"]) || cleared.AttributeManager.Item.EntityQuality==9 ||
                                !string.IsNullOrEmpty(cleared.AttributeManager.Item.CustomName))
                                 throw new Exception("Removed stickers, slab, StatTrak or name survived refresh");
-                            var clearedHandle=cleared.EntityHandle.Raw;bool? cancelled=null;var callbacks=0;
+                            infoType.GetProperty("StatTrak")!.SetValue(info,true);
+                            charmType.GetProperty("Id")!.SetValue(charm,2u);
+                            infoType.GetProperty("KeyChain")!.SetValue(info,charm);
+                            bool? reappliedCompletion=null;
+                            candidateRefresh.RefreshForProbe(bot,success=>reappliedCompletion=success);
+                            AddTimer(.8f,()=>Safe(()=>{
+                            if(reappliedCompletion!=true)throw new Exception("StatTrak re-enable did not complete");
+                            var reapplied=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==7)!;
+                            var reattrs=ReadAttributes(reapplied);
+                            if(BitConverter.SingleToUInt32Bits(reattrs.GetValueOrDefault(attributeIds["kill eater"]))!=18 || reapplied.AttributeManager.Item.EntityQuality!=9 ||
+                               BitConverter.SingleToUInt32Bits(reattrs.GetValueOrDefault(attributeIds["keychain slot 0 id"]))!=2 ||
+                               BitConverter.SingleToUInt32Bits(reattrs.GetValueOrDefault(attributeIds["keychain slot 0 sticker"]))!=0)
+                                throw new Exception("StatTrak counter or ordinary keychain was not restored correctly");
+                            var clearedHandle=reapplied.EntityHandle.Raw;bool? cancelled=null;var callbacks=0;
                             candidateRefresh.RefreshForProbe(bot,success=>{cancelled=success;callbacks++;});
                             candidateRefresh.StopForProbe();
                             Server.NextFrame(()=>Safe(()=>{
@@ -260,10 +273,11 @@ public sealed class Probe : BasePlugin
                                     if(sameKnife is not {IsValid:true} || sameKnife.OwnerEntity.Raw!=bot.PlayerPawn.Raw ||
                                        !bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Any(h=>h.Raw==knifeHandle))
                                         throw new Exception("Knife was replaced while knife customization was disabled");
-                                    error+=" callbacks=PASS clear=PASS slab-stattrak=PASS cancel=PASS knife-disabled=PASS PASS";
+                                    error+=" callbacks=PASS clear=PASS slab-stattrak=PASS reenable=PASS cancel=PASS knife-disabled=PASS PASS";
                                     candidateRefresh=null;root.Remove(bot.Slot);ownedSlots.Remove(bot.Slot);
                                 }),TimerFlags.STOP_ON_MAPCHANGE);
                             }));
+                            }),TimerFlags.STOP_ON_MAPCHANGE);
                         }),TimerFlags.STOP_ON_MAPCHANGE);
                     }),TimerFlags.STOP_ON_MAPCHANGE);
                 }),TimerFlags.STOP_ON_MAPCHANGE);
