@@ -29,6 +29,7 @@ foreach (var missing in new[] { "disabled", "no choice" })
     var plugin = new Plugin { GlovesEnabled = missing != "disabled", HasGloves = missing != "no choice" };
     plugin.Refresh(player);
     Check(plugin.Pending.Count == 0 && plugin.Events.SequenceEqual(new[] { "weapons:pistol:knife" }), "No glove data still refreshes weapons immediately");
+    Check(plugin.ClearedGloves == 1, "No glove data clears the owned glove override");
     plugin.GloveMenu(player);
     Check(player.Commands.Count == 0 && plugin.Pending.Count == 0, "No unmatched toggle without gloves");
 }

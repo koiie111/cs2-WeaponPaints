@@ -137,17 +137,20 @@ public partial class WeaponPaints
         return value.Length == 0 ? null : value;
     }
 
-    private void LoadPetFor(CCSPlayerController player)
+    private void LoadPetFor(CCSPlayerController player) => QueuePetLoad(player, null);
+    private void LoadPetForWithCompletion(CCSPlayerController player, Action<bool> completed) => QueuePetLoad(player, completed);
+    private void QueuePetLoad(CCSPlayerController player, Action<bool>? completed)
     {
-        if (!Config.Additional.PetsEnabled) return;
+        if (!Config.Additional.PetsEnabled) { completed?.Invoke(true); return; }
         var slot = player.Slot;
         var steamId = player.SteamID.ToString();
         var version = _petLoadVersions.Next(slot);
+        var generation = DataGeneration;
         _ = Task.Run(async () =>
         {
             try
             {
-                if (Database == null) return;
+                if (Database == null) throw new InvalidOperationException("Pet database is unavailable");
                 await using var connection = await Database.GetConnectionAsync();
                 await using var command = new MySqlCommand("SELECT CONVERT_TZ(a.expires_at,'+03:00','+00:00'),p.pet_enabled,p.pet_customized,p.pet_id,p.pet_stage,p.pet_variant,p.pet_seed,p.pet_name,p.pet_hat FROM plus_active a LEFT JOIN wp_player_pets p ON p.steamid=CONVERT(a.steam_id USING utf8mb4) COLLATE utf8mb4_unicode_ci WHERE a.steam_id=@id LIMIT 1", connection);
                 command.Parameters.AddWithValue("@id", steamId);
@@ -155,29 +158,48 @@ public partial class WeaponPaints
                 var active = await reader.ReadAsync();
                 var expiresAt = active ? DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Utc) : DateTime.MinValue;
                 var choice = active && !reader.IsDBNull(1) ? ReadPet(reader, 1) : active ? DefaultPet : null;
-                Server.NextFrame(() => ApplyPetLoad(slot, steamId, version, choice, expiresAt));
+                Server.NextFrame(() => {
+                    if (generation != DataGeneration) { completed?.Invoke(false); return; }
+                    try { ApplyPetLoad(slot, steamId, version, choice, expiresAt, completed); }
+                    catch (Exception error) { Logger.LogWarning(error, "Pet application failed for slot {Slot}", slot); completed?.Invoke(false); }
+                });
             }
-            catch (Exception ex) { Logger.LogWarning("Pet load failed for slot {Slot}: {Message}", slot, ex.Message); }
+            catch (Exception ex) {
+                Logger.LogWarning("Pet load failed for slot {Slot}: {Message}", slot, ex.Message);
+                if (completed != null) Server.NextFrame(() => completed(false));
+            }
         });
     }
 
-    private void ApplyPetLoad(int slot, string steamId, long version, PetChoice? choice, DateTime expiresAt)
+    private bool ApplyPetLoad(int slot, string steamId, long version, PetChoice? choice, DateTime expiresAt, Action<bool>? completed = null)
     {
-        if (!_petLoadVersions.IsCurrent(slot, version)) return;
+        if (!_petLoadVersions.IsCurrent(slot, version)) { completed?.Invoke(false); return false; }
         var player = Utilities.GetPlayerFromSlot(slot);
-        if (player == null || !player.IsValid || player.SteamID.ToString() != steamId) return;
+        if (player == null || !player.IsValid || player.SteamID.ToString() != steamId) { completed?.Invoke(false); return false; }
         UpdateAgentPatchEntitlement(player, expiresAt);
         UpdateGraffitiEntitlement(player, expiresAt);
         if (_petExpiryTimers.Remove(slot, out var previous)) StopPetTimer(previous);
         var state = new PetState(steamId, expiresAt, choice);
         _petChoices[slot] = state;
         if (state.IsActive(DateTime.UtcNow)) ArmPetExpiry(slot, state);
-        if (!state.IsActive(DateTime.UtcNow) || choice?.Enabled != true) RemovePetEntity(slot);
+        if (!state.IsActive(DateTime.UtcNow) || choice?.Enabled != true)
+        {
+            RemovePetEntity(slot);
+            if (state.IsActive(DateTime.UtcNow) && choice is { Enabled: false })
+            {
+                // Only the native chicken owned by this controller is affected;
+                // ordinary chickens and pets of non-subscribers are untouched.
+                if (_ownerOffset <= 0) { completed?.Invoke(false); return false; }
+                foreach (var native in NativePets(player)) KillPetEntity(native);
+            }
+            completed?.Invoke(true);
+        }
         else
         {
             if (_livePets.TryGetValue(slot, out var live) && !live.Choice.HasSameAppearance(choice)) RemovePetEntity(slot);
-            QueuePetSpawn(slot, .2f);
+            QueuePetSpawn(slot, .2f, completed: completed);
         }
+        return true;
     }
 
     private void ArmPetExpiry(int slot, PetState state)
@@ -277,9 +299,10 @@ public partial class WeaponPaints
             foreach (var player in Utilities.GetPlayers())
             {
                 if (!player.IsValid || player.EntityHandle.Raw != owner) continue;
-                if (_petChoices.TryGetValue(player.Slot, out var state) && state.SteamId == player.SteamID.ToString() && state.IsActive(DateTime.UtcNow) && state.Choice is { Enabled: true } choice)
+                if (_petChoices.TryGetValue(player.Slot, out var state) && state.SteamId == player.SteamID.ToString() && state.IsActive(DateTime.UtcNow) && state.Choice is { } choice)
                 {
-                    if (choice.Customized)
+                    if (!choice.Enabled) KillPetEntity(chicken);
+                    else if (choice.Customized)
                     {
                         KillPetEntity(chicken);
                         QueuePetSpawn(player.Slot, .1f);
@@ -378,43 +401,47 @@ public partial class WeaponPaints
         return found;
     }
 
-    private void QueuePetSpawn(int slot, float delay, int nativeRetries = 3)
+    private void QueuePetSpawn(int slot, float delay, int nativeRetries = 3, Action<bool>? completed = null)
     {
         var player = Utilities.GetPlayerFromSlot(slot);
-        if (player == null || !player.IsValid || player.IsBot || player.IsHLTV) return;
+        if (player == null || !player.IsValid || player.IsBot || player.IsHLTV) { completed?.Invoke(false); return; }
         var steamId = player.SteamID.ToString();
         var pawnHandle = player.PlayerPawn.Raw;
         var version = _petSpawnVersions.GetOrCreate(slot);
         AddPetTimer(delay, () =>
         {
-            if (!_petSpawnVersions.IsCurrent(slot, version)) return;
+            if (!_petSpawnVersions.IsCurrent(slot, version)) { completed?.Invoke(false); return; }
             var owner = Utilities.GetPlayerFromSlot(slot);
-            if (owner == null || !owner.IsValid || owner.SteamID.ToString() != steamId || owner.PlayerPawn.Raw != pawnHandle) return;
-            TrySpawnPet(slot, nativeRetries);
+            if (owner == null || !owner.IsValid || owner.SteamID.ToString() != steamId || owner.PlayerPawn.Raw != pawnHandle) { completed?.Invoke(false); return; }
+            try { TrySpawnPet(slot, nativeRetries, completed); }
+            catch (Exception error) { Logger.LogWarning(error, "Pet spawn update failed for slot {Slot}", slot); completed?.Invoke(false); }
         });
     }
 
-    private void TrySpawnPet(int slot, int nativeRetries)
+    private void TrySpawnPet(int slot, int nativeRetries, Action<bool>? completed = null)
     {
-        if (_ownerOffset <= 0 || !_petChoices.TryGetValue(slot, out var loaded) || !loaded.IsActive(DateTime.UtcNow)) return;
+        if (_ownerOffset <= 0 || !_petChoices.TryGetValue(slot, out var loaded) || !loaded.IsActive(DateTime.UtcNow)) { completed?.Invoke(false); return; }
         var choice = loaded.Choice;
-        if (choice?.Enabled != true) { RemovePetEntity(slot); return; }
         var player = Utilities.GetPlayerFromSlot(slot);
-        if (player == null || !player.IsValid || player.SteamID.ToString() != loaded.SteamId || player.TeamNum is not (2 or 3)) return;
+        if (player == null || !player.IsValid || player.SteamID.ToString() != loaded.SteamId || player.TeamNum is not (2 or 3)) { completed?.Invoke(false); return; }
+        if (choice?.Enabled != true) { RemovePetEntity(slot); foreach (var native in NativePets(player)) KillPetEntity(native); completed?.Invoke(true); return; }
         var pawn = player.PlayerPawn.Value;
-        if (pawn == null || !pawn.IsValid || pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE || pawn.AbsOrigin is not { } origin) return;
-        if (_livePets.ContainsKey(slot)) return;
+        if (pawn == null || !pawn.IsValid || pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE || pawn.AbsOrigin is not { } origin) { completed?.Invoke(false); return; }
+        bool ValidPet(LivePet pet) => new CHandle<CChicken>(pet.Handle).Value is { IsValid: true } &&
+            (string.IsNullOrEmpty(choice.Hat) || pet.HatHandle != 0 && new CHandle<CDynamicProp>(pet.HatHandle).Value is { IsValid: true });
+        if (_livePets.TryGetValue(slot, out var existing)) { completed?.Invoke(ValidPet(existing)); return; }
         var natives = NativePets(player);
-        if (!choice.Customized && natives.Count != 0) { RemovePetEntity(slot); return; }
+        if (!choice.Customized && natives.Count != 0) { RemovePetEntity(slot); completed?.Invoke(true); return; }
         if (choice.Customized && natives.Count != 0)
         {
             if (nativeRetries <= 0)
             {
                 Logger.LogWarning("Native pet replacement did not complete for slot {Slot}; waiting for the next spawn or round", slot);
+                completed?.Invoke(false);
                 return;
             }
             foreach (var native in natives) KillPetEntity(native);
-            QueuePetSpawn(slot, .1f, nativeRetries - 1);
+            QueuePetSpawn(slot, .1f, nativeRetries - 1, completed);
             return;
         }
         SpawnPetEntity(slot, loaded.SteamId, choice);
@@ -423,6 +450,7 @@ public partial class WeaponPaints
             _petChoices[slot] = loaded with { Choice = choice with { HasRow = true } };
             _ = PersistDefaultPet(loaded.SteamId);
         }
+        completed?.Invoke(_livePets.TryGetValue(slot, out var spawned) && ValidPet(spawned));
     }
 
     private async Task PersistDefaultPet(string steamId)

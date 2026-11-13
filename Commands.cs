@@ -11,79 +11,6 @@ namespace WeaponPaints;
 
 public partial class WeaponPaints
 {
-	private void OnCommandRefresh(CCSPlayerController? player, CommandInfo command)
-	{
-		if (!Config.Additional.CommandWpEnabled || !Config.Additional.SkinEnabled || !_gBCommandsAllowed) return;
-		if (!Utility.IsPlayerValid(player)) return;
-
-		if (player == null || !player.IsValid || player.UserId == null || player.IsBot) return;
-
-		PlayerInfo? playerInfo = new PlayerInfo
-		{
-			UserId = player.UserId,
-			Slot = player.Slot,
-			Index = (int)player.Index,
-			SteamId = player?.SteamID.ToString(),
-			Name = player?.PlayerName,
-			IpAddress = player?.IpAddress?.Split(":")[0]
-		};
-
-		// A previous refresh is still loading from the database: ignore spam instead of stacking refreshes.
-		if (PlayerDataLoading.ContainsKey(player!.Slot))
-		{
-			if (!string.IsNullOrEmpty(Localizer["wp_command_cooldown"]))
-				player.Print(Localizer["wp_command_cooldown"]);
-			return;
-		}
-
-		try
-		{
-			if (player != null && !CommandsCooldown.TryGetValue(player.Slot, out var cooldownEndTime) ||
-			    player != null && DateTime.UtcNow >= (CommandsCooldown.TryGetValue(player.Slot, out cooldownEndTime) ? cooldownEndTime : DateTime.UtcNow))
-			{
-				CommandsCooldown[player.Slot] = DateTime.UtcNow.AddSeconds(Config.CmdRefreshCooldownSeconds);
-
-				var weaponSync = WeaponSync;
-				if (weaponSync != null)
-				{
-					var expectedSteamId = playerInfo.SteamId;
-					var loadId = NextPlayerDataLoadId();
-                var generation = DataGeneration;
-					PlayerDataLoading[player.Slot] = loadId;
-
-
-
-
-
-
-					_ = ObserveAsync(async () =>
-					{
-						if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
-						Server.NextFrame(() =>
-						{
-							if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
-							PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
-							if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != expectedSteamId) return;
-
-							RefreshPlayerEquipment(player);
-							GivePlayerAgent(player);
-							GivePlayerMusicKit(player);
-							DeferPlayer(player, GivePlayerPin, 0.15f);
-
-							if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
-								player.Print(Localizer["wp_command_refresh_done"]);
-						});
-					});
-				}
-				return;
-			}
-			if (!string.IsNullOrEmpty(Localizer["wp_command_cooldown"]))
-			{
-				player!.Print(Localizer["wp_command_cooldown"]);
-			}
-		}
-		catch (Exception) { }
-	}
 
 	private void OnCommandWS(CCSPlayerController? player, CommandInfo command)
 	{
@@ -229,61 +156,9 @@ public partial class WeaponPaints
 			Console.WriteLine($"[WeaponPaints] Refreshing skins for {foundPlayer.PlayerName}...");
 		}
 
-		foreach (var targetPlayer in targetPlayers)
-		{
-			try
-			{
-				PlayerInfo? playerInfo = new PlayerInfo
-				{
-					UserId = targetPlayer.UserId,
-					Slot = targetPlayer.Slot,
-					Index = (int)targetPlayer.Index,
-					SteamId = targetPlayer.SteamID.ToString(),
-					Name = targetPlayer.PlayerName,
-					IpAddress = targetPlayer.IpAddress?.Split(":")[0]
-				};
-
-				var weaponSync = WeaponSync;
-				if (weaponSync == null) continue;
-
-				var expectedSteamId = playerInfo.SteamId;
-				var loadId = NextPlayerDataLoadId();
-                var generation = DataGeneration;
-				PlayerDataLoading[targetPlayer.Slot] = loadId;
-
-
-
-
-
-
-				_ = ObserveAsync(async () =>
-				{
-					if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
-					Server.NextFrame(() =>
-					{
-						if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
-						PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
-						if (!Utility.IsPlayerValid(targetPlayer) || targetPlayer.SteamID.ToString() != expectedSteamId) return;
-
-						RefreshPlayerEquipment(targetPlayer);
-						GivePlayerAgent(targetPlayer);
-						GivePlayerMusicKit(targetPlayer);
-						DeferPlayer(targetPlayer, GivePlayerPin, 0.15f);
-
-						if (!string.IsNullOrEmpty(Localizer["wp_command_refresh_done"]))
-							targetPlayer.Print(Localizer["wp_command_refresh_done"]);
-
-						Console.WriteLine($"[WeaponPaints] Skins refreshed for {targetPlayer.PlayerName}");
-					});
-				});
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"[WeaponPaints] Error refreshing skins for {targetPlayer.PlayerName}: {ex.Message}");
-			}
-		}
-
-		Console.WriteLine("[WeaponPaints] Refresh process completed.");
+        foreach (var targetPlayer in targetPlayers)
+            RequestPlayerRefresh(targetPlayer, false);
+        Console.WriteLine("[WeaponPaints] Refresh requests queued.");
 	}
 
 

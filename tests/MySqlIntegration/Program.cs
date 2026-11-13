@@ -31,6 +31,15 @@ try{
  var skins=WP.GPlayerWeaponsInfo[1];Check(skins[t][7].Paint==44&&skins[ct][7].Paint==55&&skins[t][7].Nametag==unicode,"skin overrides and UTF8");
  Check(skins[t][7].KeyChain!.Seed==uint.MaxValue&&skins[t][7].Stickers[0].Id==uint.MaxValue,"uint32 cosmetics parser");
  Check(skins[ct][7].KeyChain!.Id==0&&skins[ct][7].Stickers.Count==5&&skins[ct][7].Stickers.All(x=>x.Id==0),"malformed cosmetics fallback");
+ // Website saves a second sticker while the player remains connected. The
+ // subsequent refresh must replace the whole published cosmetic snapshot.
+ await sql.ExecuteAsync("ALTER TABLE wp_player_skins ADD COLUMN weapon_composition_version INT NOT NULL DEFAULT 0");
+ await sql.ExecuteAsync("INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_paint_id,weapon_seed,weapon_composition_version,weapon_sticker_0,weapon_sticker_1) VALUES (@id,2,7,44,661,1,'23;0;-0.33771758989401;0.0012166297970735;0;1;0','16;1;-0.17183095905784;0.0024511751654942;0;1;0')",new{id});
+ Check(await Load(),"website sticker update reload succeeds");
+ var updated=WP.GPlayerWeaponsInfo[1][t][7].Stickers;
+ Check(updated.Count==5 && updated[0].Id==23 && updated[1].Id==16 && updated[1].Schema==1 && Math.Abs(updated[1].OffsetX-(-0.17183096f))<0.000001f,"website sticker update reaches connected player's T snapshot without reconnect");
+ await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
+ await sql.ExecuteAsync("ALTER TABLE wp_player_skins DROP COLUMN weapon_composition_version");
  for(var mask=0;mask<64;mask++) {
   config.Additional.KnifeEnabled=(mask&1)!=0;config.Additional.GloveEnabled=(mask&2)!=0;config.Additional.AgentEnabled=(mask&4)!=0;config.Additional.MusicEnabled=(mask&8)!=0;config.Additional.SkinEnabled=(mask&16)!=0;config.Additional.PinsEnabled=(mask&32)!=0;
   Check(await Load() && WP.GPlayersKnife.ContainsKey(1)==config.Additional.KnifeEnabled && WP.GPlayersGlove.ContainsKey(1)==config.Additional.GloveEnabled && WP.GPlayersAgent.ContainsKey(1)==config.Additional.AgentEnabled && WP.GPlayersMusic.ContainsKey(1)==config.Additional.MusicEnabled && WP.GPlayerWeaponsInfo.ContainsKey(1)==config.Additional.SkinEnabled && WP.GPlayersPin.ContainsKey(1)==config.Additional.PinsEnabled,"feature flags mask "+mask);

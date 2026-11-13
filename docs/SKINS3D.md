@@ -45,8 +45,10 @@ the concrete weapon supports them. Do not rewrite legacy rows during installatio
 MySqlConnector is updated from 2.5.0 to 2.6.1 to address
 GHSA-473q-m89c-ghf8. Include the matching dependency when packaging the plugin.
 
-Refresh keeps the exact configured weapon wear: the historical cumulative 0.001
-sticker-refresh increment is removed, since the current refresh replaces the item.
+The persisted weapon wear is unchanged. During a map, distinct sticker layouts
+sharing paint, seed and rounded wear reserve nearby runtime wear steps so the
+client regenerates its finish. The closest step in the same exterior is preferred;
+repeated refreshes of the same layout do not accumulate wear changes.
 Decorations and explicitly saved v1 defaults also apply when paint kit is zero.
 Uncustomized legacy default rows retain their random-skin fallback behavior.
 

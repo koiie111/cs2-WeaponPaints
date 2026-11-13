@@ -54,6 +54,12 @@ jobs:
         run: dotnet run --project tests/WeaponRedeployTests/WeaponRedeployTests.csproj -c Release
       - name: Exact refresh item retirement checks
         run: dotnet run --project tests/WeaponRetirementTests/WeaponRetirementTests.csproj -c Release
+      - name: Finish cache collision checks
+        run: dotnet run --project tests/FinishCacheTests/FinishCacheTests.csproj -c Release
+      - name: Command refresh coordination checks
+        run: dotnet run --project tests/RefreshCommandTests/RefreshCommandTests.csproj -c Release
+      - name: Weapon appearance network checks
+        run: dotnet run --project tests/WeaponNetworkTests/WeaponNetworkTests.csproj -c Release
       - name: Measurement integrity checks
         run: python3 tests/verify_measurements.py docs/measurements/active-20261110
       - name: MySQL integration checks

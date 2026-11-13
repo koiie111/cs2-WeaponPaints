@@ -34,6 +34,8 @@ namespace WeaponPaints
 			// A slot can be reused immediately after a disconnect. Never let spawn/item hooks
 			// apply the previous occupant's native item state while MySQL is still loading.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
+            _gloveOverrides.Remove(player.Slot);
+            _commandRefreshes.Remove(player.Slot);
             ForgetGraffiti(player.Slot, player.SteamID);
 			GPlayersKnife.TryRemove(player.Slot, out _);
 			GPlayersGlove.TryRemove(player.Slot, out _);
@@ -53,23 +55,28 @@ namespace WeaponPaints
 			}
 
 			var weaponSync = WeaponSync;
-			if (weaponSync == null) return HookResult.Continue;
+			if (weaponSync == null)
+            {
+                if (PlayerDataLoading.TryGetValue(player.Slot, out var current) && current == loadId) PlayerDataLoading.TryRemove(player.Slot, out _);
+                OnExternalPlayerLoadSettled(player.Slot);
+                return HookResult.Continue;
+            }
 			_ = ObserveAsync(async () =>
 			{
-				if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) return;
+				if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) { Server.NextFrame(() => OnExternalPlayerLoadSettled(playerInfo.Slot)); return; }
 				Server.NextFrame(() =>
 				{
-					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) return;
+					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
 					PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
-					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != playerInfo.SteamId) return;
+					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != playerInfo.SteamId) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
 
 					if (!Players.Contains(player)) Players.Add(player);
-					if ((LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE) return;
+					if ((LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
 
 					GivePlayerMusicKit(player);
 					GivePlayerAgent(player);
 					GivePlayerPin(player);
-					RefreshPlayerEquipment(player);
+					RefreshPlayerEquipmentWithCompletion(player, _ => OnExternalPlayerLoadSettled(playerInfo.Slot));
 				});
 			});
 
@@ -96,6 +103,8 @@ namespace WeaponPaints
 			// Detach the slot state synchronously. Waiting for MySQL before removing it lets a
 			// reconnecting client inherit stale WeaponInfo and can crash native item hooks.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
+            _gloveOverrides.Remove(player.Slot);
+            _commandRefreshes.Remove(player.Slot);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
             ForgetGraffiti(player.Slot, player.SteamID);
 			ForgetAgentPatches(player.Slot);
@@ -138,6 +147,9 @@ namespace WeaponPaints
 
 		private void OnMapStart(string mapName)
 		{
+            FinishCacheKeys.Clear();
+            _gloveOverrides.Clear();
+            _commandRefreshes.Clear();
             ClearSkinPreviews();
             ClearGraffiti(false);
             Interlocked.Increment(ref DataGeneration);
@@ -332,6 +344,9 @@ namespace WeaponPaints
             {
                 Interlocked.Increment(ref DataGeneration);
                 PlayerDataLoading.Clear();
+                _commandRefreshes.Clear();
+                FinishCacheKeys.Clear();
+                _gloveOverrides.Clear();
                 ClearSkinPreviews();
                 ClearGraffiti(false);
                 InvalidateKnifePaint();

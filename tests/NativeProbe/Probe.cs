@@ -35,6 +35,7 @@ public sealed class Probe : BasePlugin
     private void StopGiveTrace(){if(giveTrace){VirtualFunctions.GiveNamedItemFunc.Unhook(TraceGive,HookMode.Post);giveTrace=false;}}
     private const BindingFlags Flags = BindingFlags.Static|BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic;
     private BasePlugin? weaponPaints;
+    private WeaponPaints.WeaponPaints? candidateRefresh;
     private Type? type;
     private bool active, recording, loading, stopped, refreshing;
     private long thinkStarted, previousTick;
@@ -147,6 +148,127 @@ public sealed class Probe : BasePlugin
         });
         AddCommand("css_s3_check","Verify native decoration attributes",(caller,command)=>{
             if(caller!=null)return;Safe(()=>{foreach(var player in Bots())Verify(player,true);});command.ReplyToCommand("S3 "+Status());
+        });
+        AddCommand("css_s3_single","Single bot in-memory sticker transition",(caller,command)=>{
+            if(caller!=null)return;
+            Safe(()=>{
+                var bot=Bots().Single();
+                weaponPaints=AppDomain.CurrentDomain.GetAssemblies().Where(a=>a.GetName().Name=="WeaponPaints")
+                    .Select(a=>a.GetType("WeaponPaints.WeaponPaints")?.GetProperty("Instance",Flags)?.GetValue(null)).OfType<BasePlugin>()
+                    .Last(p=>p.GetType().GetField("_giveNamedItemHooked",Flags)?.GetValue(p) is true);
+                type=weaponPaints.GetType(); var root=(IDictionary)type.GetField("GPlayerWeaponsInfo",Flags)!.GetValue(null)!;
+                candidateRefresh=new WeaponPaints.WeaponPaints();candidateRefresh.InitializeForProbe(weaponPaints,this,bot);
+                if(root.Contains(bot.Slot))throw new Exception("Bot slot already has player data");
+                var teamsType=root.GetType().GetGenericArguments()[1]; var teams=(IDictionary)Activator.CreateInstance(teamsType)!;
+                var items=(IDictionary)Activator.CreateInstance(teamsType.GetGenericArguments()[1])!;
+                var infoType=type.Assembly.GetType("WeaponPaints.WeaponInfo")!;var info=Activator.CreateInstance(infoType)!;
+                infoType.GetProperty("Paint")!.SetValue(info,44);infoType.GetProperty("Wear")!.SetValue(info,.01f);
+                infoType.GetProperty("CompositionVersion")!.SetValue(info,1);
+                var stickerType=type.Assembly.GetType("WeaponPaints.StickerInfo")!;
+                var stickers=(IList)infoType.GetProperty("Stickers")!.GetValue(info)!;
+                for(var index=0;index<5;index++){var sticker=Activator.CreateInstance(stickerType)!;stickerType.GetProperty("Id")!.SetValue(sticker,index==0?23u:0u);stickerType.GetProperty("Scale")!.SetValue(sticker,1f);stickers.Add(sticker);}
+                items[7]=info;teams[bot.Team]=items;root[bot.Slot]=teams;ownedSlots.Add(bot.Slot);
+                bot.RemoveWeapons(); AddTimer(.15f,()=>Safe(()=>{
+                    var raw=bot.GiveNamedItem("weapon_ak47");if(raw==0)throw new Exception("AK give failed");
+                    var gun=new CBasePlayerWeapon(raw);if(!gun.IsValid || gun.OwnerEntity.Raw!=bot.PlayerPawn.Raw)throw new Exception("AK not owned");
+                    type.GetMethod("GivePlayerWeaponSkin",Flags)!.Invoke(weaponPaints,new object[]{bot,gun});
+                    var before=BitConverter.SingleToUInt32Bits(ReadAttributes(gun).GetValueOrDefault(attributeIds["sticker slot 0 id"]));
+                    if(before!=23)throw new Exception("Initial sticker mismatch: "+before);
+                    stickerType.GetProperty("Id")!.SetValue(stickers[1],16u);stickerType.GetProperty("Schema")!.SetValue(stickers[1],1u);
+                    stickerType.GetProperty("OffsetX")!.SetValue(stickers[1],-.17183096f);
+                    stickerType.GetProperty("OffsetY")!.SetValue(stickers[1],.002451175f);
+                    var old=gun.EntityHandle.Raw;bool? firstCompletion=null,secondCompletion=null;
+                    candidateRefresh.RefreshForProbe(bot,success=>firstCompletion=success);
+                    // Arrive after the first pass has begun retiring the gun, so
+                    // the second request must survive the in-flight operation.
+                    Server.NextFrame(()=>Safe(()=>candidateRefresh!.RefreshForProbe(bot,success=>secondCompletion=success)));
+                    AddTimer(.8f,()=>Safe(()=>{
+                        if(firstCompletion!=true || secondCompletion!=true)throw new Exception("Candidate refresh did not report success for both requests");
+                        var current=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==7)!;
+                        foreach(var field in new[]{"m_AttributeManager","m_nFallbackPaintKit","m_nFallbackSeed","m_flFallbackWear"}) {
+                            if(Schema.GetSchemaOffset(nameof(CEconEntity),field)<=0)throw new Exception("Missing network schema "+field);
+                            if(!Schema.IsSchemaFieldNetworked(nameof(CEconEntity),field))throw new Exception("Non-networked weapon field "+field);
+                        }
+                        WeaponPaints.WeaponPaints.NotifyWeaponAppearanceChanged(current);
+                        foreach(var field in new[]{"m_EconGloves","m_nEconGlovesChanged"})
+                            if(Schema.GetSchemaOffset(nameof(CCSPlayerPawn),field)<=0 || !Schema.IsSchemaFieldNetworked(nameof(CCSPlayerPawn),field))
+                                throw new Exception("Missing networked pawn field "+field);
+                        var testPawn=bot.PlayerPawn.Value!;var gloves=testPawn.EconGloves;var changed=testPawn.EconGlovesChanged;
+                        gloves.ItemDefinitionIndex=5030;gloves.Initialized=true;
+                        WeaponPaints.GloveNetwork.Clear(testPawn);
+                        if(gloves.ItemDefinitionIndex!=0 || gloves.Initialized || testPawn.EconGlovesChanged!=unchecked((byte)(changed+1)))
+                            throw new Exception("Glove reset failed");
+                        var values=ReadAttributes(current);var first=BitConverter.SingleToUInt32Bits(values.GetValueOrDefault(attributeIds["sticker slot 0 id"]));
+                        var second=BitConverter.SingleToUInt32Bits(values.GetValueOrDefault(attributeIds["sticker slot 1 id"]));
+                        error=$"SINGLE old={old} new={current.EntityHandle.Raw} first={first} second={second}";
+                        if(current.EntityHandle.Raw==old || first!=23 || second!=16 ||
+                           BitConverter.SingleToUInt32Bits(values.GetValueOrDefault(attributeIds["sticker slot 1 schema"]))!=1 ||
+                           Math.Abs(values.GetValueOrDefault(attributeIds["sticker slot 1 offset x"])-(-.17183096f))>.000001f ||
+                           Math.Abs(values.GetValueOrDefault(attributeIds["sticker slot 1 offset y"])-.002451175f)>.000001f)
+                            throw new Exception(error+" incorrect sticker attributes");
+                        var previous=current.EntityHandle.Raw;
+                        stickerType.GetProperty("Id")!.SetValue(stickers[0],0u);stickerType.GetProperty("Id")!.SetValue(stickers[1],0u);
+                        bool? clearCompletion=null;
+                        candidateRefresh.RefreshForProbe(bot,success=>clearCompletion=success);
+                        AddTimer(.8f,()=>Safe(()=>{
+                            if(clearCompletion!=true)throw new Exception("Candidate clear refresh did not report success");
+                            var cleared=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==7)!;
+                            var attrs=ReadAttributes(cleared);
+                            if(cleared.EntityHandle.Raw==previous || BitConverter.SingleToUInt32Bits(attrs.GetValueOrDefault(attributeIds["sticker slot 0 id"]))!=0 ||
+                               BitConverter.SingleToUInt32Bits(attrs.GetValueOrDefault(attributeIds["sticker slot 1 id"]))!=0)
+                                throw new Exception("Removed stickers survived refresh");
+                            var clearedHandle=cleared.EntityHandle.Raw;bool? cancelled=null;var callbacks=0;
+                            candidateRefresh.RefreshForProbe(bot,success=>{cancelled=success;callbacks++;});
+                            candidateRefresh.StopForProbe();
+                            Server.NextFrame(()=>Safe(()=>{
+                                var retained=bot.PlayerPawn.Value!.WeaponServices!.MyWeapons.Select(h=>h.Value).Single(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==7)!;
+                                if(cancelled!=false || callbacks!=1 || retained.EntityHandle.Raw!=clearedHandle)
+                                    throw new Exception("Cancelled candidate refresh ran or completed incorrectly");
+                                error+=" callbacks=PASS clear=PASS cancel=PASS PASS";candidateRefresh=null;root.Remove(bot.Slot);ownedSlots.Remove(bot.Slot);
+                            }));
+                        }),TimerFlags.STOP_ON_MAPCHANGE);
+                    }),TimerFlags.STOP_ON_MAPCHANGE);
+                }),TimerFlags.STOP_ON_MAPCHANGE);
+            });command.ReplyToCommand("S3 "+Status());
+        });
+        AddCommand("css_s3_sticker_refresh","Verify changed sticker after native replacement",(caller,command)=>{
+            if(caller!=null)return;
+            Safe(()=>{
+                if(type==null || weaponPaints==null || loading || refreshing) throw new Exception("Fixture not ready");
+                var players=Bots(); if(players.Length!=8) throw new Exception("Exactly eight live bots required");
+                refreshing=true; var pending=players.Length;
+                foreach(var player in players) {
+                    var root=(IDictionary)type.GetField("GPlayerWeaponsInfo",Flags)!.GetValue(null)!;
+                    var teams=(IDictionary)root[player.Slot]!;
+                    var weapons=(IDictionary)teams[player.Team]!;
+                    var info=weapons[3] ?? throw new Exception("Fixture weapon preference missing");
+                    var stickers=(IList)info.GetType().GetProperty("Stickers")!.GetValue(info)!;
+                    var sticker=stickers[0]!; var property=sticker.GetType().GetProperty("Id")!;
+                    var previous=(uint)property.GetValue(sticker)!; var next=previous==1u?2u:1u;
+                    var old=Gun(player).EntityHandle.Raw;
+                    if(BitConverter.SingleToUInt32Bits(ReadAttributes(Gun(player)).GetValueOrDefault(attributeIds["sticker slot 0 id"]))!=previous)
+                        throw new Exception("Initial sticker does not match snapshot");
+                    property.SetValue(sticker,next);
+                    type.GetMethod("RefreshWeapons",Flags)!.Invoke(weaponPaints,new object?[]{player,(int?)3});
+                    var start=Stopwatch.GetTimestamp();
+                    void Poll() { Safe(()=>{
+                        var gun=player.PlayerPawn.Value?.WeaponServices?.MyWeapons.Select(h=>h.Value)
+                            .FirstOrDefault(w=>w is {IsValid:true} && w.AttributeManager.Item.ItemDefinitionIndex==3);
+                        if(gun==null || gun.EntityHandle.Raw==old) {
+                            if(Stopwatch.GetElapsedTime(start).TotalSeconds>2) throw new Exception("Sticker refresh did not replace weapon");
+                            Server.NextFrame(Poll); return;
+                        }
+                        Server.NextFrame(()=>Safe(()=>{
+                            var current=Gun(player);
+                            var actual=BitConverter.SingleToUInt32Bits(ReadAttributes(current).GetValueOrDefault(attributeIds["sticker slot 0 id"]));
+                            if(actual!=next) throw new Exception($"Sticker refresh remained {actual}; expected {next}");
+                            if(--pending==0)refreshing=false;
+                        }));
+                    }); }
+                    Server.NextFrame(Poll);
+                }
+            });
+            command.ReplyToCommand("S3 "+Status());
         });
         AddCommand("css_s3_check_default","Verify decoration on default paint",(caller,command)=>{
             if(caller!=null)return;Safe(()=>{foreach(var player in Bots()){Verify(player,true);if(Gun(player).FallbackPaintKit!=0)throw new Exception("Default paint not applied");}});command.ReplyToCommand("S3 "+Status());
@@ -264,6 +386,13 @@ public sealed class Probe : BasePlugin
         return result;
     }
     private string Status()=>JsonSerializer.Serialize(new{active,loading,refreshing,mode,cycles,failures,error,loads,applied,slots=ownedSlots.Count,version=weaponPaints?.ModuleVersion});
-    private void Stop(){active=recording=false;stopped=true;ownedSlots.Clear();}
+    private void Stop(){
+        active=recording=false;stopped=true;
+        candidateRefresh?.StopForProbe();candidateRefresh=null;
+        if(type?.GetField("GPlayerWeaponsInfo",Flags)?.GetValue(null) is IDictionary root)
+            foreach(var slot in ownedSlots)
+                if(Utilities.GetPlayerFromSlot(slot) is {IsValid:true,IsBot:true})root.Remove(slot);
+        ownedSlots.Clear();
+    }
     public override void Unload(bool hotReload){Stop();StopGiveTrace();sqlListener?.Dispose();}
 }

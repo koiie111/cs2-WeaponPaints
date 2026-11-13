@@ -38,6 +38,10 @@ namespace WeaponPaints
     internal static class Utility { internal static bool IsPlayerValid(CCSPlayerController player) => player.IsValid; }
     public partial class WeaponPaints
     {
+        public sealed class Configuration { public AdditionalFlags Additional = new(); }
+        public sealed class AdditionalFlags { public bool GloveEnabled = true; }
+        public Configuration Config = new();
+        public int ClearedGloves;
         internal static long DataGeneration;
         public bool GlovesEnabled = true, HasGloves = true, FailApply;
         public readonly List<Exception> Logger = new();
@@ -55,7 +59,9 @@ namespace WeaponPaints
             if (FailApply) throw new Exception("Injected native boundary failure");
             Events.Add("gloves");
         }
+        private void ClearPlayerGloves(CCSPlayerController player) => ClearedGloves++;
         private void RefreshWeapons(CCSPlayerController player) => Events.Add("weapons:" + player.Active + ":" + player.Last);
+        private void RefreshWeaponsWithCompletion(CCSPlayerController player, Action<bool> completed, IReadOnlySet<int>? previousDefinitions = null) { RefreshWeapons(player); completed(true); }
         public void Refresh(CCSPlayerController player) => RefreshPlayerEquipment(player);
         public void GloveMenu(CCSPlayerController player) => GivePlayerGloves(player);
         public void Flush() { while (Pending.TryDequeue(out var callback)) callback(); }
