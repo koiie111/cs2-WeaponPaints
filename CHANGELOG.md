@@ -9,6 +9,7 @@
 ## Unreleased
 
 - Return synchronous, versioned RCON replies for `wp_refresh`: targeted queue acknowledgement and explicit busy/disabled/not-found/invalid/unavailable statuses. The acknowledgement confirms acceptance, not asynchronous cosmetic completion.
+- Report unavailable synchronization before player lookup, and send one player queue notice per coalesced follow-up during automatic refresh bursts.
 
 - Fit weapon name tags into the 160-byte UTF-8 payload of the networked item name, without cutting a Unicode code point or changing the stored database value. Overlong names no longer abort skin application.
 - Send one MVP event: update the engine's original event in a pre hook instead of firing a replacement from a post hook, preserving its other fields.

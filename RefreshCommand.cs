@@ -41,9 +41,10 @@ public partial class WeaponPaints
         {
             if (running.SteamId == player.SteamID && running.Controller == player.EntityHandle.Raw && running.Generation == DataGeneration)
             {
+                var notifyQueued = !running.Repeat;
                 running.Repeat = true;
                 if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
-                player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущего применения.");
+                if (notifyQueued) player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущего применения.");
                 return true;
             }
             _commandRefreshes.Remove(player.Slot);

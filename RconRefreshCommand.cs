@@ -27,6 +27,9 @@ public partial class WeaponPaints
         if (!Config.Additional.CommandWpEnabled || !Config.Additional.SkinEnabled)
         { Reply("disabled", target); return; }
         if (!_gBCommandsAllowed) { Reply("busy", target); return; }
+        // Utility.IsPlayerValid also requires WeaponSync. Check it first so
+        // an unavailable coordinator is not misreported as an absent player.
+        if (WeaponSync == null) { Reply("unavailable", target); return; }
 
         var players = Utilities.GetPlayers().Where(p => Utility.IsPlayerValid(p) &&
             !p.IsBot && p.UserId != null && (all || p.SteamID.ToString() == target)).ToList();

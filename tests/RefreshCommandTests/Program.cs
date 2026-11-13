@@ -139,7 +139,10 @@ Reply("WP_REFRESH_V1 not_found 76561190000000000","wp_refresh","7656119000000000
 Utilities.Players.Clear();Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);Utilities.Players[1]=player;
 player.IsBot=true;Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);player.IsBot=false;
 player.UserId=null;Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);player.UserId=1;
+player.IsValid=false;Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);player.IsValid=true;
+player.IsHLTV=true;Reply("WP_REFRESH_V1 not_found "+target,"wp_refresh",target);player.IsHLTV=false;
 wp.SyncAvailable=false;Reply("WP_REFRESH_V1 unavailable "+target,"wp_refresh",target);wp.SyncAvailable=true;
+wp.SyncAvailable=false;Reply("WP_REFRESH_V1 unavailable all","wp_refresh","all");wp.SyncAvailable=true;
 WP.CommandsCooldown[1]=DateTime.UtcNow.AddMinutes(1);
 Check(wp.Rcon(null,"wp_refresh",target).Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued "+target}),"RCON ACK bypasses chat cooldown");
 protocolReplies["queued"]=wp.Rcon(null,"wp_refresh",target).Replies.Single();
@@ -152,17 +155,44 @@ Utilities.Players.Clear();Reply("WP_REFRESH_V1 not_found all","wp_refresh","all"
 Utilities.Players[1]=player;wp.Sync.Reset();
 Check(wp.Rcon(null,"wp_refresh","ALL").Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued all"}),"manual all remains supported");
 wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
+// A burst remains one active load plus a single follow-up, including requests
+// received after SQL has finished while the native application is still pending.
+wp.Sync.Reset();player.Messages.Clear();
+for(var i=0;i<1000;i++)
+ Check(wp.Rcon(null,"wp_refresh",target).Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued "+target}),"burst ACK "+i);
+Check(wp.Sync.Calls==1,"1000 requests start one SQL load");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();
+for(var i=0;i<1000;i++)wp.Rcon(null,"wp_refresh",target);
+Check(wp.Sync.Calls==1,"requests during native apply do not start concurrent SQL");
+Check(player.Messages.Count(m=>m.Contains("очереди"))==1,"coalesced burst sends one queue notice to the player");
+wp.Sync.Reset();wp.FinishEquipment(true);
+Check(wp.Sync.Calls==1,"burst creates exactly one follow-up load");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
+Check(player.Messages.Count(m=>m=="done")==1,"burst completes once");
+// Multi-player all: dead humans still need their cached settings for respawn;
+// bots, HLTV, invalid and unauthenticated controllers must never start SQL.
+wp=new WP();Utilities.Players.Clear();
+for(var slot=1;slot<=64;slot++)Utilities.Players[slot]=new CCSPlayerController {
+ Slot=slot,SteamID=76561198000000000UL+(ulong)slot,UserId=slot,PawnIsAlive=false,
+ IsBot=slot==61,IsHLTV=slot==62,IsValid=slot!=63
+};
+Utilities.Players[64].UserId=null;
+Check(wp.Rcon(null,"wp_refresh","all").Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued all"}),"all acknowledges every eligible human");
+Check(wp.Sync.Calls==60 && WP.PlayerDataLoading.Count==60,"all starts one load per eligible human");
+wp.Sync.Complete(true);await Task.WhenAll(wp.Tasks);Server.Flush();
+Check(WP.PlayerDataLoading.IsEmpty && wp.Events.Count==0,"dead all targets load without native application");
+Check(Utilities.Players.Values.Take(60).All(p=>p.Messages.Any(m=>m.Contains("отложено"))),"all dead targets defer to respawn");
 Console.WriteLine("WP_PROTOCOL_FIXTURE_JSON="+System.Text.Json.JsonSerializer.Serialize(protocolReplies));
 Console.WriteLine("PASS: RCON protocol, rejections, targeted ACK, cooldown bypass and coalescing");
 Console.WriteLine("PASS: command loading, coalescing guard, game-frame dispatch, subsystem order and stale identity");
 
 namespace CounterStrikeSharp.API {
- public static class Server { private static readonly Queue<Action> Frames=new(); public static void NextFrame(Action a)=>Frames.Enqueue(a); public static void Flush(){while(Frames.TryDequeue(out var a))a();} }
+ public static class Server { private static readonly System.Collections.Concurrent.ConcurrentQueue<Action> Frames=new(); public static void NextFrame(Action a)=>Frames.Enqueue(a); public static void Flush(){while(Frames.TryDequeue(out var a))a();} }
  public static class Utilities { public static readonly Dictionary<int,CCSPlayerController> Players=new();public static List<CCSPlayerController> GetPlayers()=>Players.Values.ToList();public static CCSPlayerController? GetPlayerFromSlot(int slot)=>Players.GetValueOrDefault(slot); }
 }
 namespace CounterStrikeSharp.API.Core {
  public class Handle { public uint Raw=100; }
- public class CCSPlayerController { public int Slot,Team=2;public ulong SteamID;public uint Index=1;public int? UserId;public Handle EntityHandle=new(),PlayerPawn=new() { Raw=200 };public object? InventoryServices=new();public bool IsValid=true,IsBot,PawnIsAlive=true;public string? PlayerName="test",IpAddress="127.0.0.1:1";public List<string> Messages=new();public void Print(string message)=>Messages.Add(message); }
+ public class CCSPlayerController { public int Slot,Team=2;public ulong SteamID;public uint Index=1;public int? UserId;public Handle EntityHandle=new(),PlayerPawn=new() { Raw=200 };public object? InventoryServices=new();public bool IsValid=true,IsBot,IsHLTV,PawnIsAlive=true;public string? PlayerName="test",IpAddress="127.0.0.1:1";public List<string> Messages=new();public void Print(string message)=>Messages.Add(message); }
 }
 namespace CounterStrikeSharp.API.Modules.Commands { public class CommandInfo {
  public string[] Args=["wp_refresh"]; public int ArgCount=>Args.Length; public List<string> Replies=new();
@@ -178,7 +208,8 @@ namespace WeaponPaints {
   public void Complete(bool result)=>source.SetResult(result);
   public void Reset(){source=new(TaskCreationOptions.RunContinuationsAsynchronously);Calls=0;}
  }
- internal static class Utility { internal static bool IsPlayerValid(CCSPlayerController? player)=>player is { IsValid:true, IsBot:false }; }
+ // Match Utility.cs, including its dependency on synchronization availability.
+ internal static class Utility { internal static bool IsPlayerValid(CCSPlayerController? player)=>WP.WeaponSync != null && player is { IsValid:true, IsBot:false, IsHLTV:false, UserId:not null }; }
  internal sealed class DeferredPlayer {
   private readonly CCSPlayerController player;private readonly ulong steam;
   private DeferredPlayer(CCSPlayerController p){player=p;steam=p.SteamID;}
@@ -190,11 +221,12 @@ namespace WeaponPaints {
   public static Dictionary<int,Dictionary<int,int>> GPlayersMusic=new(),GPlayersPin=new();
   public static Dictionary<int, Dictionary<int, Dictionary<int, object>>> GPlayerWeaponsInfo = new();
   public static Dictionary<int,DateTime> CommandsCooldown=new();public static long DataGeneration=1;private static long next;
-  public FakeSync Sync=new();public bool SyncAvailable=true;private FakeSync? WeaponSync=>SyncAvailable?Sync:null; public List<string> Events=new();public Task? Active;public bool WaitPet,FailAgent,WaitAgent;
+  public FakeSync Sync=new();internal static FakeSync? WeaponSync;public WeaponPaints(){WeaponSync=Sync;}
+  public bool SyncAvailable { get=>WeaponSync!=null;set=>WeaponSync=value?Sync:null; } public List<string> Events=new();public Task? Active;public List<Task> Tasks=new();public bool WaitPet,FailAgent,WaitAgent;
   public Microsoft.Extensions.Logging.ILogger Logger=>Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
   private readonly Dictionary<string,string> Localizer=new(){{"wp_command_cooldown","cooldown"},{"wp_command_refresh_done","done"}};
   private static long NextPlayerDataLoadId()=>++next;
-  private Task ObserveAsync(Func<Task> action)=>Active=action();
+  private Task ObserveAsync(Func<Task> action){Active=action();Tasks.Add(Active);return Active;}
   private Action<bool>? pendingPet;
   private void LoadPetForWithCompletion(CCSPlayerController p,Action<bool> completed){Events.Add("pet");if(WaitPet)pendingPet=completed;else completed(true);}
   public void FinishPet(bool ok){var callback=pendingPet!;pendingPet=null;callback(ok);}
