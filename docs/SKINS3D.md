@@ -52,6 +52,14 @@ repeated refreshes of the same layout do not accumulate wear changes.
 Decorations and explicitly saved v1 defaults also apply when paint kit is zero.
 Uncustomized legacy default rows retain their random-skin fallback behavior.
 
+Deferred equipment work also binds to the captured team, since `SwitchTeam` can
+keep the same pawn alive. Connect and hot-reload application retain a separate
+busy lease after clearing the SQL marker, so `!wp` waits for native completion.
+On unload, tracked agent overrides restore their original pawn model before the
+tracker is discarded. When upgrading from an older build that did not restore
+agents on unload, a pawn already wearing a plugin agent needs one respawn to
+establish its original model for later resets.
+
 `tests/fixtures/composition-roundtrip.json` matches the website fixture byte for
 byte. It covers six physical anchors versus five draw slots, legacy anchors,
 positions, degree rotation, scales, precision and the separate embedded slab kit.

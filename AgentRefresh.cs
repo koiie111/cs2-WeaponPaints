@@ -6,6 +6,28 @@ namespace WeaponPaints;
 
 public partial class WeaponPaints
 {
+        // Leave the pawn's baseline in the engine before our tracker disappears
+        // on reload. Otherwise the next instance remembers our agent as default.
+        private void RestoreAgentOverrides()
+        {
+            foreach (var player in Utilities.GetPlayers())
+            {
+                if (!player.IsValid || player.PlayerPawn.Value is not { IsValid: true } pawn) continue;
+                var original = _agentRestore.Find(player.Slot, player.SteamID, pawn.EntityHandle.Raw, player.TeamNum);
+                if (original == null) continue;
+                try
+                {
+                    pawn.SetModel(original);
+                    if (HasAgentPatchOverride(player.Slot, player.SteamID, pawn.EntityHandle.Raw))
+                    {
+                        pawn.PlayerPatchEconIndices.Clear();
+                        Utilities.SetStateChanged(pawn, "CCSPlayerPawn", "m_vecPlayerPatchEconIndices");
+                    }
+                }
+                catch (Exception error) { Logger.LogWarning(error, "Unable to restore agent before unload for slot {Slot}", player.Slot); }
+            }
+        }
+
 		private static void GivePlayerAgent(CCSPlayerController player) => ApplyPlayerAgent(player, null);
         private static void GivePlayerAgentWithCompletion(CCSPlayerController player, Action<bool> completed) => ApplyPlayerAgent(player, completed);
 		private static void ApplyPlayerAgent(CCSPlayerController player, Action<bool>? completed)

@@ -101,6 +101,12 @@ WP.PlayerDataLoading.TryRemove(1,out _);wp.ExternalSettled(1);
 Check(wp.Sync.Calls==1&&WP.PlayerDataLoading.ContainsKey(1),"queued command starts when the external load settles");
 wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
 Check(player.Messages.Contains("done"),"command queued behind external load completes");
+WP.CommandsCooldown.Clear();wp.Sync.Reset();player.Messages.Clear();wp.ExternalApplying(1,888);wp.Command(player);
+Check(wp.Sync.Calls==0 && !WP.PlayerDataLoading.ContainsKey(1),"external native application remains busy after SQL marker is cleared");
+wp.ExternalSettled(1,777);Check(wp.Sync.Calls==0,"stale external callback cannot release another application's lease");
+wp.ExternalSettled(1,888);Check(wp.Sync.Calls==1,"queued refresh starts after external native completion");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
+Check(player.Messages.Contains("done"),"native-phase external wait completes");
 WP.CommandsCooldown.Clear();wp.Sync.Reset();player.Messages.Clear();
 WP.GPlayerWeaponsInfo[1] = new() { [2] = new() { [7] = new object() } };
 wp.Command(player); WP.GPlayerWeaponsInfo[1][2].Clear();
@@ -159,6 +165,7 @@ namespace WeaponPaints {
   private void GivePlayerPin(CCSPlayerController p)=>Events.Add("pin");
   private void AddOneShot(float delay,Action action)=>Server.NextFrame(action);
   public void Command(CCSPlayerController p)=>OnCommandRefresh(p,new());
-  public void ExternalSettled(int slot)=>OnExternalPlayerLoadSettled(slot);
+  public void ExternalSettled(int slot,long loadId=777)=>OnExternalPlayerLoadSettled(slot,loadId);
+  public void ExternalApplying(int slot,long loadId)=>_externalPlayerApplies[slot]=loadId;
  }
 }

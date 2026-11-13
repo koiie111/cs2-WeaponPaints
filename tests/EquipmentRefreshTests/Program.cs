@@ -34,7 +34,7 @@ foreach (var missing in new[] { "disabled", "no choice" })
     Check(player.Commands.Count == 0 && plugin.Pending.Count == 0, "No unmatched toggle without gloves");
 }
 
-foreach (var change in new[] { "controller", "account", "pawn", "map", "dead", "invalid", "disconnect" })
+foreach (var change in new[] { "controller", "account", "pawn", "team", "map", "dead", "invalid", "disconnect" })
 {
     var player = Player();
     var plugin = new Plugin();
@@ -44,6 +44,7 @@ foreach (var change in new[] { "controller", "account", "pawn", "map", "dead", "
         case "controller": player.EntityHandle.Raw++; break;
         case "account": player.SteamID++; break;
         case "pawn": player.PlayerPawn.Raw++; break;
+        case "team": player.TeamNum = 3; break;
         case "map": Plugin.DataGeneration++; break;
         case "dead": player.PawnIsAlive = false; break;
         case "invalid": player.IsValid = false; break;

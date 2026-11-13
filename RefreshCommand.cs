@@ -20,6 +20,9 @@ public partial class WeaponPaints
     // Only touched from the game thread. Loading and applying are separate:
     // HasChangedPaint must not see PlayerDataLoading during native application.
     private readonly Dictionary<int, CommandRefreshState> _commandRefreshes = new();
+    // SQL loading must finish before HasChangedPaint can apply items. Keep a
+    // separate lease until connect/reload's native equipment callbacks settle.
+    private readonly Dictionary<int, long> _externalPlayerApplies = new();
 
     private void OnCommandRefresh(CCSPlayerController? player, CommandInfo command) => RequestPlayerRefresh(player, true);
 
@@ -47,7 +50,7 @@ public partial class WeaponPaints
         }
         // A connect or administrator refresh owns this slot. Keep one request
         // until that operation releases its marker; never overwrite its load.
-        if (PlayerDataLoading.ContainsKey(player.Slot))
+        if (PlayerDataLoading.ContainsKey(player.Slot) || _externalPlayerApplies.ContainsKey(player.Slot))
         {
             if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
             _commandRefreshes[player.Slot] = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration) { WaitingExternal = true };
@@ -60,9 +63,10 @@ public partial class WeaponPaints
         StartCommandRefresh(player, state);
     }
 
-    private void OnExternalPlayerLoadSettled(int slot)
+    private void OnExternalPlayerLoadSettled(int slot, long loadId)
     {
-        if (PlayerDataLoading.ContainsKey(slot) || !_commandRefreshes.TryGetValue(slot, out var state) || !state.WaitingExternal) return;
+        if (_externalPlayerApplies.TryGetValue(slot, out var applying) && applying == loadId) _externalPlayerApplies.Remove(slot);
+        if (PlayerDataLoading.ContainsKey(slot) || _externalPlayerApplies.ContainsKey(slot) || !_commandRefreshes.TryGetValue(slot, out var state) || !state.WaitingExternal) return;
         var player = Utilities.GetPlayerFromSlot(slot);
         if (state.Generation != DataGeneration || !Utility.IsPlayerValid(player) || player == null ||
             player.SteamID != state.SteamId || player.EntityHandle.Raw != state.Controller)

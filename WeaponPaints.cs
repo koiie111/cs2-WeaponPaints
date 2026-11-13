@@ -79,21 +79,30 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
                     {
                         Server.NextFrame(() => {
                             if (PlayerDataLoading.TryGetValue(playerInfo.Slot, out var marker) && marker == loadId) PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
-                            OnExternalPlayerLoadSettled(playerInfo.Slot);
+                            OnExternalPlayerLoadSettled(playerInfo.Slot, loadId);
                         });
                         return;
                     }
-					if (!await WeaponSync.GetPlayerData(playerInfo, loadId, generation)) { Server.NextFrame(() => OnExternalPlayerLoadSettled(playerInfo.Slot)); return; }
+					if (!await WeaponSync.GetPlayerData(playerInfo, loadId, generation)) { Server.NextFrame(() => OnExternalPlayerLoadSettled(playerInfo.Slot, loadId)); return; }
                     Server.NextFrame(() =>
                     {
-                        if (generation != DataGeneration || !PlayerDataLoading.TryGetValue(playerInfo.Slot, out var current) || current != loadId) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
+                        if (generation != DataGeneration || !PlayerDataLoading.TryGetValue(playerInfo.Slot, out var current) || current != loadId) { OnExternalPlayerLoadSettled(playerInfo.Slot, loadId); return; }
                         PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
                         var currentPlayer = Utilities.GetPlayerFromSlot(playerInfo.Slot);
-                        if (currentPlayer == null || !Utility.IsPlayerValid(currentPlayer) || currentPlayer.SteamID.ToString() != playerInfo.SteamId) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
+                        if (currentPlayer == null || !Utility.IsPlayerValid(currentPlayer) || currentPlayer.SteamID.ToString() != playerInfo.SteamId) { OnExternalPlayerLoadSettled(playerInfo.Slot, loadId); return; }
                         if (!Players.Contains(currentPlayer)) Players.Add(currentPlayer);
-                        GivePlayerMusicKit(currentPlayer); GivePlayerAgent(currentPlayer); GivePlayerPin(currentPlayer);
-                        if (currentPlayer.PawnIsAlive) RefreshPlayerEquipmentWithCompletion(currentPlayer, _ => OnExternalPlayerLoadSettled(playerInfo.Slot));
-                        else OnExternalPlayerLoadSettled(playerInfo.Slot);
+                        _externalPlayerApplies[playerInfo.Slot] = loadId;
+                        try
+                        {
+                            GivePlayerMusicKit(currentPlayer); GivePlayerAgent(currentPlayer); GivePlayerPin(currentPlayer);
+                            if (currentPlayer.PawnIsAlive) RefreshPlayerEquipmentWithCompletion(currentPlayer, _ => OnExternalPlayerLoadSettled(playerInfo.Slot, loadId));
+                            else OnExternalPlayerLoadSettled(playerInfo.Slot, loadId);
+                        }
+                        catch (Exception error)
+                        {
+                            Logger.LogError(error, "Reloaded player cosmetic application failed for slot {Slot}", playerInfo.Slot);
+                            OnExternalPlayerLoadSettled(playerInfo.Slot, loadId);
+                        }
                     });
 				});
 			}
@@ -112,8 +121,11 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 
 	public override void Unload(bool hotReload)
 	{
+		try { RestoreAgentOverrides(); }
+        catch (Exception error) { Logger.LogWarning(error, "Unable to restore agents before unload"); }
 		_gloveOverrides.Clear();
 		_commandRefreshes.Clear();
+		_externalPlayerApplies.Clear();
 		Interlocked.Increment(ref DataGeneration);
         PlayerDataLoading.Clear();
         ClearDeferredTimers();

@@ -27,6 +27,12 @@ pawn.Patches[0]=55; Select(null);Check(result==true && pawn.Patches[0]==55,"no s
 WP.GPlayersPatchExpiry[1]=DateTime.UtcNow.AddMinutes(-1);Select("agent_a");Server.Flush();
 Check(result==true && pawn.Patches.All(x=>x==0),"expired access clears site patches");
 Select("agent_b");player.PlayerPawn.Raw++;Server.Flush();Check(result==false && pawn.Model=="agents/models/agent_a.vmdl","stale pawn callback cannot apply model");
+player.PlayerPawn.Raw=200;Select(null);Server.Flush();
+WP.GPlayersPatchExpiry[1]=DateTime.UtcNow.AddHours(1);WP.GPlayersPatches[1][2]=new uint[]{11,22,33};
+Select("agent_a");Server.Flush();Utilities.Players.Add(player);plugin.UnloadAgents();
+Check(pawn.Model=="default-t.vmdl" && pawn.Patches.All(x=>x==0),"unload restores the baseline before the tracker is discarded");
+WP.Instance=new WP();Select("agent_b");Server.Flush();Select(null);Server.Flush();
+Check(pawn.Model=="default-t.vmdl","fresh plugin instance can reset its agent after hot reload");
 player.PlayerPawn.Raw=200; WP.Instance=new WP();pawn.Model="";Select("agent_a");Server.Flush();
 Check(result==false && pawn.Model=="","missing original model reports failure");
 Console.WriteLine($"PASS: {checks} linked agent and patch refresh checks");
@@ -34,7 +40,7 @@ Console.WriteLine($"PASS: {checks} linked agent and patch refresh checks");
 namespace CounterStrikeSharp.API.Core {
  public class Handle<T> where T:class { public uint Raw; public T? Value; }
  public class CCSPlayerController { public int Slot,TeamNum; public ulong SteamID;public bool IsValid=true;public Handle<CCSPlayerPawn> PlayerPawn=new(); }
- public class CCSPlayerPawn { public bool IsValid=true;public Handle<object> EntityHandle=new(){Raw=200};public uint[] Patches=new uint[5];public uint[] PlayerPatchEconIndices=>Patches;public string Model=""; public Body CBodyComponent {get;}
+ public class CCSPlayerPawn { public bool IsValid=true;public Handle<object> EntityHandle=new(){Raw=200};public uint[] Patches=new uint[5];public Span<uint> PlayerPatchEconIndices=>Patches;public string Model=""; public Body CBodyComponent {get;}
   public CCSPlayerPawn(){CBodyComponent=new Body(this);} public void SetModel(string value)=>Model=value; }
  public class Body(CCSPlayerPawn pawn) { public Scene SceneNode=new(pawn); }
  public class Scene(CCSPlayerPawn pawn) { public Skeleton GetSkeletonInstance()=>new(pawn); }
@@ -43,7 +49,7 @@ namespace CounterStrikeSharp.API.Core {
 }
 namespace CounterStrikeSharp.API {
  public static class Server {public static Queue<Action> Pending=new();public static void NextFrame(Action a)=>Pending.Enqueue(a);public static void Flush(){while(Pending.TryDequeue(out var a))a();} }
- public static class Utilities {public static void SetStateChanged(CCSPlayerPawn pawn,string cls,string field){} }
+ public static class Utilities {public static List<CCSPlayerController> Players=new();public static IEnumerable<CCSPlayerController> GetPlayers()=>Players;public static void SetStateChanged(CCSPlayerPawn pawn,string cls,string field){} }
 }
 namespace WeaponPaints {
  internal static class Utility {internal static bool IsPlayerValid(CCSPlayerController p)=>p.IsValid;}
@@ -57,5 +63,6 @@ namespace WeaponPaints {
   private void MarkAgentPatchOverride(int slot,ulong steam,uint pawn,bool applied)=>patchOverride=applied;
   private void ArmAgentPatchExpiry(int slot){}
   public void Apply(CCSPlayerController player,Action<bool> completed)=>GivePlayerAgentWithCompletion(player,completed);
+  public void UnloadAgents()=>RestoreAgentOverrides();
  }
 }

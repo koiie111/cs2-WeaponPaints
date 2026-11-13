@@ -36,6 +36,7 @@ namespace WeaponPaints
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
             _gloveOverrides.Remove(player.Slot);
             _commandRefreshes.Remove(player.Slot);
+            _externalPlayerApplies.Remove(player.Slot);
             ForgetGraffiti(player.Slot, player.SteamID);
 			GPlayersKnife.TryRemove(player.Slot, out _);
 			GPlayersGlove.TryRemove(player.Slot, out _);
@@ -58,25 +59,34 @@ namespace WeaponPaints
 			if (weaponSync == null)
             {
                 if (PlayerDataLoading.TryGetValue(player.Slot, out var current) && current == loadId) PlayerDataLoading.TryRemove(player.Slot, out _);
-                OnExternalPlayerLoadSettled(player.Slot);
+                OnExternalPlayerLoadSettled(player.Slot, loadId);
                 return HookResult.Continue;
             }
 			_ = ObserveAsync(async () =>
 			{
-				if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) { Server.NextFrame(() => OnExternalPlayerLoadSettled(playerInfo.Slot)); return; }
+				if (!await weaponSync.GetPlayerData(playerInfo, loadId, generation)) { Server.NextFrame(() => OnExternalPlayerLoadSettled(playerInfo.Slot, loadId)); return; }
 				Server.NextFrame(() =>
 				{
-					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
+					if (!PlayerDataLoading.TryGetValue(playerInfo.Slot, out var currentLoadId) || currentLoadId != loadId) { OnExternalPlayerLoadSettled(playerInfo.Slot, loadId); return; }
 					PlayerDataLoading.TryRemove(playerInfo.Slot, out _);
-					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != playerInfo.SteamId) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
+					if (!Utility.IsPlayerValid(player) || player.SteamID.ToString() != playerInfo.SteamId) { OnExternalPlayerLoadSettled(playerInfo.Slot, loadId); return; }
 
 					if (!Players.Contains(player)) Players.Add(player);
-					if ((LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE) { OnExternalPlayerLoadSettled(playerInfo.Slot); return; }
+					if ((LifeState_t)player.LifeState != LifeState_t.LIFE_ALIVE) { OnExternalPlayerLoadSettled(playerInfo.Slot, loadId); return; }
 
-					GivePlayerMusicKit(player);
-					GivePlayerAgent(player);
-					GivePlayerPin(player);
-					RefreshPlayerEquipmentWithCompletion(player, _ => OnExternalPlayerLoadSettled(playerInfo.Slot));
+                    _externalPlayerApplies[playerInfo.Slot] = loadId;
+                    try
+                    {
+                        GivePlayerMusicKit(player);
+                        GivePlayerAgent(player);
+                        GivePlayerPin(player);
+                        RefreshPlayerEquipmentWithCompletion(player, _ => OnExternalPlayerLoadSettled(playerInfo.Slot, loadId));
+                    }
+                    catch (Exception error)
+                    {
+                        Logger.LogError(error, "Connected player cosmetic application failed for slot {Slot}", playerInfo.Slot);
+                        OnExternalPlayerLoadSettled(playerInfo.Slot, loadId);
+                    }
 				});
 			});
 
@@ -105,6 +115,7 @@ namespace WeaponPaints
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
             _gloveOverrides.Remove(player.Slot);
             _commandRefreshes.Remove(player.Slot);
+            _externalPlayerApplies.Remove(player.Slot);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
             ForgetGraffiti(player.Slot, player.SteamID);
 			ForgetAgentPatches(player.Slot);
@@ -150,6 +161,7 @@ namespace WeaponPaints
             FinishCacheKeys.Clear();
             _gloveOverrides.Clear();
             _commandRefreshes.Clear();
+            _externalPlayerApplies.Clear();
             ClearSkinPreviews();
             ClearGraffiti(false);
             Interlocked.Increment(ref DataGeneration);
@@ -312,6 +324,7 @@ namespace WeaponPaints
                 Interlocked.Increment(ref DataGeneration);
                 PlayerDataLoading.Clear();
                 _commandRefreshes.Clear();
+                _externalPlayerApplies.Clear();
                 FinishCacheKeys.Clear();
                 _gloveOverrides.Clear();
                 ClearSkinPreviews();

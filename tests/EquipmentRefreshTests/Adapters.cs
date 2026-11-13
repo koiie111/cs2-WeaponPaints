@@ -11,7 +11,7 @@ namespace CounterStrikeSharp.API.Core
     public sealed class Handle { public uint Raw; }
     public sealed class CCSPlayerController
     {
-        public int Slot;
+        public int Slot, TeamNum = 2;
         public ulong SteamID = 10;
         public bool IsValid = true, PawnIsAlive = true;
         public Handle EntityHandle = new() { Raw = 100 }, PlayerPawn = new() { Raw = 200 };
