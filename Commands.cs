@@ -104,6 +104,8 @@ public partial class WeaponPaints
 		{
 			OnCommandSkinRefresh(player, info);
 		});
+		AddCommand("wp_refresh_request", "Request a tracked skin refresh", (player, info) => OnCommandTrackedRefresh(player, info, false));
+		AddCommand("wp_refresh_status", "Read a tracked skin refresh result", (player, info) => OnCommandTrackedRefresh(player, info, true));
 	}
 
 	private void OnCommandStattrak(CCSPlayerController? player, CommandInfo commandInfo)

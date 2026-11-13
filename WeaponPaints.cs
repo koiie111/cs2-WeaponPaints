@@ -21,7 +21,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db7-skins3d.15-rcon-refresh";
+	public override string ModuleVersion => "3.3a-db7-skins3d.16-refresh-receipts";
 
 	internal static long DataGeneration;
 
@@ -124,7 +124,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 		try { RestoreAgentOverrides(); }
         catch (Exception error) { Logger.LogWarning(error, "Unable to restore agents before unload"); }
 		_gloveOverrides.Clear();
-		_commandRefreshes.Clear();
+		ClearCommandRefreshes();
 		_externalPlayerApplies.Clear();
 		Interlocked.Increment(ref DataGeneration);
         PlayerDataLoading.Clear();

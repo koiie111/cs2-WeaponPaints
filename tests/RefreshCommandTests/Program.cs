@@ -154,6 +154,7 @@ wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
 Utilities.Players.Clear();Reply("WP_REFRESH_V1 not_found all","wp_refresh","all");
 Utilities.Players[1]=player;wp.Sync.Reset();
 Check(wp.Rcon(null,"wp_refresh","ALL").Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued all"}),"manual all remains supported");
+Check(wp.Sync.Calls==0,"all starts outside the command frame");wp.AdvanceBulk();
 wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
 // A burst remains one active load plus a single follow-up, including requests
 // received after SQL has finished while the native application is still pending.
@@ -178,10 +179,111 @@ for(var slot=1;slot<=64;slot++)Utilities.Players[slot]=new CCSPlayerController {
 };
 Utilities.Players[64].UserId=null;
 Check(wp.Rcon(null,"wp_refresh","all").Replies.SequenceEqual(new[]{"WP_REFRESH_V1 queued all"}),"all acknowledges every eligible human");
-Check(wp.Sync.Calls==60 && WP.PlayerDataLoading.Count==60,"all starts one load per eligible human");
-wp.Sync.Complete(true);await Task.WhenAll(wp.Tasks);Server.Flush();
+Check(wp.Sync.Calls==0 && wp.BulkCount==60,"all queues eligible humans without a SQL burst");
+wp.Rcon(null,"wp_refresh","all");Check(wp.BulkCount==60,"repeated all coalesces the batch");
+for(var i=0;i<60;i++) {
+ wp.AdvanceBulk();Check(wp.Sync.Calls==1 && WP.PlayerDataLoading.Count==1,"one bulk SQL operation "+i);
+ wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.Sync.Reset();
+}
 Check(WP.PlayerDataLoading.IsEmpty && wp.Events.Count==0,"dead all targets load without native application");
 Check(Utilities.Players.Values.Take(60).All(p=>p.Messages.Any(m=>m.Contains("отложено"))),"all dead targets defer to respawn");
+Check(wp.BulkCount==0 && wp.BulkTimerCount==0,"idle bulk queue has no timer");
+// A native operation holds the single bulk permit until its last callback.
+wp=new WP();Utilities.Players.Clear();
+player=new CCSPlayerController{Slot=1,SteamID=ulong.Parse(target),UserId=1};Utilities.Players[1]=player;
+Utilities.Players[2]=new CCSPlayerController{Slot=2,SteamID=player.SteamID+1,UserId=2};
+wp.Rcon(null,"wp_refresh","all");wp.AdvanceBulk();
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();
+Check(wp.BulkTimerCount==0 && wp.Sync.Calls==1,"all waits for native completion before scheduling next player");
+wp.Sync.Reset();wp.FinishEquipment(true);Check(wp.BulkTimerCount==1 && wp.Sync.Calls==0,"completion schedules a paced continuation");
+Utilities.Players[2].EntityHandle.Raw++;wp.AdvanceBulk();
+Check(wp.Sync.Calls==0 && wp.BulkCount==0,"queued bulk target revalidates controller serial");
+wp.Rcon(null,"wp_refresh","all");wp.ClearRefreshes();wp.AdvanceBulk();
+Check(wp.Sync.Calls==0 && wp.BulkCount==0,"lifecycle cancellation invalidates queued timer");
+
+// Pollable V2 receipts are separate from transient CommandInfo/RCON lifetimes.
+wp=new WP();WP.PlayerDataLoading.Clear();Utilities.Players.Remove(2);
+var token=new string('a',32);var token2=new string('b',32);var v2=new Dictionary<string,string>();
+string Tracked(string verb,string requestToken,CCSPlayerController? caller=null) => wp.RconTracked(caller,verb,target,requestToken).Replies.Single();
+string Expected(string status,string requestToken) => $"WP_REFRESH_V2 {status} {target} {requestToken}";
+v2["invalid"]=Tracked("wp_refresh_request","bad");Check(v2["invalid"]=="WP_REFRESH_V2 invalid - -","invalid receipt token rejected");
+v2["forbidden"]=Tracked("wp_refresh_request",token,player);Check(v2["forbidden"]=="WP_REFRESH_V2 forbidden - -","tracked commands are server-only");
+v2["unknown"]=Tracked("wp_refresh_status",token);Check(v2["unknown"]==Expected("unknown",token),"unknown receipt does no SQL");
+foreach(var status in new[]{"disabled","busy","unavailable","not_found"}) {
+ if(status=="disabled")wp.Config.Additional.SkinEnabled=false;
+ if(status=="busy")wp._gBCommandsAllowed=false;
+ if(status=="unavailable")wp.SyncAvailable=false;
+ if(status=="not_found")Utilities.Players.Clear();
+ v2[status]=Tracked("wp_refresh_request",token);Check(v2[status]==Expected(status,token),"tracked rejection "+status);
+ wp.Config.Additional.SkinEnabled=true;wp._gBCommandsAllowed=true;wp.SyncAvailable=true;Utilities.Players[1]=player;
+}
+v2["queued"]=Tracked("wp_refresh_request",token);Check(v2["queued"]==Expected("queued",token),"tracked queue ACK");
+Check(Tracked("wp_refresh_request",token)==Expected("queued",token)&&wp.Sync.Calls==1,"lost ACK retry is idempotent");
+v2["pending"]=Tracked("wp_refresh_status",token);Check(v2["pending"]==Expected("pending",token)&&wp.Sync.Calls==1,"polling does not enqueue or load");
+wp.Sync.Complete(false);await wp.Active!;Server.Flush();
+v2["failed"]=Tracked("wp_refresh_status",token);Check(v2["failed"]==Expected("failed",token),"post-ACK SQL failure is visible to website");
+wp.Sync.Reset();Check(Tracked("wp_refresh_request",token2)==Expected("queued",token2),"new retry token accepted after failure");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();
+Check(Tracked("wp_refresh_status",token2)==Expected("pending",token2),"SQL completion alone is not success");
+wp.FinishEquipment(true);
+Check(Tracked("wp_refresh_status",token2)==Expected("succeeded",token2),"native completion publishes success");
+Check(Tracked("wp_refresh_request",token2)==Expected("succeeded",token2)&&wp.Sync.Calls==1,"completed request remains idempotent");
+Check(Tracked("wp_refresh_status",token)==Expected("failed",token),"new attempt cannot overwrite old receipt");
+v2["succeeded"]=Tracked("wp_refresh_status",token2);
+wp.Sync.Reset();player.PawnIsAlive=false;
+var deferredToken=new string('c',32);Tracked("wp_refresh_request",deferredToken);
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();
+Check(Tracked("wp_refresh_status",deferredToken)==Expected("deferred",deferredToken),"deferred application is not a success receipt");
+v2["deferred"]=Tracked("wp_refresh_status",deferredToken);player.PawnIsAlive=true;
+wp.Sync.Reset();var nativeToken=new string('d',32);Tracked("wp_refresh_request",nativeToken);
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(false);
+Check(Tracked("wp_refresh_status",nativeToken)==Expected("failed",nativeToken),"post-ACK native failure is visible");
+wp.Sync.Reset();var cancelledToken=new string('e',32);Tracked("wp_refresh_request",cancelledToken);wp.ClearRefreshes();
+Check(Tracked("wp_refresh_status",cancelledToken)==Expected("failed",cancelledToken),"map/unload invalidates pending receipts");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();
+Check(Tracked("wp_refresh_status",cancelledToken)==Expected("failed",cancelledToken),"late completion cannot resurrect cancelled receipt");
+WP.PlayerDataLoading.Clear();
+wp=new WP();wp.Sync.Reset();
+Tracked("wp_refresh_request",token);Tracked("wp_refresh_request",token2);
+Check(wp.Sync.Calls==1,"different revisions coalesce while SQL runs");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();var oldNative=wp.EquipmentCompletion();
+wp.Sync.Reset();wp.FinishEquipment(true);
+Check(wp.Sync.Calls==1 && Tracked("wp_refresh_status",token2)==Expected("pending",token2),"newer revision waits for its fresh load");
+oldNative(true);Check(Tracked("wp_refresh_status",token)==Expected("pending",token),"stale native callback cannot complete pending follow-up");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
+Check(Tracked("wp_refresh_status",token)==Expected("succeeded",token)&&Tracked("wp_refresh_status",token2)==Expected("succeeded",token2),"both coalesced receipts complete after latest application");
+wp=new WP();WP.PlayerDataLoading[1]=777;
+Tracked("wp_refresh_request",token);Check(wp.Sync.Calls==0,"tracked request waits behind external load");
+WP.PlayerDataLoading.TryRemove(1,out _);wp.ExternalSettled(1);
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();wp.FinishEquipment(true);
+Check(Tracked("wp_refresh_status",token)==Expected("succeeded",token),"external wait retains result callback");
+wp=new WP();Tracked("wp_refresh_request",token);wp.Disconnect(1);
+Check(Tracked("wp_refresh_status",token)==Expected("failed",token),"disconnect publishes failure immediately");
+wp.Sync.Complete(true);await wp.Active!;Server.Flush();
+wp=new WP();
+for(var i=0;i<64;i++)Check(Tracked("wp_refresh_request",i.ToString("x32"))==Expected("queued",i.ToString("x32")),"bounded receipt observer "+i);
+Check(Tracked("wp_refresh_request",64.ToString("x32"))==Expected("unavailable",64.ToString("x32")),"per-player observers cannot grow without bound");
+wp.ClearRefreshes();wp.Sync.Complete(true);await wp.Active!;Server.Flush();WP.PlayerDataLoading.Clear();
+var clock=DateTime.UtcNow;var receipts=new RefreshReceipts(()=>clock,2);
+Check(receipts.TryBegin(1,token,out var firstReceipt)&&receipts.TryBegin(2,token,out _),"bounded receipt allocation");
+Check(!receipts.TryBegin(3,token,out _),"receipt capacity refuses extra work");
+clock=clock.AddMinutes(11);Check(receipts.TryBegin(1,token,out var freshReceipt),"expired receipt capacity is reclaimed");
+firstReceipt("succeeded");Check(receipts.Status(1,token)=="pending","old completion cannot overwrite reused token");
+freshReceipt("succeeded");receipts.FailPending();Check(receipts.Status(1,token)=="succeeded","lifecycle reset preserves terminal receipts");
+// Timer pacing and queue capacity do not rely on wall-clock sleeps.
+var scheduled=new Queue<Action>();var delays=new List<float>();var ready=false;var starts=0;Action? releaseBulk=null;
+var bulk=new BulkRefreshQueue((delay,action)=>{delays.Add(delay);scheduled.Enqueue(action);},()=>ready);
+Check(bulk.Enqueue("one",done=>{starts++;releaseBulk=done;return true;}),"bulk enqueue");
+scheduled.Dequeue()();Check(starts==0&&scheduled.Count==1,"round transition pauses bulk dispatch");
+ready=true;scheduled.Dequeue()();Check(starts==1&&scheduled.Count==0,"one active operation owns the permit");
+for(var i=2;i<=256;i++)Check(bulk.Enqueue(i.ToString(),done=>{done();return true;}),"bounded bulk enqueue "+i);
+Check(!bulk.Enqueue("overflow",_=>true)&&bulk.Count==256,"bulk capacity bounded including active operation");
+Check(bulk.Enqueue("one",_=>throw new Exception("duplicate executed"))&&bulk.Count==256,"duplicate all cannot grow the queue");
+releaseBulk!();releaseBulk();Check(scheduled.Count==1,"duplicate completion schedules once");
+scheduled.Dequeue()();Check(bulk.Count==254&&scheduled.Count==1,"synchronous callbacks do not drain more than one target per timer");
+bulk.Clear();scheduled.Dequeue()();Check(bulk.Count==0&&scheduled.Count==0,"clear rejects stale continuation");
+Check(delays.All(delay=>delay==.25f),"every bulk dispatch is separated by a 250ms one-shot");
+Console.WriteLine("WP_PROTOCOL_V2_FIXTURE_JSON="+System.Text.Json.JsonSerializer.Serialize(v2));
 Console.WriteLine("WP_PROTOCOL_FIXTURE_JSON="+System.Text.Json.JsonSerializer.Serialize(protocolReplies));
 Console.WriteLine("PASS: RCON protocol, rejections, targeted ACK, cooldown bypass and coalescing");
 Console.WriteLine("PASS: command loading, coalescing guard, game-frame dispatch, subsystem order and stale identity");
@@ -240,9 +342,14 @@ namespace WeaponPaints {
   public Action<bool> EquipmentCompletion()=>equipment!;
   private void GivePlayerMusicKit(CCSPlayerController p)=>Events.Add("music");
   private void GivePlayerPin(CCSPlayerController p)=>Events.Add("pin");
-  private void AddOneShot(float delay,Action action)=>Server.NextFrame(action);
+  private readonly Queue<Action> bulkTimers=new();public int BulkTimerCount=>bulkTimers.Count;public int BulkCount=>_bulkRefreshes?.Count??0;
+  private void AddOneShot(float delay,Action action){if(delay==BulkRefreshQueue.Interval)bulkTimers.Enqueue(action);else Server.NextFrame(action);}
+  public void AdvanceBulk(){if(bulkTimers.TryDequeue(out var action))action();}
+  public void ClearRefreshes()=>ClearCommandRefreshes();
+  public void Disconnect(int slot){CancelCommandRefresh(slot);PlayerDataLoading.TryRemove(slot,out _);}
   public void Command(CCSPlayerController p)=>OnCommandRefresh(p,new());
   public CounterStrikeSharp.API.Modules.Commands.CommandInfo Rcon(CCSPlayerController? caller, params string[] args){var info=new CounterStrikeSharp.API.Modules.Commands.CommandInfo{Args=args};OnCommandSkinRefresh(caller,info);return info;}
+  public CounterStrikeSharp.API.Modules.Commands.CommandInfo RconTracked(CCSPlayerController? caller, params string[] args){var info=new CounterStrikeSharp.API.Modules.Commands.CommandInfo{Args=args};OnCommandTrackedRefresh(caller,info,args[0]=="wp_refresh_status");return info;}
   public void ExternalSettled(int slot,long loadId=777)=>OnExternalPlayerLoadSettled(slot,loadId);
   public void ExternalApplying(int slot,long loadId)=>_externalPlayerApplies[slot]=loadId;
  }

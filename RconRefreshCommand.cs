@@ -36,7 +36,7 @@ public partial class WeaponPaints
         if (players.Count == 0) { Reply("not_found", target); return; }
         var accepted = 0;
         foreach (var player in players)
-            if (RequestPlayerRefresh(player, false)) accepted++;
+            if (all ? EnqueueBulkRefresh(player) : RequestPlayerRefresh(player, false)) accepted++;
         Reply(accepted == players.Count ? "queued" : "unavailable", target);
     }
 }

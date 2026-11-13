@@ -16,6 +16,7 @@ public partial class WeaponPaints
         internal long Run;
         internal bool Repeat;
         internal bool WaitingExternal;
+        internal readonly List<Action<string>> Completed = new();
     }
     // Only touched from the game thread. Loading and applying are separate:
     // HasChangedPaint must not see PlayerDataLoading during native application.
@@ -26,7 +27,26 @@ public partial class WeaponPaints
 
     private void OnCommandRefresh(CCSPlayerController? player, CommandInfo command) => RequestPlayerRefresh(player, true);
 
-    private bool RequestPlayerRefresh(CCSPlayerController? player, bool enforceCooldown)
+    private void CompleteCommandRefresh(CommandRefreshState state, string result)
+    {
+        var callbacks = state.Completed.ToArray();
+        state.Completed.Clear();
+        foreach (var callback in callbacks) callback(result);
+    }
+
+    private void CancelCommandRefresh(int slot)
+    {
+        if (_commandRefreshes.Remove(slot, out var state)) CompleteCommandRefresh(state, "failed");
+    }
+
+    private void ClearCommandRefreshes()
+    {
+        _bulkRefreshes?.Clear();
+        _refreshReceipts.FailPending();
+        foreach (var slot in _commandRefreshes.Keys.ToArray()) CancelCommandRefresh(slot);
+    }
+
+    private bool RequestPlayerRefresh(CCSPlayerController? player, bool enforceCooldown, Action<string>? completed = null)
     {
         if (!Config.Additional.CommandWpEnabled || !Config.Additional.SkinEnabled || !_gBCommandsAllowed ||
             !Utility.IsPlayerValid(player) || player == null || player.UserId == null || player.IsBot || WeaponSync == null) return false;
@@ -41,13 +61,15 @@ public partial class WeaponPaints
         {
             if (running.SteamId == player.SteamID && running.Controller == player.EntityHandle.Raw && running.Generation == DataGeneration)
             {
+                if (completed != null && running.Completed.Count >= 64) return false;
                 var notifyQueued = !running.Repeat;
                 running.Repeat = true;
+                if (completed != null) running.Completed.Add(completed);
                 if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
                 if (notifyQueued) player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущего применения.");
                 return true;
             }
-            _commandRefreshes.Remove(player.Slot);
+            CancelCommandRefresh(player.Slot);
         }
         // A connect or administrator refresh owns this slot. Keep one request
         // until that operation releases its marker; never overwrite its load.
@@ -55,11 +77,13 @@ public partial class WeaponPaints
         {
             if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
             _commandRefreshes[player.Slot] = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration) { WaitingExternal = true };
+            if (completed != null) _commandRefreshes[player.Slot].Completed.Add(completed);
             player.Print("{yellow}Обновление в очереди: настройки будут перечитаны после текущей загрузки.");
             return true;
         }
         if (enforceCooldown) CommandsCooldown[player.Slot] = now.AddSeconds(Config.CmdRefreshCooldownSeconds);
         var state = new CommandRefreshState(player.Slot, player.SteamID, player.EntityHandle.Raw, DataGeneration);
+        if (completed != null) state.Completed.Add(completed);
         _commandRefreshes[player.Slot] = state;
         StartCommandRefresh(player, state);
         return true;
@@ -73,7 +97,7 @@ public partial class WeaponPaints
         if (state.Generation != DataGeneration || !Utility.IsPlayerValid(player) || player == null ||
             player.SteamID != state.SteamId || player.EntityHandle.Raw != state.Controller)
         {
-            _commandRefreshes.Remove(slot); return;
+            CancelCommandRefresh(slot); return;
         }
         state.WaitingExternal = false;
         // The deferred load itself reads the newest state, so requests that
@@ -147,14 +171,14 @@ public partial class WeaponPaints
         var player = Utilities.GetPlayerFromSlot(state.Slot);
         if (!Utility.IsPlayerValid(player) || player == null || player.SteamID != state.SteamId || player.EntityHandle.Raw != state.Controller)
         {
-            _commandRefreshes.Remove(state.Slot); return;
+            CancelCommandRefresh(state.Slot); return;
         }
         if (state.Repeat)
         {
             state.Repeat = false;
             if (PlayerDataLoading.ContainsKey(state.Slot))
             {
-                _commandRefreshes.Remove(state.Slot);
+                CancelCommandRefresh(state.Slot);
                 player.Print("{yellow}Другое обновление ещё загружается. Повторите !wp после его завершения.");
                 return;
             }
@@ -162,6 +186,7 @@ public partial class WeaponPaints
             return;
         }
         _commandRefreshes.Remove(state.Slot);
+        CompleteCommandRefresh(state, deferred ? "deferred" : success ? "succeeded" : "failed");
         if (deferred)
         {
             player.Print("{yellow}Настройки загружены, применение отложено до следующего возрождения.");
