@@ -8,6 +8,7 @@
 
 ## Unreleased
 
+- Release only a cancelled command's own SQL marker, hold the bulk permit until cancelled SQL actually settles, and isolate setup/completion/timer failures so later refreshes can proceed.
 - Add pollable, account/token-bound refresh receipts so websites can retry SQL/native failures after the queue acknowledgement, and pace manual `all` refreshes through one active operation with 250ms spacing.
 - Return synchronous, versioned RCON replies for `wp_refresh`: targeted queue acknowledgement and explicit busy/disabled/not-found/invalid/unavailable statuses. The acknowledgement confirms acceptance, not asynchronous cosmetic completion.
 - Report unavailable synchronization before player lookup, and send one player queue notice per coalesced follow-up during automatic refresh bursts.

@@ -2,7 +2,7 @@ namespace WeaponPaints;
 
 // One complete SQL + native operation at a time. Only a nonempty queue owns a
 // one-shot timer; neither SQL completion nor rejected targets drain recursively.
-internal sealed class BulkRefreshQueue(Action<float, Action> schedule, Func<bool> ready)
+internal sealed class BulkRefreshQueue(Action<float, Action> schedule, Func<bool> ready, Action<Exception>? failed = null)
 {
     internal const float Interval = .25f;
     private readonly Queue<(string Key, Func<Action, bool> Start)> _pending = new();
@@ -16,15 +16,14 @@ internal sealed class BulkRefreshQueue(Action<float, Action> schedule, Func<bool
         if (_keys.Count >= 256) return false;
         _keys.Add(key);
         _pending.Enqueue((key, start));
-        Schedule();
-        return true;
+        return Schedule();
     }
-    private void Schedule()
+    private bool Schedule()
     {
-        if (_scheduled || _active || _pending.Count == 0) return;
+        if (_scheduled || _active || _pending.Count == 0) return true;
         _scheduled = true;
         var generation = _generation;
-        schedule(Interval, () =>
+        try { schedule(Interval, () =>
         {
             if (generation != _generation) return;
             _scheduled = false;
@@ -41,8 +40,16 @@ internal sealed class BulkRefreshQueue(Action<float, Action> schedule, Func<bool
                 Schedule();
             }
             try { if (!entry.Start(Finish)) Finish(); }
-            catch { Finish(); throw; }
-        });
+            catch (Exception error) { Finish(); failed?.Invoke(error); }
+        }); return true; }
+        catch (Exception error)
+        {
+            // A failed timer registration must not leave a permanently scheduled
+            // batch. A future all request can start a fresh batch.
+            Clear();
+            failed?.Invoke(error);
+            return false;
+        }
     }
     internal void Clear()
     {

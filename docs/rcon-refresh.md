@@ -1,6 +1,6 @@
 # Website skin refresh via RCON
 
-Version `3.3a-db7-skins3d.16-refresh-receipts` adds completion receipts. Every
+Version `3.3a-db7-skins3d.17-refresh-review` includes completion receipts. Every
 command is console/RCON-only and returns one synchronous ASCII line through
 `CommandInfo.ReplyToCommand`. No asynchronous callback retains `CommandInfo`.
 
@@ -40,6 +40,11 @@ the worker exits after sending, resume status polling for that attempt rather
 than immediately submitting another refresh. Poll every 3 seconds; retry an
 unresolved attempt after 90 seconds. Polls do not consume delivery attempts.
 Delivery retains the website's 10-attempt / 5-minute limits and revision guards.
+Transport/invalid-response failures back off at 3/6/12/24/48/60 seconds; a valid
+pending result resets that counter. A definite RCON authentication rejection is
+a terminal configuration error. It also pauses other jobs for that server for
+60 seconds in durable website storage; other servers continue normally. These
+transport decisions are local website result codes, not additional V2 statuses.
 
 Request submission is idempotent within the receipt lifetime: the same
 account/token returns its existing result without starting another SQL load or
@@ -55,6 +60,10 @@ polls access no SQL and schedule no refresh. At capacity, new work receives
 `unavailable`; live receipts are not evicted. Each player's coordinator accepts
 at most 64 result observers. Map changes fail pending receipts; reload/restart
 can return `unknown`. Cancellation and late callbacks cannot resurrect results.
+Cancellation atomically removes only the command's own SQL marker. A newer
+session or external loader's marker is preserved. Synchronous setup exceptions
+release the command and fail the receipt; one throwing completion observer does
+not prevent other receipts from settling.
 
 ## Manual commands and bulk pacing
 
@@ -70,6 +79,11 @@ dispatch. Targets are revalidated on dispatch; disconnect, slot reuse, map
 change and unload invalidate stale work. An empty queue owns no timer. There
 is no new `OnTick` listener, permanent world scan or cosmetic application in the
 bulk command's loop. Independent targeted/chat work keeps its existing behavior.
+If a player disconnects during SQL, the bulk permit remains held until that SQL
+operation actually settles; cancelling a receipt does not create overlapping
+bulk queries. Timer registration failure clears/logs the stopped batch, and a
+later `all` can start again. A failed individual target releases its permit and
+does not prevent the remaining targets from running.
 
 The existing coordinator retains the chat cooldown, serialized per-account SQL,
 coalesced refreshes, external-load lease and account/pawn/team/serial guards.
@@ -87,7 +101,10 @@ Coverage includes post-ACK SQL/native failures, delayed completion, idempotent
 lost-ACK recovery, coalesced revisions, external loads, lifecycle cancellation,
 receipt expiry/capacity, bounded observers, 2,000 repeated requests, 60 eligible
 dead humans among 64 controllers, live native completion gating, duplicate bulk
-commands, round pause, 250ms pacing and stale timer/controller rejection.
+commands, round pause, 250ms pacing, cancelled SQL settlement, failed timers/setup
+and stale timer/controller rejection. Website checks cover transport backoff,
+authentication failure isolation across jobs/worker passes, server recovery and
+newer revisions arriving during a rejected authentication attempt.
 
 These tests verify protocol, ordering and bounded work. They do not establish
 live frame-time gains or client visual acceptance. No production installation,
@@ -95,5 +112,5 @@ reload or deployment is part of this change.
 
 Local validation on 2026-11-13 passed: Release build with warnings as errors,
 all 15 managed workflow suites, measurement integrity, 154 disposable MySQL 8.4
-assertions, and 218 isolated website/RCON checks. Both website SQL migrations
+assertions, and 231 isolated website/RCON checks. All three website SQL migrations
 were applied twice; disposable databases/containers were removed.

@@ -1,6 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
+using Microsoft.Extensions.Logging;
 
 namespace WeaponPaints;
 
@@ -15,13 +16,14 @@ public partial class WeaponPaints
         var steamId = player.SteamID;
         var controller = player.EntityHandle.Raw;
         var generation = DataGeneration;
-        _bulkRefreshes ??= new BulkRefreshQueue(AddOneShot, () => _gBCommandsAllowed);
+        _bulkRefreshes ??= new BulkRefreshQueue(AddOneShot, () => _gBCommandsAllowed,
+            error => Logger.LogWarning(error, "Bulk refresh scheduling failed"));
         return _bulkRefreshes.Enqueue($"{generation}:{slot}:{steamId}:{controller}", done =>
         {
             var current = Utilities.GetPlayerFromSlot(slot);
             if (generation != DataGeneration || !Utility.IsPlayerValid(current) || current == null ||
                 current.SteamID != steamId || current.EntityHandle.Raw != controller) return false;
-            return RequestPlayerRefresh(current, false, _ => done());
+            return RequestPlayerRefresh(current, false, settled: done);
         });
     }
 
