@@ -28,7 +28,7 @@ namespace WeaponPaints {
   internal static readonly ConcurrentDictionary<int,DateTime> GPlayersPatchExpiry=new();
   internal void ArmAgentPatchExpiry(int slot) { }
   internal static readonly ConcurrentDictionary<int,(int Kit,int Tint)> PlayerGraffiti=new();
-  internal bool IsValidGraffiti(int kit,int tint)=>kit==1671&&tint==0;
+  internal bool IsValidGraffiti(int kit,int tint)=>(kit==1671&&tint==0)||(kit==1672&&tint==4);
   internal static readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,ConcurrentDictionary<int,WeaponInfo>>> GPlayerWeaponsInfo=new();
   internal static readonly List<JObject> AgentsList=[JObject.Parse("{team:3,model:'ct'}"),JObject.Parse("{team:2,model:'t'}")];
  }

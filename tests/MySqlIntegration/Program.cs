@@ -197,6 +197,10 @@ try{
  Check(await Load(),"graffiti selection loads with the regular identity-guarded snapshot");
  Check(WP.PlayerGraffiti.TryGetValue(player.Slot,out var graffiti)&&graffiti==(1671,0),"native graffiti kit and tint round trip");
  Check(!WP.HasGraffitiSubscription(player.Slot),"saved graffiti gives no permission without active 4ill+");
+ await sql.ExecuteAsync("UPDATE wp_player_graffiti SET graffiti_id=1672,tint_id=4 WHERE steamid=@id",new{id});
+ Check(await Load()&&WP.PlayerGraffiti[player.Slot]==(1672,4),"website graffiti change replaces both kit and tint on refresh");
+ await sql.ExecuteAsync("UPDATE wp_player_graffiti SET graffiti_id=1671,tint_id=0 WHERE steamid=@id",new{id});
+ Check(await Load()&&WP.PlayerGraffiti[player.Slot]==(1671,0),"subsequent graffiti selection replaces the previous choice");
  await sql.ExecuteAsync("INSERT INTO plus_active VALUES (@id,'2030-01-01 03:00:00')",new{id});
  Check(await Load()&&WP.HasGraffitiSubscription(player.Slot)&&WP.PlayerGraffitiExpiry[player.Slot]==new DateTime(2030,1,1,0,0,0,DateTimeKind.Utc),"graffiti permission shares joined read and converts MSK expiry to UTC");
  WP.PlayerGraffitiExpiry[player.Slot]=DateTime.UtcNow.AddSeconds(-1);
