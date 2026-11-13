@@ -43,4 +43,3 @@ namespace WeaponPaints { public partial class WeaponPaints {
  public bool NormalLookup(CCSPlayerController p,int def)=>HasChangedPaint(p,def,out _);
  public void Death(EventPlayerDeath e)=>OnPlayerDeath(e,new());
 } }
-

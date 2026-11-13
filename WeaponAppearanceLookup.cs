@@ -17,7 +17,7 @@ public partial class WeaponPaints
             weaponInfo = null;
 
 			// Check if player has weapons info for their slot and team
-			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamInfo) || 
+			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out var teamInfo) ||
 			    !teamInfo.TryGetValue(player.Team, out var teamWeapons))
 			{
 				return false;
@@ -25,7 +25,7 @@ public partial class WeaponPaints
 
 			// Check if the specified weapon has a paint/skin change
 			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || !value.HasCustomization) return false;
-			
+
 			weaponInfo = value; // Assign the out variable when it exists
 			return true;
 		}

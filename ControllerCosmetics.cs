@@ -30,9 +30,9 @@ public partial class WeaponPaints
             ushort pinId = 0;
             if (GPlayersPin.TryGetValue(player.Slot, out var pinInfo))
                 pinInfo.TryGetValue(player.Team, out pinId);
-			
+
 			player.InventoryServices.Rank[5] = pinId > 0 ? (MedalRank_t)pinId : MedalRank_t.MEDAL_RANK_NONE;
 			Utilities.SetStateChanged(player, "CCSPlayerController", "m_pInventoryServices");
 		}
-		
+
 }

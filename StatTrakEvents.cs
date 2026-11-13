@@ -12,10 +12,10 @@ public partial class WeaponPaints
 
 			if (player is null || !player.IsValid)
 				return HookResult.Continue;
-			
+
 			if (victim == null || !victim.IsValid || victim == player)
 				return HookResult.Continue;
-			
+
 			CBasePlayerWeapon? weapon = player.PlayerPawn.Value?.WeaponServices?.ActiveWeapon.Value;
 
 			if (weapon == null) return HookResult.Continue;
@@ -24,14 +24,14 @@ public partial class WeaponPaints
 
 			if (!HasChangedPaintForCounter(player, weaponDefIndex, out var weaponInfo) || weaponInfo == null)
 				return HookResult.Continue;
-				
+
 			if (!weaponInfo.StatTrak) return HookResult.Continue;
-			
+
 			weaponInfo.StatTrakCount += 1;
-				
+
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "kill eater", ViewAsFloat((uint)weaponInfo.StatTrakCount));
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.NetworkedDynamicAttributes.Handle, "kill eater score type", 0);
-				
+
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "kill eater", ViewAsFloat((uint)weaponInfo.StatTrakCount));
 			CAttributeListSetOrAddAttributeValueByName.Invoke(weapon.AttributeManager.Item.AttributeList.Handle, "kill eater score type", 0);
 
