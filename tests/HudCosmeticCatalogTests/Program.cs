@@ -1,0 +1,20 @@
+using WeaponPaints.Hud;
+var path=Path.Combine(AppContext.BaseDirectory,"cosmetic-metadata.json");var catalog=HudCosmeticCatalog.Load(path);int checks=0;
+void Check(bool value,string message) { if(!value) throw new Exception(message); checks++; }
+Check(catalog.TryGet(8620,out var a) && a.Kind=="agent" && a.Id==5105 && a.Team==2 && a.Model=="tm_leet/tm_leet_variantg","agent economy to exact model");
+var policy=catalog.CreatePolicy(new HashSet<(int,string)>{(2,a.Model!)},new HashSet<int>{1},new HashSet<int>{875});
+Check(policy.Allowed[new(HudCosmeticKind.Agent,2)].Contains(new HudAgentValue(a.Model)),"runtime agent allowed");
+Check(!policy.Allowed[new(HudCosmeticKind.Agent,3)].Contains(new HudAgentValue(a.Model)),"T agent rejected for CT");
+Check(policy.Allowed[new(HudCosmeticKind.Agent,3)].Contains(new HudAgentValue(null)),"default CT agent");
+Check(policy.Allowed[new(HudCosmeticKind.Music,2)].Contains(new HudNumberValue(1)),"runtime music id");
+Check(policy.Allowed[new(HudCosmeticKind.Pin,3)].Contains(new HudNumberValue(875)),"runtime pin id");
+Check(policy.Allowed[new(HudCosmeticKind.Graffiti,0)].Contains(new HudGraffitiValue(1671,0)),"real graffiti kit and tint");
+Check(policy.Allowed[new(HudCosmeticKind.Patch,2)].Contains(new HudNumberValue(4550)),"real patch kit");
+Check(policy.Pets.Count==111 && policy.Pets.Contains(new HudPetIdentity(3,1,0)) && policy.Pets.Contains(new HudPetIdentity(4,3,9)) && !policy.Pets.Contains(new HudPetIdentity(4,3,10)),"site pet model/stage/variant matrix");
+Check(policy.Hats.Count==11 && policy.Hats.Contains("wizard_hat") && policy.Hats.Contains(""),"site pet hats");
+var restricted=catalog.CreatePolicy(new HashSet<(int,string)>(),new HashSet<int>(),new HashSet<int>());
+Check(!restricted.Allowed[new(HudCosmeticKind.Agent,2)].Contains(new HudAgentValue(a.Model)),"missing runtime agent denies");
+Check(!restricted.Allowed[new(HudCosmeticKind.Music,2)].Contains(new HudNumberValue(1)),"missing runtime music denies");
+Check(!restricted.Allowed[new(HudCosmeticKind.Pin,3)].Contains(new HudNumberValue(875)),"missing runtime pin denies");
+Check(!catalog.TryGet(-1,out _),"unknown economy id denied");
+Console.WriteLine($"PASS: {checks} trusted cosmetic metadata checks");

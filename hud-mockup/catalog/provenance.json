@@ -1,0 +1,32 @@
+{
+  "cs2Lib": {
+    "name": "@ianlucas/cs2-lib",
+    "author": "Ian Lucas",
+    "license": "MIT",
+    "repository": "https://github.com/ianlucas/cs2-lib",
+    "baseCommit": "ca9f8d1787e7faf3abd7c7c3158ddbe6d4c7ff71",
+    "modifiedInputs": true,
+    "inputs": {
+      "scripts/data/items.json": "a1cad7be71fc25fe9f6b38d4b6f61c51ad38b0797b02053e8369e470315c9f9a",
+      "src/translations/russian.ts": "e4679f0efe0b42596f910300073dd792cb40d2753d99fc5f41d6eecc2e235158"
+    }
+  },
+  "itemsGame": {
+    "description": "decompiled game schema used for stock resource paths and tint palette",
+    "sha256": "1edea31ef2af0a46d1b38b4e4a6337de534bb61629f4b527137617ef03879fed"
+  },
+  "siteCapabilities": {
+    "description": "4ill site composition-capabilities.json",
+    "version": 1,
+    "buildId": 26445667,
+    "sha256": "645744aa4af61434419c2f80f4e9b6cea188d4d542fe5cd166db555896e8ecf7"
+  },
+  "gameVpkIndex": {
+    "description": "index of installed CS2 pak01_dir.vpk",
+    "sha256": "c1f3cd797bb8d7d2de4bc9c1bd8fa7ddd02fc0934e6aaa1c2a37815a4a4c1204"
+  },
+  "siteWeaponCatalog": {
+    "description": "4ill skins.json authoritative defindex to weapon_name",
+    "sha256": "fe0cbb0bef51f43fddbe54b9803a97e0958efc7b5f189fb0bd51f959dadd67c9"
+  }
+}

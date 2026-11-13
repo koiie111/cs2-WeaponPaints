@@ -84,9 +84,6 @@ ALLOWED_ATTRS = {"id", "class", "hittest", "text", "src", "texturewidth", "textu
 # Properties whose values are a fixed vocabulary, taken from the reference's own descriptions. These
 # are the ones where a web-CSS reflex produces a value Panorama drops without a word.
 KEYWORDS = {
-    # Valve documents pixels, percent, "contains" and "auto" - there is no "cover". Leaving it in
-    # here passed the exact silent fallback the skill warns about.
-    "background-size":  {"contains", "auto"},
     "background-repeat": {"repeat", "space", "round", "no-repeat", "repeat-x", "repeat-y"},
     "overflow":         {"squish", "clip", "scroll", "noclip"},
     "visibility":       {"visible", "collapse"},
@@ -152,9 +149,24 @@ def main() -> int:
         for prop in sorted(used - known):
             failures.append(f"{path.name}: '{prop}' is not a registered Panorama property")
 
-        # Values matter as much as names, and are just as silent when wrong. background-size takes
-        # "contains" where the web takes "contain"; get it wrong and Panorama falls back to "auto",
-        # which draws the image at its original size and overflows the panel.
+        # Retail MINI v5 established singular `contain`; v4 logs prove that
+        # `contains` is rejected. Historical sources remain inspectable with a
+        # warning, but all v6 live sheets reject the invalid legacy spelling.
+        version_match = re.search(r"(?:^|_)v(\d+)\.css$", path.name)
+        is_retail_live = (version_match is not None and int(version_match.group(1)) >= 6) or bool(re.search(r"live-addon-v(?:[6-9]|[1-9][0-9]+)$", _panorama.parent.name))
+        legacy_count = 0
+        for match in re.finditer(r"(?:[{{;]|^)\s*background-size\s*:([^;}}]+)", text, re.M):
+            for layer in match.group(1).split(','):
+                tokens = layer.strip().split()
+                valid_length = lambda token: bool(re.fullmatch(r"(?:0|\d+(?:\.\d+)?(?:px|%))", token))
+                if tokens == ["contains"] and not is_retail_live:
+                    legacy_count += 1
+                elif tokens == ["contain"] or (1 <= len(tokens) <= 2 and all(token == "auto" or valid_length(token) for token in tokens)):
+                    pass
+                else:
+                    failures.append(f"{path.name}: unsupported retail background-size {layer.strip()!r}")
+        if legacy_count:
+            print(f"  {path.name}: WARNING: {legacy_count} legacy `contains` value(s) rejected by tested retail client")
         for prop, allowed in KEYWORDS.items():
             for m in re.finditer(rf'(?:[{{;]|^)\s*{re.escape(prop)}\s*:([^;}}]+)', text, re.M):
                 for word in re.findall(r'[a-z][a-z0-9-]*', m.group(1)):

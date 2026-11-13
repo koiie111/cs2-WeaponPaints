@@ -21,7 +21,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
     public override string ModuleAuthor => "Nereziel & daffyy";
 	public override string ModuleDescription => "Skin, gloves, agents and knife selector, standalone and web-based";
 	public override string ModuleName => "WeaponPaints";
-	public override string ModuleVersion => "3.3a-db7-skins3d.14-wp-refresh";
+	public override string ModuleVersion => "3.3a-db7-skins3d.14-wp-refresh.hud.1";
 
 	internal static long DataGeneration;
 
@@ -115,12 +115,14 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 		Utility.LoadPinsFromFile(ModuleDirectory + $"/data/collectibles_{_config.SkinsLanguage}.json", Logger);
 
 		RegisterListeners();
+		InitializeHud();
 		if (Config.Additional.PetsEnabled) RegisterPetListeners();
         RegisterEventHandler<EventRoundStart>(OnAgentPatchRoundStart);
 	}
 
 	public override void Unload(bool hotReload)
 	{
+		ShutdownHud();
 		try { RestoreAgentOverrides(); }
         catch (Exception error) { Logger.LogWarning(error, "Unable to restore agents before unload"); }
 		_gloveOverrides.Clear();
@@ -193,6 +195,13 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
         if (_menusAndCommandsRegistered) return;
 		try
 		{
+			if (Config.PanoramaHud.Enabled)
+			{
+				RegisterHudMenuAliases();
+				RegisterCommands();
+				_menusAndCommandsRegistered = true;
+				return;
+			}
 			MenuApi = MenuCapability.Get();
 			
 			if (Config.Additional.KnifeEnabled)

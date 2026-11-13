@@ -23,8 +23,9 @@ def main():
     parser.add_argument(
         "--out", type=Path, default=root / "dist" / "weaponpaints_dir.vpk"
     )
+    parser.add_argument("--source-root", type=Path, default=root / "addon", help="explicit authored addon source root")
     args = parser.parse_args()
-    source = root / "addon"
+    source = args.source_root.resolve()
     allowed = {}
     extensions = {".xml": ".vxml_c", ".css": ".vcss_c", ".vtex": ".vtex_c"}
     for ext, compiled_ext in extensions.items():
