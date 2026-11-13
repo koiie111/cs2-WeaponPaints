@@ -1,0 +1,6 @@
+"AddonInfo"
+{
+ "addonversion" "1"
+ "addontitle" "4ill WeaponPaints HUD mockup"
+ "addonauthor" "4ill.ru"
+}

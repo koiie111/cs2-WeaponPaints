@@ -1,0 +1,7 @@
+previews/*.html
+previews/*.png
+!previews/weaponpaints.home.png
+!previews/weaponpaints.finishes.png
+!previews/weaponpaints.settings.png
+previews/ratio*/
+__pycache__/

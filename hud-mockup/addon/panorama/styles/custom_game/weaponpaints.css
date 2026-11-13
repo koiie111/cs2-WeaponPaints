@@ -1,0 +1,179 @@
+
+.outer { font-family: Stratum2; width: 100%; height: 100%; z-index: 99999; }
+.app { width: 1480px; height: 820px; horizontal-align: center; vertical-align: center; visibility: collapse; }
+.app.show { visibility: visible; }
+.app.compact { ui-scale: 80%; }
+.app.small { ui-scale: 65%; }
+.shell { width: 1480px; height: 820px; flow-children: right; background-color: #111d2af5; border: 1px solid #344b5c; }
+.side { width: 235px; height: 820px; flow-children: down; padding: 35px 22px; background-color: #0c1722; }
+.brand { color: #e6f5ff; font-size: 25px; font-weight: bold; margin-bottom: 54px; }
+.nav { width: 190px; height: 42px; padding: 12px 12px; }
+.nav.active { background-color: #203e50; border-left: 3px solid #79c7ef; }
+.nav:hover { background-color: #213a4b; }
+.nav .buttonText { color: #a4b7c4; font-size: 15px; }
+.main { width: 1245px; height: 820px; padding: 28px 42px; flow-children: down; }
+.top { width: 1161px; height: 30px; flow-children: right; }
+.close { width: 36px; height: 32px; background-color: #253744; }
+.close .buttonText { color: #b4c7d2; font-size: 17px; horizontal-align: center; vertical-align: center; }
+.back { width: 28px; height: 34px; }
+.back .buttonText { color: #80c9ef; font-size: 26px; }
+.crumbText { color: #8da6b5; font-size: 13px; margin-top: 8px; }
+.title { color: #eef7fc; font-size: 32px; font-weight: bold; margin-top: 6px; }
+.team { width: 190px; height: 35px; margin-top: 29px; padding: 10px; background-color: #253947; }
+.team .buttonText { color: #bad0dc; font-size: 12px; }
+.pane { visibility: collapse; }
+.is-hidden { visibility: collapse; }
+.home.show, .catalog.show, .settings.show { visibility: visible; }
+.home { width: 1161px; height: 580px; flow-children: down; }
+.mosaicTop { width: 1161px; height: 325px; flow-children: right; }
+.mosaicBottom { width: 1161px; height: 210px; flow-children: right; margin-top: 12px; }
+.mosaic { height: 100%; background-color: #1c3040; border: 1px solid #324b5c; margin-right: 12px; }
+.mosaic.large { width: 475px; }
+.mosaic.small { width: 327px; }
+.mosaicBottom .mosaic.small { width: 277px; }
+.tileTitle { margin: 45px 22px; color: #f0f7fb; font-size: 19px; font-weight: bold; }
+.tileImage { width: 280px; height: 150px; horizontal-align: center; vertical-align: center; }
+.mosaic.large .tileImage { width: 420px; height: 224px; }
+.mosaicBottom .tileImage { width: 230px; height: 123px; margin-top: 44px; }
+.catalog { width: 1161px; height: 585px; flow-children: down; }
+.toolbar { width: 1161px; height: 48px; flow-children: right; }
+.tab { width: 170px; height: 36px; padding: 10px; border-bottom: 2px solid #324b5c; }
+.tab.active { border-bottom: 2px solid #78c7ee; }
+.tab .buttonText { color: #adc3cf; font-size: 12px; font-weight: bold; }
+.search { width: 310px; height: 34px; margin-left: 195px; padding: 9px; background-color: #263b4a; }
+.sort { width: 230px; height: 34px; margin-left: 20px; padding: 9px; background-color: #263b4a; }
+.search .buttonText, .sort .buttonText { color: #aac1ce; font-size: 12px; }
+.hero { width: 1161px; height: 145px; flow-children: right; background-color: #243d4e; margin-bottom: 12px; }
+.heroCopy { width: 650px; padding: 24px; flow-children: down; }
+.heroTitle { color: #f3f8fb; font-size: 26px; font-weight: bold; margin-top: 8px; }
+.heroSub { color: #a4bac8; font-size: 13px; margin-top: 5px; }
+.heroImage { width: 270px; height: 144px; }
+.grid { width: 1161px; height: 310px; flow-children: down; }
+.cardRow { width: 1161px; height: 150px; flow-children: right; margin-bottom: 8px; }
+.item { width: 224px; height: 150px; margin-right: 8px; background-color: #1c3040; border: 1px solid #31495a; }
+.rarity { width: 224px; height: 3px; vertical-align: bottom; background-color: #718998; }
+.selectedMark { visibility: collapse; color: #83d4f7; font-size: 18px; margin: 8px; }
+.item.selected .selectedMark { visibility: visible; }
+.itemImage { width: 186px; height: 112px; horizontal-align: center; }
+.itemName { color: #ecf4f8; font-size: 13px; font-weight: bold; margin: 103px 12px 0px 12px; }
+.itemSub { color: #7893a3; font-size: 10px; margin: 123px 12px 0px 12px; }
+.catalogFooter { width: 1161px; height: 45px; flow-children: right; padding-top: 10px; }
+.muted { color: #829ba9; font-size: 12px; }
+.catalogFooter .muted { width: 1000px; }
+.page { width: 30px; height: 26px; background-color: #263b4a; }
+.page .buttonText, .pageNumber { color: #c8dbe5; font-size: 14px; horizontal-align: center; }
+.pageNumber { width: 70px; text-align: center; }
+.settings { width: 1161px; height: 585px; flow-children: right; }
+.previewColumn { width: 585px; height: 560px; flow-children: down; background-color: #1c3040; padding: 24px; }
+.previewImage { width: 530px; height: 318px; margin-top: 40px; }
+.previewName { color: #f0f7fb; font-size: 22px; font-weight: bold; margin-top: 30px; margin-bottom: 10px; }
+.settingsRight { width: 550px; height: 565px; margin-left: 24px; flow-children: down; }
+.sectionTitle { color: #eff7fb; font-size: 20px; font-weight: bold; }
+.settingsRight .muted { margin-top: 5px; margin-bottom: 10px; }
+.settingRow { width: 550px; height: 57px; flow-children: right; border-bottom: 1px solid #31495a; }
+.settingLabel { color: #dbe9f0; font-size: 14px; }
+.settingValue { width: 220px; height: 34px; margin-top: 11px; padding: 10px; background-color: #263e4e; }
+.settingValue .buttonText { color: #cde4ef; font-size: 12px; }
+.valueControls { width: 220px; height: 34px; margin-top: 11px; flow-children: right; }
+.step { width: 34px; height: 34px; padding: 8px; background-color: #304d5e; }
+.step .buttonText { color: #cde4ef; font-size: 14px; }
+.valueInput { width: 152px; height: 34px; padding: 9px; background-color: #263e4e; }
+.valueInput .buttonText { color: #cde4ef; font-size: 12px; }
+.presetRow { width: 550px; height: 32px; flow-children: right; margin-top: 7px; }
+.preset { width: 53px; height: 25px; padding: 6px; margin-right: 5px; background-color: #304d5e; }
+.preset .buttonText { color: #cde4ef; font-size: 10px; }
+.decorRow { width: 550px; height: 55px; flow-children: right; margin-top: 10px; }
+.decorSlot { width: 62px; height: 45px; margin-right: 8px; background-color: #263e4e; }
+.decorSlot .buttonText { color: #9ebac9; font-size: 15px; horizontal-align: center; vertical-align: center; }
+.feature { width: 550px; height: 500px; flow-children: down; visibility: collapse; }
+.feature.show { visibility: visible; }
+.featureRow { width: 550px; height: 45px; flow-children: right; margin-bottom: 6px; background-color: #1e3240; }
+.featureLabel { width: 275px; color: #a6bdc9; font-size: 13px; margin: 13px 10px; }
+.featureInput { width: 150px; height: 34px; padding: 9px; background-color: #263e4e; }
+.featureInput .buttonText { color: #cde4ef; font-size: 12px; }
+.applyRow { width: 550px; height: 70px; flow-children: right; }
+.apply { width: 220px; height: 44px; padding: 14px; background-color: #73bfe5; }
+.apply .buttonText { color: #0a2635; font-size: 12px; font-weight: bold; }
+.apply.disabled { background-color: #465966; }
+.plus { width: 310px; margin-left: 10px; height: 66px; padding: 10px; flow-children: down; background-color: #263d4d; visibility: collapse; }
+.plus.show { visibility: visible; }
+.plusTitle { color: #9bdaf8; font-size: 11px; font-weight: bold; }
+.plusLink .buttonText { color: #87ccee; font-size: 11px; }
+.overlay { ignore-parent-flow: true; horizontal-align: center; vertical-align: center; width: 520px; height: 200px; padding: 25px; flow-children: down; background-color: #233b4c; visibility: collapse; }
+.overlay.show { visibility: visible; }
+.stateText { color: #acc2ce; font-size: 14px; margin-top: 18px; }
+.overlayActions { flow-children: right; margin-top: 25px; }
+.stateButton { width: 140px; height: 34px; padding: 9px; margin-right: 10px; background-color: #42677d; }
+.stateButton .buttonText { color: #e9f6fc; font-size: 12px; }
+.finishes { background-image: url("s2r://materials/weaponpaints/finishes.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank { background-image: url("s2r://materials/weaponpaints/catalog.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+
+.side { width: 260px; padding: 32px 20px; }
+.brand { font-size: 18px; margin-bottom: 34px; letter-spacing: 1px; }
+.title, .tileTitle, .heroTitle, .nav .buttonText { letter-spacing: 1px; }
+.nav .buttonText { font-size: 15px; font-weight: bold; }
+.nav { width: 220px; height: 44px; }
+.main { width: 1220px; padding: 20px 32px; }
+.top { width: 1156px; height: 64px; flow-children: right; }
+.top .back { margin-top: 8px; }
+.top .crumbText { width: 170px; margin-top: 13px; }
+.top .title { width: 700px; font-size: 23px; margin-top: 7px; }
+.top .team { width: 190px; margin-top: 6px; }
+.top .close { margin-left: 15px; margin-top: 6px; }
+.close { horizontal-align: right; }
+.title { font-size: 25px; margin-top: 0px; }
+.team { margin-top: 0px; }
+.home { width: 1156px; height: 700px; }
+.mosaicTop { width: 1156px; height: 460px; }
+.mosaicStack { width: 555px; height: 460px; flow-children: down; }
+.mosaic.large { width: 589px; height: 460px; margin-right: 12px; }
+.mosaic.wide { width: 555px; height: 224px; margin-right: 0px; margin-bottom: 12px; }
+.mosaicBottom { width: 1156px; height: 190px; margin-top: 12px; }
+.mosaicBottom .mosaic.small { width: 280px; height: 190px; }
+.mosaic { background-color: gradient( linear, 0% 0%, 100% 100%, from( #303d49 ), to( #24323e ) ); border: 1px solid #314654; }
+.categoryStripe { width: 100%; height: 3px; vertical-align: bottom; background-color: #719dde; }
+.tileTitle { margin: 0px 22px 22px 22px; font-size: 24px; vertical-align: bottom; }
+.tileImage { width: 340px; height: 204px; horizontal-align: center; vertical-align: center; }
+.mosaic.large .tileImage { width: 570px; height: 342px; }
+.mosaic.large .tileTitle { font-size: 32px; }
+.mosaic.large { background-color: gradient( linear, 0% 0%, 100% 100%, from( #364351 ), to( #563e47 ) ); }
+.mosaic.wide { background-color: gradient( linear, 0% 0%, 100% 100%, from( #33414c ), to( #404157 ) ); }
+.mosaic.wide .tileImage { width: 310px; height: 186px; horizontal-align: right; margin-right: 30px; }
+.mosaicBottom .tileImage { width: 220px; height: 132px; margin-top: 0px; }
+.catalog { height: 660px; }
+.hero { height: 225px; flow-children: right; }
+.heroCopy { width: 451px; height: 225px; padding: 18px 28px; flow-children: down; background-color: #111e29; }
+.heroArt { width: 710px; height: 225px; overflow: clip; }
+.heroImage { width: 560px; height: 336px; horizontal-align: center; margin-top: -55px; }
+.heroValue { color: #9eb1be; font-size: 12px; margin-top: 5px; }
+.heroTitle { font-size: 26px; }
+.heroSub { font-size: 13px; margin-top: 12px; }
+.configure { width: 145px; height: 32px; margin-top: 8px; padding: 11px; background-color: #76bfe5; }
+.configure .buttonText { color: #112939; font-size: 12px; font-weight: bold; }
+.settings { height: 660px; }
+.previewColumn { height: 620px; }
+.previewImage { margin-top: 55px; }
+.settingsRight { height: 620px; padding-top: 0px; }
+.settingRow { height: 53px; border: 1px solid #3b4b58; margin-bottom: 6px; padding-left: 12px; }
+.settingLabel { width: 275px; margin-top: 17px; font-size: 13px; font-weight: bold; color: #a2b4bf; }
+.settingValue, .valueControls { margin-top: 9px; }
+.presetRow { height: 32px; margin-top: 0px; }
+.bank-gloves { background-image: url("s2r://materials/weaponpaints/gloves.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-agents { background-image: url("s2r://materials/weaponpaints/agents.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-music { background-image: url("s2r://materials/weaponpaints/music.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-pins { background-image: url("s2r://materials/weaponpaints/pins.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-charm { background-image: url("s2r://materials/weaponpaints/charm.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-stickers { background-image: url("s2r://materials/weaponpaints/stickers.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-knives { background-image: url("s2r://materials/weaponpaints/knives.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-custom { background-image: url("s2r://materials/weaponpaints/custom.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.bank-pet { background-image: url("s2r://materials/weaponpaints/pet.vtex"); background-size: 500% 200%; background-repeat: no-repeat; }
+.cell0 { background-position: 0% 0%; }
+.cell1 { background-position: 25% 0%; }
+.cell2 { background-position: 50% 0%; }
+.cell3 { background-position: 75% 0%; }
+.cell4 { background-position: 100% 0%; }
+.cell5 { background-position: 0% 100%; }
+.cell6 { background-position: 25% 100%; }
+.cell7 { background-position: 50% 100%; }
+.cell8 { background-position: 75% 100%; }
+.cell9 { background-position: 100% 100%; }
