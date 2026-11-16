@@ -7,7 +7,7 @@ internal enum HudSection { Weapons, Knives, Gloves, Agents, Music, Pins, Graffit
 internal enum HudSize { Normal, Compact, Small }
 internal enum HudFeatureKind { None, Sticker, Charm, Slab, AgentPatches, Custom, Pet, Cosmetic }
 
-internal sealed record HudImage(int Bank, int Cell, int? Tint = null, bool CustomAtlas = false, bool PetIcon = false);
+internal sealed record HudImage(int Bank, int Cell, int? Tint = null, bool CustomAtlas = false, bool PetIcon = false, int? CustomIndex = null);
 internal sealed record HudCard(string Name, string Subtitle, HudImage? Image, string? Rarity, bool Equipped = false, string? EquippedLabel = null);
 internal sealed record HudHero(string Title, string Subtitle, string Wear, string Seed, string StatTrak,
     HudImage? Image, string? Rarity);

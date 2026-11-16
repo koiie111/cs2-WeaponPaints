@@ -5,8 +5,9 @@ the native-client acceptance and controller review are complete.
 
 `PanoramaHud.Enabled` defaults to `false`. When enabled, `css_whud` opens the
 HUD and `css_whud_scale normal|compact|small` selects its scale for the current
-session. The V8 layout and its matching contract and companion stock stylesheet must be
-available to the client. A browser approximation is not a native-client test.
+session. The V9 layout and its matching contract and companion stock stylesheet must be
+available to the client. V9 has been compiled offline and has not been accepted
+in the native client. A browser approximation is not a native-client test.
 
 `PanoramaHud.CustomWeaponsIntegration` defaults to `required`. In that mode a
 compatible, ready CustomWeapons HUD capability and matching database identity
@@ -31,12 +32,20 @@ retry of reconciliation and native refresh only; they do not repeat the save.
 For a two-team CustomWeapons selection, reconciliation confirms the player's
 current team; the other team's selection remains saved for that team. Its live
 application still requires native verification. A timeout does not prove that a
-later native operation cannot finish.
+later native operation cannot finish. Transient deferred refresh results use
+bounded 1/2/4/5-second backoff until the phase deadline; terminal failures do
+not retry and retries never repeat the committed SQL save.
 
 `PanoramaHud.DiagnosticsEnabled` defaults to `false`. When enabled, server
 console command `wp_hud_diag` reports a bounded sample of actual native drain
 durations and write counts. The sampler runs only for pending HUD frames; it is
 not an idle tick listener. Full performance and player-load acceptance remain pending.
+The same command includes aggregate Apply stage/outcome counts, the latest
+trace phase and validation reason, and separate store/CW/refresh timings. The
+`last_refresh_failure_mask` bits are music=1, pet=2, agent=4, equipment=8,
+pin=16, other/unknown=32; zero means no recorded subsystem failure. A count
+does not prove a particular in-game appearance. Diagnostics do not include
+player identities, item values, SQL text or raw error messages.
 
 Current known limitations include controller/game-host tests, real-client
 layout validation, complete feature behavior and native confirmation of refresh.
@@ -62,14 +71,19 @@ identified `NETWORK_DISCONNECT_STEAM_LOGON (2009)`; its underlying cause and any
 relationship to the test tooling remain undetermined. No real HUD Apply was
 performed during that 13 November checkpoint.
 
-On 16 November the owner confirmed that the V7 HUD and the AK-47 menu opened in
-the native client and exercised a real Apply. The owner reported an unhelpful
-deferred-application message and an invalid-parameters case. The subsequent V8
-contract, DTO, validation and refresh-handshake fixes are source-only and have
-not been deployed or accepted in a native client. Server 11 was restored to its
-original public configuration and plugin binaries; the temporary profiler was
-removed and the ten account changes made during testing were restored, with
-StatTrak progress preserved.
+On 16 November the owner opened V7 and V8 in the native client. During the V8
+trial the owner reported a successful AK-47 T-side apply and a successful
+Glock apply for both teams with StatTrak, a third sticker and a charm. The owner
+also reported intermittent cases where settings were saved but the visible item
+was not updated; this remains unresolved and Apply is not accepted as complete.
+After that trial eight scoped account differences were restored and server 11
+returned to its original public configuration (final audit prefix `24982`). No
+CSSProfiler measurement was taken during the V8 trial.
+
+V9 adds the preview rarity line, a larger 4ill+ card and 19 custom images from
+editor renders. Its 512×308 BC7 textures total 582,499 bytes in the offline package;
+this is not a measurement of client memory or native visual quality. V9 has not
+been published or tested in-game.
 
 On 16 November, one 10-second instrumented window was recorded for each of HUD
 closed, open and idle, and closed again, on the same process with the owner

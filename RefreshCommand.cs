@@ -179,6 +179,8 @@ public partial class WeaponPaints
             return;
         }
         _commandRefreshes.Remove(state.Slot);
+        if (!success && !deferred && state.Completions.Count > 0)
+            RecordHudRefreshFailures(state.Slot, state.SteamId, state.Controller, failures);
         CompleteHudRefreshCallbacks(state, deferred ? HudRefreshOutcome.Deferred : success ? HudRefreshOutcome.Applied : HudRefreshOutcome.Failed);
         if (state.Quiet) return;
         if (deferred)

@@ -35,6 +35,12 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             foreach (var name in contract.AuthoredClasses(panel).Where(x => x.StartsWith("art-", StringComparison.Ordinal)))
                 Class(panel, name, false);
             if (image == null) return;
+            if (image.CustomIndex is { } customIndex)
+            {
+                if (customIndex is < 0 or > 18) throw new InvalidDataException("Invalid custom art index");
+                Class(panel, "art-custom-" + customIndex);
+                return;
+            }
             if (image.CustomAtlas) { Class(panel, "art-custom-0"); return; }
             if (image.PetIcon) { Class(panel, "art-pet-0"); return; }
             if (image.Bank is < 0 or > 255 || image.Cell is < 0 or > 255 || image.Tint is < 0 or > 19)

@@ -125,6 +125,10 @@ Check(wp.HudOutcomes.Count==0, "HUD cannot report success before native completi
 wp.FinishEquipment(true); Check(wp.HudOutcomes.SequenceEqual(new[]{"Applied"}) && !player.Messages.Contains("done"), "HUD completion must report applied once without legacy chat");
 wp.Sync.Reset(); wp.HudOutcomes.Clear(); wp.HudCommand(player); wp.Sync.Complete(false); await wp.Active!; Server.Flush();
 Check(wp.HudOutcomes.SequenceEqual(new[]{"Failed"}), "HUD must report refresh failure separately");
+wp.Sync.Reset(); wp.HudOutcomes.Clear(); wp.HudFailureReports.Clear(); wp.HudCommand(player);
+wp.Sync.Complete(true); await wp.Active!; Server.Flush(); wp.FinishEquipment(false);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Failed"}) && wp.HudFailureReports.Count==1
+    && wp.HudFailureReports[0]!.Contains("оружие и перчатки"), "HUD failure diagnostics must receive the actual failed subsystem");
 wp.Config.Additional.SkinEnabled=false; wp.Config.Additional.AgentEnabled=false; wp.HudOutcomes.Clear(); wp.Events.Clear(); wp.Sync.Reset();
 wp.HudCosmetic(player); Check(wp.Sync.Calls==1, "cosmetic-only HUD refresh must work with skins disabled");
 wp.Sync.Complete(true); await wp.Active!; Server.Flush();
@@ -165,6 +169,8 @@ namespace WeaponPaints {
   internal bool TryResolve(out CCSPlayerController current){current=player;return player.IsValid && player.SteamID==steam;}
  }
  public partial class WeaponPaints {
+  public readonly List<IReadOnlyList<string>?> HudFailureReports=[];
+  private void RecordHudRefreshFailures(int slot,ulong steam,uint controller,IReadOnlyList<string>? failures) => HudFailureReports.Add(failures);
   public ConfigData Config=new();public bool _gBCommandsAllowed=true;public static System.Collections.Concurrent.ConcurrentDictionary<int,long> PlayerDataLoading=new();
   public static Dictionary<int,Dictionary<int,int>> GPlayersMusic=new(),GPlayersPin=new();
   public static Dictionary<int, Dictionary<int, Dictionary<int, object>>> GPlayerWeaponsInfo = new();

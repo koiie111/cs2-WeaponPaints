@@ -25,6 +25,19 @@ Check((int)Get(certainty,"Count")! == 0,"map teardown removes all deferred owner
 Check(((int[])Call(null,typeof(WeaponPaints.WeaponPaints),"HudTeams",0)!).SequenceEqual(new[]{2,3}),"both filter checks both sides");
 Check(((int[])Call(null,typeof(WeaponPaints.WeaponPaints),"HudTeams",2)!).SequenceEqual(new[]{2}),"single team filter checks only that side");
 var plugin=RuntimeHelpers.GetUninitializedObject(typeof(WeaponPaints.WeaponPaints));
+using(var customManifest=System.Text.Json.JsonDocument.Parse(File.ReadAllText("hud-mockup/catalog/custom-art-v9.json")))
+{
+    var entries=customManifest.RootElement.GetProperty("entries");
+    Check(entries.GetArrayLength()==19,"all configured custom-model images are present");
+    foreach(var entry in entries.EnumerateArray())
+    {
+        var weapon=entry.GetProperty("weapon").GetString()!;var customModel=entry.GetProperty("model").GetString()!;var index=entry.GetProperty("index").GetInt32();
+        var art=Call(null,plugin.GetType(),"HudCustomImage",weapon,customModel);
+        Check(art!=null && (int)Get(art,"CustomIndex")! == index,"custom artwork must match the exact weapon and model ID");
+        Check(Call(null,plugin.GetType(),"HudCustomImage","weapon_unknown",customModel)==null,"custom artwork must reject wrong weapon identity");
+    }
+    Check(Call(null,plugin.GetType(),"HudCustomImage","weapon_ak47","unknown")==null,"unknown custom model uses fallback");
+}
 var nativeType=T("HudSessionCoordinator").GetNestedType("Session",flags)!;
 var native=RuntimeHelpers.GetUninitializedObject(nativeType);
 var sessionType=typeof(WeaponPaints.WeaponPaints).GetNestedType("HudControllerSession",flags)!;

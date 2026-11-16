@@ -1,0 +1,22 @@
+using WeaponPaints.Hud;
+static void Check(bool value,string message){if(!value)throw new Exception(message);}
+var m=new HudMetrics();
+Check(m.BeginApply(false)==0,"disabled diagnostics must not start a trace");
+m.RecordApply(false,HudApplyPhase.StoreError);m.RecordRefreshFailures(false,0,["weapon-private-value"]);
+Check(m.ApplyPhaseCount(HudApplyPhase.StoreError)==0 && m.ApplyPhaseCount(HudApplyPhase.RefreshFailOther)==0,"disabled diagnostics must not record events");
+var cold=m.BeginApply(true);m.RecordApply(true,HudApplyPhase.StoreStarted,cold);m.RecordApply(true,HudApplyPhase.StoreSaved,cold);
+m.RecordApply(true,HudApplyPhase.CwStarted,cold);m.RecordApply(true,HudApplyPhase.CwSucceeded,cold);
+m.RecordApply(true,HudApplyPhase.RefreshStarted,cold);m.RecordRefreshFailures(true,cold,["оружие и перчатки","значок","private-value"]);
+m.RecordApply(true,HudApplyPhase.RefreshFailed,cold);
+var first=m.ApplyDiagnostics();
+Check(first.Contains("apply_clickaccepted=1") && first.Contains("apply_storesaved=1") && first.Contains("apply_refreshfailed=1"),"cold phase counts missing");
+Check(first.Contains("last_apply_phase=RefreshFailed") && first.Contains("last_refresh_failure_mask=56"),"bounded subsystem codes missing");
+Check(first.Contains("last_store_ms=") && first.Contains("last_cw_ms=") && first.Contains("last_refresh_ms=") && !first.Contains("private-value"),"timing fields or privacy guard missing");
+var warm=m.BeginApply(true);m.RecordApply(true,HudApplyPhase.ValidationRejected,warm,HudSkinValidationIssue.StickerPosition);
+m.RecordApply(true,HudApplyPhase.CwTimeout,cold);
+var last=m.ApplyDiagnostics();
+Check(last.Contains("apply_clickaccepted=2") && last.Contains("last_apply_phase=ValidationRejected") && last.Contains("last_apply_reason=StickerPosition"),"stale callback overwrote newest trace or field reason missing");
+Check(last.Contains("last_refresh_failure_mask=0"),"previous trace leaked subsystem result");
+Parallel.For(0,1000,_=>m.RecordApply(true,HudApplyPhase.ClickBlocked));
+Check(m.ApplyPhaseCount(HudApplyPhase.ClickBlocked)==1000,"concurrent aggregate events were lost");
+Console.WriteLine("PASS: diagnostics off, phase outcomes, timings, bounded reasons, stale trace and concurrent counters");

@@ -1,6 +1,6 @@
 using WeaponPaints.Hud;
 static void Check(bool value, string message) { if (!value) throw new Exception(message); }
-var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v8.json");
+var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v9.json");
 var renderer = new HudRenderer(contract);
 var image0 = new HudWriteKey(false,"image_0","art-finishes-0");
 Check(contract.Authored(image0)=="1" && contract.Authored(new(false,"tab_standard","active"))=="1", "authored classes missing");
@@ -15,6 +15,15 @@ Check(Val(false,"item_0","tier-d32ce6")=="1" && Val(false,"item_0","selected")==
 Check(Val(true,"wp_root","sub_0")=="Установлен", "equipped label missing");
 var oneTeam = renderer.Render(view with { Cards=[card with { EquippedLabel="Установлен · CT" }] });
 Check(oneTeam.GetValueOrDefault(new(true,"wp_root","sub_0"))=="Установлен · CT", "team-specific label missing");
+var custom = renderer.Render(view with { Cards=[card with { Image=new HudImage(0,0,CustomIndex:18) }] });
+Check(custom.GetValueOrDefault(new(false,"image_0","art-custom-18"))=="1", "custom art index missing");
+var customQueue = new HudDeltaQueue(contract.Authored); customQueue.Replace(custom);
+while (customQueue.TryPeek(out var customWrite)) customQueue.Commit(customWrite);
+customQueue.Replace(renderer.Render(view)); var customChanges=new List<HudWrite>();
+while (customQueue.TryPeek(out var customWrite)) { customChanges.Add(customWrite); customQueue.Commit(customWrite); }
+Check(customChanges.Any(w=>w.Key==new HudWriteKey(false,"image_0","art-custom-18") && w.Value=="0"), "old custom art did not clear");
+try { renderer.Render(view with { Cards=[card with { Image=new HudImage(0,0,CustomIndex:19) }] }); throw new Exception("invalid custom art index accepted"); }
+catch (InvalidDataException) { }
 var preview = renderer.Render(view with { Cards=[card with { Equipped=false }], Hero=view.Hero! with { Title="Preview only" } });
 Check(preview.GetValueOrDefault(new(false,"item_0","selected")) != "1" && preview.Values.Contains("Preview only"), "preview must not acquire an equipped marker");
 Check(Val(false,"item_1","is-hidden")=="1" && Val(true,"wp_root","hero_seed")=="Паттерн: 123", "empty cell or hero label wrong");

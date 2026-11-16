@@ -9,6 +9,7 @@ internal sealed record HudCustomState(int ServerId, HudDatabaseIdentity Database
     IReadOnlyDictionary<string, string> Names, string Fingerprint, bool Supported, object Bridge);
 internal sealed record HudCustomPrefetch(HudDatabaseIdentity Database, int ServerId, long Generation,
     IReadOnlyDictionary<string, HudCustomState> Weapons, IReadOnlyList<HudCustomProductSpec> Products);
+internal enum HudCustomRefreshOutcome { Reconciled, Deferred, Failed }
 
 // Isolated from normal plugin startup. The caller may invoke this only for an
 // enabled HUD and must handle missing shared API assemblies as unavailable.
@@ -89,17 +90,31 @@ internal static class HudCustomBridge
     internal static bool IsCurrent(HudCustomPrefetch state) => state.Generation == HudBridgeRegistry.Instance.Generation;
 
     internal static void Refresh(HudCustomState state, HudViewerStamp owner, int team, string expected,
-        Action<bool> callback)
+        Action<HudCustomRefreshOutcome> callback)
     {
-        bool StillSame()
+        HudCustomRefreshOutcome CheckState()
         {
-            var fresh = Snapshot(state.Weapon, state.Definition);
-            return fresh != null && fresh.Generation == state.Generation && fresh.ServerId == state.ServerId && fresh.Database == state.Database
+            var bridge = Get();
+            if (!ReferenceEquals(bridge, state.Bridge) || !ReferenceEquals(bridge, HudBridgeRegistry.Instance)
+                || state.Generation != HudBridgeRegistry.Instance.Generation) return HudCustomRefreshOutcome.Failed;
+            var snapshot = bridge!.GetSnapshot();
+            if (state.Generation != HudBridgeRegistry.Instance.Generation) return HudCustomRefreshOutcome.Failed;
+            if (!snapshot.Loaded || !snapshot.MapReady || !snapshot.DatabaseReady) return HudCustomRefreshOutcome.Deferred;
+            var fresh = BuildSnapshot(bridge, snapshot, state.Generation, state.Weapon, state.Definition);
+            var same = fresh != null && fresh.Generation == state.Generation && fresh.ServerId == state.ServerId && fresh.Database == state.Database
                 && fresh.Supported == state.Supported && fresh.Fingerprint == state.Fingerprint && fresh.Models.Count == state.Models.Count
                 && fresh.Models.All(pair => state.Models.TryGetValue(pair.Key, out var model) && model == pair.Value);
+            return same ? HudCustomRefreshOutcome.Reconciled : HudCustomRefreshOutcome.Failed;
         }
-        if (!StillSame()) { callback(false); return; }
+        var initial = CheckState();
+        if (initial != HudCustomRefreshOutcome.Reconciled) { callback(initial); return; }
         ((IHudBridge)state.Bridge).RequestRefresh(new HudRefreshRequest(owner.Slot, owner.SteamId, owner.Controller,
-            team, state.Weapon, expected), result => callback(result == HudRefreshResult.Reconciled && StillSame()));
+            team, state.Weapon, expected), result =>
+            {
+                if (result is HudRefreshResult.Error or HudRefreshResult.Superseded) { callback(HudCustomRefreshOutcome.Failed); return; }
+                var current = CheckState();
+                callback(current != HudCustomRefreshOutcome.Reconciled ? current
+                    : result == HudRefreshResult.Reconciled ? HudCustomRefreshOutcome.Reconciled : HudCustomRefreshOutcome.Deferred);
+            });
     }
 }

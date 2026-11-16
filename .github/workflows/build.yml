@@ -64,6 +64,14 @@ jobs:
         run: dotnet run --project tests/FinishCacheTests/FinishCacheTests.csproj -c Release
       - name: Command refresh coordination checks
         run: dotnet run --project tests/RefreshCommandTests/RefreshCommandTests.csproj -c Release
+      - name: HUD bounded retry checks
+        run: dotnet run --project tests/HudRetryPolicyTests/HudRetryPolicyTests.csproj -c Release
+      - name: HUD apply diagnostics checks
+        run: dotnet run --project tests/HudMetricsTests/HudMetricsTests.csproj -c Release
+      - name: HUD CustomWeapons bridge checks
+        run: dotnet run --project tests/HudCustomBridgeTests/HudCustomBridgeTests.csproj -c Release
+      - name: HUD controller checks
+        run: dotnet run --project tests/HudControllerTests/HudControllerTests.csproj -c Release
       - name: StatTrak event checks
         run: dotnet run --project tests/StatTrakEventTests/StatTrakEventTests.csproj -c Release
       - name: Music and pin controller checks
