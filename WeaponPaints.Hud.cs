@@ -93,7 +93,7 @@ public partial class WeaponPaints
         }
         try
         {
-            _hudContract = HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", "hud-live-contract-v6.json"));
+            _hudContract = HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", HudSurface.ContractFile));
             _hudRenderer = new HudRenderer(_hudContract);
             _hudSurface = new HudSurface();
             _hudCoordinator = new HudSessionCoordinator(new HudGameSurface(_hudSurface, () => DataGeneration),
@@ -136,7 +136,11 @@ public partial class WeaponPaints
             if (!Config.PanoramaHud.DiagnosticsEnabled) { command.ReplyToCommand("HUD diagnostics disabled"); return; }
             var metrics = _hudMetrics.Snapshot();
             var ticksToMs = 1000d / System.Diagnostics.Stopwatch.Frequency;
+            var catalogCount = _hudCatalog?.Count ?? 0;
+            var ready = catalogCount > 0 && _hudCosmetics != null && _hudCosmeticPolicy != null
+                && _hudContract != null && _hudRenderer != null && _hudSurface != null && _hudCoordinator != null;
             command.ReplyToCommand((_hudCoordinator?.DrainSummary() ?? "HUD unavailable")
+                + $" ready={(ready ? 1 : 0)} catalog_count={catalogCount} layout={HudSurface.Layout} contract={HudSurface.ContractFile}"
                 + FormattableString.Invariant($" render_count={metrics.RenderCount} render_max_ms={metrics.RenderMaxTicks * ticksToMs:F3} apply_count={metrics.ApplyCount} apply_max_ms={metrics.ApplyMaxTicks * ticksToMs:F3}"));
         });
         AddCommand("css_whud_scale", "HUD scale: normal, compact, small", (player, command) =>

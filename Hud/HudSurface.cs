@@ -9,7 +9,9 @@ namespace WeaponPaints.Hud;
 /// <summary>Owns only its own entity. Every method is called on the game thread.</summary>
 internal sealed class HudSurface
 {
-    internal const string Layout = "panorama/layout/custom_game/weaponpaints_v7.vxml_c";
+    internal const string ResourceVersion = "7";
+    internal const string Layout = "panorama/layout/custom_game/weaponpaints_v" + ResourceVersion + ".vxml_c";
+    internal const string ContractFile = "hud-live-contract-v" + ResourceVersion + ".json";
     internal const string Root = "wp_root";
     private CCSCustomHudLayout? _entity;
     private int _captureScanTick = -1;

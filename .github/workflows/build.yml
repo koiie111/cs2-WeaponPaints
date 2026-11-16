@@ -38,6 +38,8 @@ jobs:
         run: dotnet restore WeaponPaints.csproj
       - name: Build
         run: dotnet build WeaponPaints.csproj --no-restore -c Release -o build/WeaponPaints
+      - name: Runtime HUD layout and packaged contract
+        run: python3 tests/check_hud_runtime_contract.py --output build/WeaponPaints
       - name: Pet lifecycle regression checks
         run: dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release
       - name: Pet refresh and entitlement checks
