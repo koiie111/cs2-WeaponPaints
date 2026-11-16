@@ -30,7 +30,7 @@ namespace WeaponPaints {
  internal sealed class WeaponPaintsConfig { public Additional Additional=new(); }
  internal static class Utility { internal static readonly ConcurrentQueue<string> Messages=new(); internal static void Log(string message) { Messages.Enqueue(message); Console.WriteLine(message); } }
  public sealed partial class WeaponPaints {
- bool HasWeaponOverride(CCSPlayerController player,CBasePlayerWeapon weapon)=>true;
+ bool HasWeaponOverride(CounterStrikeSharp.API.Core.CCSPlayerController player,CounterStrikeSharp.API.Core.CBasePlayerWeapon weapon)=>true;
   internal static readonly WeaponPaints Instance=new(); public ILogger Logger=>NullLogger.Instance;
   private sealed class AttributeSetter { internal void Invoke(nint handle,string name,float value) { } }
   private static readonly AttributeSetter CAttributeListSetOrAddAttributeValueByName=new();

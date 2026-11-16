@@ -176,6 +176,8 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
                         {
                             await NativeInventoryStore.ResetAsync(connection, transaction, actual.Key.SteamId, actual.Key.Team, actual.Key.Definition,
                                 actual.Key.EquipmentKind == HudEquipmentKind.Knife ? "knife" : actual.Key.EquipmentKind == HudEquipmentKind.Glove ? "glove" : "weapon");
+                            if (first.CustomSupported && !await WriteCustomSelectionAsync(connection, transaction, actual, "", cancellationToken).ConfigureAwait(false))
+                                return await Rollback(transaction, HudApplyResult.Conflict).ConfigureAwait(false);
                             continue;
                         }
                         if (plans[i] is { Columns.Count: > 0 } patch)

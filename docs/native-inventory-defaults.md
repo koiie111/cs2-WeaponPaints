@@ -1,6 +1,6 @@
 # Native inventory defaults
 
-Stacked on PR #7 (`codex/weaponpaints-panorama-hud`, 5c61829). No deployment or merge.
+Stacked on PR #7 (`codex/weaponpaints-panorama-hud`, 6c32058). No deployment or merge.
 
 Ordinary weapons with paint 0 use the native item, even when legacy decoration fields are populated. A chosen nonstandard knife model with paint 0 remains an explicit bare-model override. Knife/glove resets mask team-0 choices. All native economy writes are gated before item identity changes. Snapshots retain both attribute vectors as managed values, including raw float payloads and original identity. Unknown attribute IDs refuse customization rather than erase an attribute we cannot restore. Dropped items cannot adopt another player's snapshot. Virtual counters require a tracked override.
 
