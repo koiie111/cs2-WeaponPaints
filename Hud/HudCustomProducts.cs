@@ -52,6 +52,20 @@ internal sealed class HudCustomProducts
     {
         try { await using var connection=await pending.ConfigureAwait(false); } catch { /* Observe abandoned connection failure. */ }
     }
-    private sealed record ProductRow(string Model,string? Name,int? Active,decimal? Price,int? EventOnly);
-    private sealed record GrantRow(string Model,long Expires);
+    // Dapper property mapping converts MySQL numeric field widths; positional
+    // constructors require an exact provider signature and fail on TINYINT/INT.
+    // Record value equality keeps duplicate identical catalogue rows equivalent.
+    private sealed record ProductRow
+    {
+        public string Model { get; set; } = "";
+        public string? Name { get; set; }
+        public int? Active { get; set; }
+        public decimal? Price { get; set; }
+        public int? EventOnly { get; set; }
+    }
+    private sealed record GrantRow
+    {
+        public string Model { get; set; } = "";
+        public long Expires { get; set; }
+    }
 }
