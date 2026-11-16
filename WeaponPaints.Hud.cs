@@ -1,6 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using WeaponPaints.Hud;
@@ -54,6 +55,8 @@ public partial class WeaponPaints
     }
 
     private readonly Dictionary<int, HudControllerSession> _hudSessions = [];
+    // A committed write followed by a deferred/failed refresh cannot establish the applied loadout.
+    private readonly HudLoadoutCertainty _hudUnconfirmedSlots = new();
     private HudSurface? _hudSurface;
     private HudSessionCoordinator? _hudCoordinator;
     private HudCatalog? _hudCatalog;
@@ -854,7 +857,7 @@ public partial class WeaponPaints
         ((session.Feature == HudFeatureKind.Pet ? session.PetTouched : session.CosmeticChanges?.Any(HudCosmeticChanged) == true)
         || session.Snapshots is { } snapshots && session.Drafts is { } drafts && snapshots.Length == drafts.Length
         && snapshots.Where((snapshot, i) => !HudSkinCodec.Decode(snapshot).Draft.SameAppearance(drafts[i])
-            || snapshot.Key.CustomSupported && snapshot.Custom?.SourceTeam != snapshot.Key.Team
+            || snapshot.Key.CustomSupported && snapshot.Custom is { } custom && custom.SourceTeam != snapshot.Key.Team
             || drafts[i].CustomModel == null && snapshot.Key.EquipmentKind switch
             {
                 HudEquipmentKind.Knife => snapshot.Equipment != snapshot.Key.Weapon,
@@ -1172,6 +1175,7 @@ public partial class WeaponPaints
                     session.Message = null;
                     if (result == HudCosmeticResult.Saved)
                     {
+                        _hudUnconfirmedSlots.Mark(session.Native.Owner.SteamId, cosmetic: true);
                         StartHudRefresh(session); return;
                     }
                     session.Message = result switch
@@ -1337,8 +1341,10 @@ public partial class WeaponPaints
                     session.Native.Busy = false;
                     session.Message = null;
                     var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
-                    if (result == HudApplyResult.Saved && player != null)
+                    if (result == HudApplyResult.Saved)
                     {
+                        _hudUnconfirmedSlots.Mark(session.Native.Owner.SteamId, cosmetic: false);
+                        if (player == null) { ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred); return; }
                         if (custom?.Supported == true) { ReconcileHudCustom(session, custom, targets); return; }
                         StartHudRefresh(session);
                         return;
@@ -1370,6 +1376,7 @@ public partial class WeaponPaints
     private void MarkHudSaveUncertain(HudControllerSession session, long generation)
     {
         if (_hudCoordinator?.IsQueryCurrent(session.Native, generation) != true) return;
+        _hudUnconfirmedSlots.Mark(session.Native.Owner.SteamId, session.CosmeticChanges != null);
         session.Native.Busy = false;
         session.SaveUncertain = true;
         session.Message = new HudModalView("Результат не подтверждён", "Откройте предмет заново перед повторным сохранением.", ["Понятно"]);
@@ -1458,7 +1465,12 @@ public partial class WeaponPaints
             if (finished || _hudCoordinator?.IsLive(session.Native) != true) return;
             finished = true;
             timer?.Cancel(); timer?.Dispose(); timer = null;
-            ShowHudSavedOutcome(session, partialAgentRefresh && outcome == HudRefreshOutcome.Applied ? HudRefreshOutcome.Deferred : outcome);
+            var effectiveOutcome = partialAgentRefresh && outcome == HudRefreshOutcome.Applied ? HudRefreshOutcome.Deferred : outcome;
+            if (effectiveOutcome == HudRefreshOutcome.Applied)
+            {
+                _hudUnconfirmedSlots.Complete(session.Native.Owner.SteamId, session.CosmeticChanges != null);
+            }
+            ShowHudSavedOutcome(session, effectiveOutcome);
         }
         var cosmeticOnly = session.CosmeticChanges != null && (!agentOrPatch || partialAgentRefresh);
         RequestPlayerRefresh(player, false, fromHud: true, completed: Complete, cosmeticOnly: cosmeticOnly);
@@ -1527,11 +1539,71 @@ public partial class WeaponPaints
         "Yellow Red Gradient" => "Жёлто-красный градиент", _ => "Окрас"
     };
 
+    private static int[] HudTeams(int filter) => filter switch { 2 => [2], 3 => [3], _ => [2, 3] };
+
+    private bool HudKnownCustomEquipped(HudControllerSession session, string choice, Func<int, string, (bool Known, bool Supported, string? Model)> effective)
+    {
+        if (session.Custom is not { } custom || Config.PanoramaHud.CustomWeaponsIntegration != "required"
+            || PlayerDataLoading.ContainsKey(session.Native.Owner.Slot) || _hudUnconfirmedSlots.IsUncertain(session.Native.Owner.SteamId)
+            || _externalPlayerApplies.ContainsKey(session.Native.Owner.Slot) || _commandRefreshes.ContainsKey(session.Native.Owner.Slot)) return false;
+        try
+        {
+            return HudTeams(session.Browser.Team).All(team =>
+            {
+                var actual = effective(team, custom.Weapon);
+                return actual.Known && actual.Supported && actual.Model == choice;
+            });
+        }
+        catch { return false; }
+    }
+
+    private bool HudKnownEquipped(HudControllerSession session, HudCatalogItem item, Func<int, string, (bool Known, bool Supported, string? Model)> effective)
+    {
+        var slot = session.Native.Owner.Slot;
+        if (PlayerDataLoading.ContainsKey(slot) || _hudUnconfirmedSlots.IsUncertain(session.Native.Owner.SteamId)
+            || _externalPlayerApplies.ContainsKey(slot) || _commandRefreshes.ContainsKey(slot)) return false;
+        var teams = HudTeams(session.Browser.Team);
+        if (session.Browser.Level == HudBrowserLevel.Cosmetics && _hudCosmetics?.TryGet(item.Id, out var entry) == true)
+        {
+            return entry.Kind switch
+            {
+                "music" when Config.Additional.MusicEnabled => teams.All(t => GPlayersMusic.TryGetValue(slot, out var values) && values.TryGetValue((CsTeam)t, out var id) && id == entry.Id),
+                "pin" when Config.Additional.PinsEnabled => teams.All(t => GPlayersPin.TryGetValue(slot, out var values) && values.TryGetValue((CsTeam)t, out var id) && id == entry.Id),
+                "agent" when Config.Additional.AgentEnabled => teams.All(t => t == entry.Team && GPlayersAgent.TryGetValue(slot, out var values) && (t == 2 ? values.T : values.CT) == entry.Model),
+                "graffiti" when Config.Additional.GraffitiEnabled => HasGraffitiSubscription(slot) && PlayerGraffiti.TryGetValue(slot, out var value) && value.Kit == entry.Id && value.Tint == entry.Tint,
+                _ => false
+            };
+        }
+        if (session.Browser.Level != HudBrowserLevel.Finishes || !Config.Additional.SkinEnabled || item.Definition is not int definition) return false;
+        if (item.Category == "knives" && !Config.Additional.KnifeEnabled || item.Category == "gloves" && !Config.Additional.GloveEnabled) return false;
+        return teams.All(team =>
+        {
+            if (!item.AvailableTo(team)) return false;
+            var side = (CsTeam)team;
+            if (item.Category == "knives" && (!GPlayersKnife.TryGetValue(slot, out var knives) || !knives.TryGetValue(side, out var name) || name != item.WeaponName)) return false;
+            if (item.Category == "gloves" && (!GPlayersGlove.TryGetValue(slot, out var gloves) || !gloves.TryGetValue(side, out var glove) || glove != definition)) return false;
+            if (!GPlayerWeaponsInfo.TryGetValue(slot, out var sides) || !sides.TryGetValue(side, out var weapons)
+                || !weapons.TryGetValue(definition, out var paint) || paint.Paint != (item.Kit ?? 0)) return false;
+            if (Config.PanoramaHud.CustomWeaponsIntegration == "disabled") return true;
+            if (Config.PanoramaHud.CustomWeaponsIntegration != "required" || string.IsNullOrEmpty(item.WeaponName)) return false;
+            try { var custom = effective(team, item.WeaponName); return custom.Known && (!custom.Supported || custom.Model == ""); }
+            catch { return false; }
+        });
+    }
+
     private void RenderHud(HudControllerSession session)
     {
         if (_hudCoordinator == null || _hudRenderer == null || !_hudCoordinator.IsLive(session.Native)) return;
         var browser = session.Browser;
         var page = browser.CurrentPage;
+        var effectiveChoices = new Dictionary<(int Team, string Weapon), (bool Known, bool Supported, string? Model)>();
+        (bool Known, bool Supported, string? Model) Effective(int team, string weapon)
+        {
+            var key = (team, weapon);
+            if (!effectiveChoices.TryGetValue(key, out var result))
+                effectiveChoices[key] = result = HudCustomBridge.Effective(session.Native.Owner, team, weapon);
+            return result;
+        }
         var screen = session.Editing ? HudScreen.Settings : browser.Level switch
         {
             HudBrowserLevel.Home => HudScreen.Home,
@@ -1540,13 +1612,13 @@ public partial class WeaponPaints
             _ => HudScreen.Category
         };
         var cards = page?.Items.Select(item => new HudCard(browser.Level == HudBrowserLevel.Finishes ? HudFinishName(item) : item.Name,
-            item.Resource == null ? "Нет изображения" : "", HudItemImage(item), item.Rarity, session.Selected?.Id == item.Id)).ToArray() ?? [];
+            item.Resource == null ? "Нет изображения" : "", HudItemImage(item), item.Rarity, HudKnownEquipped(session, item, Effective))).ToArray() ?? [];
         var customOptions = session.CustomTab ? HudCustomOptions(session) : [];
         if (session.CustomTab && !session.Editing)
             cards = customOptions.Skip(session.CustomPage * 10).Take(10)
                 .Select(option => new HudCard(option.Value, option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? "" : "Нет изображения",
                     option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? new HudImage(0, 0, CustomAtlas: true) : null,
-                    null, option.Key == session.CustomChoice)).ToArray();
+                    null, HudKnownCustomEquipped(session, option.Key, Effective))).ToArray();
         var title = browser.Section switch
         {
             HudSection.Weapons => "ОРУЖИЕ", HudSection.Knives => "НОЖИ", HudSection.Gloves => "ПЕРЧАТКИ",

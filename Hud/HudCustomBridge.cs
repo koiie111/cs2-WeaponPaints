@@ -17,6 +17,17 @@ internal static class HudCustomBridge
     private static readonly PluginCapability<IHudBridge> Capability = new(HudBridgeRegistry.CapabilityName);
     internal static IHudBridge? Get() => Capability.Get();
 
+    // A missing provider, stale owner, pending write, or unavailable access is unknown.
+    internal static (bool Known, bool Supported, string? Model) Effective(HudViewerStamp owner, int team, string weapon)
+    {
+        var bridge = Get();
+        if (!ReferenceEquals(bridge, HudBridgeRegistry.Instance)) return (false, false, null);
+        var generation = HudBridgeRegistry.Instance.Generation;
+        var value = bridge!.GetEffectiveSelection(new HudSelectionRequest(owner.Slot, owner.SteamId, owner.Controller, team, weapon));
+        return generation == HudBridgeRegistry.Instance.Generation ? (value.Known, value.Supported, value.Model) : (false, false, null);
+    }
+
+
     internal static HudCustomPrefetch? CaptureAll(IReadOnlyDictionary<string, int> definitions)
     {
         var bridge = Get();

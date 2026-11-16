@@ -12,6 +12,8 @@ string Val(bool variable,string panel,string name) => frame.GetValueOrDefault(ne
 Check(Val(false,"wp_root","show")=="missing", "renderer must not reveal the surface");
 Check(Val(false,"image_0","art-finishes-0")=="0" && Val(false,"image_0","bank-2")=="1" && Val(false,"image_0","cell-3")=="1", "sample image leaked or bank missing");
 Check(Val(false,"item_0","tier-d32ce6")=="1" && Val(false,"item_0","selected")=="1", "rarity or equipped state missing");
+var preview = renderer.Render(view with { Cards=[card with { Equipped=false }], Hero=view.Hero! with { Title="Preview only" } });
+Check(preview.GetValueOrDefault(new(false,"item_0","selected")) != "1" && preview.Values.Contains("Preview only"), "preview must not acquire an equipped marker");
 Check(Val(false,"item_1","is-hidden")=="1" && Val(true,"wp_root","hero_seed")=="Паттерн: 123", "empty cell or hero label wrong");
 Check(Val(true,"wp_root","sort")=="По названию ↑", "sort label is not bound to the native contract");
 Check(Val(false,"prev","disabled")=="1" && Val(false,"next","disabled")=="1", "page bounds missing");

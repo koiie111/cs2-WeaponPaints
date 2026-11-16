@@ -11,6 +11,19 @@ object? Get(object obj,string name)=>obj.GetType().GetProperty(name,flags)?.GetV
 void Set(object obj,string name,object? value) { var p=obj.GetType().GetProperty(name,flags);if(p!=null){p.SetValue(obj,value);return;} obj.GetType().GetField(name,flags)!.SetValue(obj,value); }
 object? Call(object? obj,Type type,string name,params object?[] args)=>type.GetMethod(name,flags)!.Invoke(obj,args);
 int checks=0;void Check(bool v,string m){if(!v)throw new Exception(m);checks++;}
+var certainty=New(T("HudLoadoutCertainty"));
+void Mark(ulong owner,bool cosmetic)=>Call(certainty,certainty.GetType(),"Mark",owner,cosmetic);
+void Complete(ulong owner,bool cosmetic)=>Call(certainty,certainty.GetType(),"Complete",owner,cosmetic);
+bool Uncertain(ulong owner)=>(bool)Call(certainty,certainty.GetType(),"IsUncertain",owner)!;
+Mark(1,false);Mark(1,true);Complete(1,true);
+Check(Uncertain(1),"cosmetic completion cannot clear deferred weapon refresh");
+Complete(1,false);Check(!Uncertain(1),"successful weapon refresh clears its uncertainty");
+Mark(1,false);Call(certainty,certainty.GetType(),"Remove",1UL);
+Check(!Uncertain(1),"disconnect removes deferred owner before reconnect");
+Mark(1,false);Mark(2,true);Call(certainty,certainty.GetType(),"Clear");
+Check((int)Get(certainty,"Count")! == 0,"map teardown removes all deferred owners");
+Check(((int[])Call(null,typeof(WeaponPaints.WeaponPaints),"HudTeams",0)!).SequenceEqual(new[]{2,3}),"both filter checks both sides");
+Check(((int[])Call(null,typeof(WeaponPaints.WeaponPaints),"HudTeams",2)!).SequenceEqual(new[]{2}),"single team filter checks only that side");
 var plugin=RuntimeHelpers.GetUninitializedObject(typeof(WeaponPaints.WeaponPaints));
 var nativeType=T("HudSessionCoordinator").GetNestedType("Session",flags)!;
 var native=RuntimeHelpers.GetUninitializedObject(nativeType);
@@ -81,6 +94,21 @@ var decoded=Call(null,T("HudSkinCodec"),"Decode",stored)!;var fallbackDraft=Get(
 var snapshotsArray=Array.CreateInstance(T("HudStoredSkin"),1);snapshotsArray.SetValue(stored,0);Set(session,"Snapshots",snapshotsArray);
 var fallbackDrafts=Array.CreateInstance(T("HudSkinDraft"),1);fallbackDrafts.SetValue(fallbackDraft,0);Set(session,"Drafts",fallbackDrafts);
 Check(Dirty(),"explicit custom choice inherited from team0 must be dirty until materialized");
+var noCustomStored=New(T("HudStoredSkin"),skinKey,2,raw,0,null,null);
+var noCustomDecoded=Call(null,T("HudSkinCodec"),"Decode",noCustomStored)!;
+var noCustomSnapshots=Array.CreateInstance(T("HudStoredSkin"),1);noCustomSnapshots.SetValue(noCustomStored,0);
+var noCustomDrafts=Array.CreateInstance(T("HudSkinDraft"),1);noCustomDrafts.SetValue(Get(noCustomDecoded,"Draft"),0);
+Set(session,"Snapshots",noCustomSnapshots);Set(session,"Drafts",noCustomDrafts);
+Check(!Dirty(),"opening unchanged stock settings without a custom selection must stay clean");
+Set(Get(noCustomDecoded,"Draft")!,"Paint",45);
+Check(Dirty(),"a changed stock paint remains dirty when there is no custom selection");
+var emptyFallback=New(T("HudCustomRevision"),"",(long)1,0);
+var emptyFallbackStored=New(T("HudStoredSkin"),skinKey,2,raw,0,null,emptyFallback);
+var emptyFallbackDecoded=Call(null,T("HudSkinCodec"),"Decode",emptyFallbackStored)!;
+noCustomSnapshots.SetValue(emptyFallbackStored,0);noCustomDrafts.SetValue(Get(emptyFallbackDecoded,"Draft"),0);
+Check(Dirty(),"an inherited explicit stock marker must remain dirty until materialized");
+Set(session,"Snapshots",snapshotsArray);Set(session,"Drafts",fallbackDrafts);
+
 var configType=asm.GetType("WeaponPaints.WeaponPaintsConfig",true)!;var config=New(configType);Set(plugin,"Config",config);var hud=Get(config,"PanoramaHud")!;
 var musicSection=EnumValue("HudSection","Music");
 Set(hud,"Enabled",false);Check(!(bool)Call(plugin,plugin.GetType(),"RouteHudAlias",null,musicSection)!,"disabled HUD permits legacy alias");

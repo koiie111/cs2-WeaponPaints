@@ -123,6 +123,7 @@ public partial class WeaponPaints : BasePlugin, IPluginConfig<WeaponPaintsConfig
 	public override void Unload(bool hotReload)
 	{
 		ShutdownHud();
+        _hudUnconfirmedSlots.Clear();
 		try { RestoreAgentOverrides(); }
         catch (Exception error) { Logger.LogWarning(error, "Unable to restore agents before unload"); }
 		_gloveOverrides.Clear();

@@ -4,10 +4,10 @@ namespace CounterStrikeSharp.API.Core.Capabilities
     // Simulates only the managed capability boundary; not a CSS host test.
     internal sealed class PluginCapability<T>
     {
-        public PluginCapability(string name) { ArgumentException.ThrowIfNullOrEmpty(name); }
+        public PluginCapability(string name) { ArgumentException.ThrowIfNullOrEmpty(name); TestCapability.Name=name; }
         public T? Get() => TestCapability.Available ? (T)(object)HudBridgeRegistry.Provider() : default;
     }
-    internal static class TestCapability { internal static bool Available=true; }
+    internal static class TestCapability { internal static bool Available=true; internal static string? Name; }
 }
 namespace WeaponPaints.Hud
 {

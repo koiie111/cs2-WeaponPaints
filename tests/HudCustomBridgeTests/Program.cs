@@ -8,6 +8,9 @@ void Check(bool ok,string message) { if(!ok)throw new InvalidOperationException(
 var registry=HudBridgeRegistry.Instance;var service=new Fake();registry.SetCurrent(service);
 try {
  var owner=new HudViewerStamp(1,76561198000000001UL,101,102,1,1);
+ Check(HudCustomBridge.Effective(owner,2,"weapon_ak47") is { Known:true, Supported:true, Model:"precached" },"effective choice crosses V2 boundary");
+ Check(TestCapability.Name=="customweapons:hud:v2", "must request V2 and never fall back to V1");
+ TestCapability.Available=false;Check(!HudCustomBridge.Effective(owner,2,"weapon_ak47").Known,"missing V2 fails closed");TestCapability.Available=true;
  var original=service.Snapshot;
  var state=HudCustomBridge.Snapshot("weapon_ak47",7)!;
  Check(state.Supported && state.ServerId==33 && state.Database.Database=="cw" && state.Models.ContainsKey("precached") && state.AllModels.ContainsKey("notready") && !state.Models.ContainsKey("notready"),"precached model and immutable source identity");
@@ -48,6 +51,7 @@ sealed class Fake : IHudBridge {
  public Action<HudRefreshResult>? Pending;
  public Queue<HudSnapshot> Snapshots=new();
  public HudSnapshot GetSnapshot()=>Snapshots.TryDequeue(out var next)?next:Snapshot;
+ public HudEffectiveSelection GetEffectiveSelection(HudSelectionRequest request)=>new(true,true,"precached");
  public void RequestRefresh(HudRefreshRequest request,Action<HudRefreshResult> completed)=>Pending=completed;
  public void Complete(HudRefreshResult result){var callback=Pending ?? throw new InvalidOperationException("No callback");Pending=null;callback(result);}
 }

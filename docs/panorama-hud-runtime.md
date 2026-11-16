@@ -16,6 +16,13 @@ the integration mode. Do not use `disabled` alongside a legacy CustomWeapons
 installation. The public bridge assembly must be installed once in the CSS
 shared loader when the integration is used. `Reconciled` from the bridge means
 that its database selection and cache agree; it is not proof of a live model.
+The coordinated bridge contract is `customweapons:hud:v2` (assembly version 2);
+the CustomWeapons and WeaponPaints builds must use the identical shared DLL.
+The effective-selection getter is read-only and does not query SQL. The green
+card marker uses confirmed per-team loadout caches and the effective CW choice,
+not the preview; the both-teams filter requires a match on both teams. Unknown
+or deferred state has no marker. A successful refresh is not a visual inspection
+of every game entity, and native acceptance remains necessary.
 
 `PanoramaHud.DiagnosticsEnabled` defaults to `false`. When enabled, server
 console command `wp_hud_diag` reports a bounded sample of actual native drain
