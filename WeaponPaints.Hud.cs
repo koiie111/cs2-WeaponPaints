@@ -251,6 +251,9 @@ public partial class WeaponPaints
         _hudCoordinator?.Close(slot);
     }
 
+    private static bool NativeHudChoice(HudCatalogItem item) => item.Category == "knives" ? item.Definition is 42 or 59
+        : item.Category == "gloves" ? item.Definition is 5028 or 5029 : (item.Kit ?? 0) == 0;
+
     private void ResetHud()
     {
         foreach (var slot in _hudSessions.Keys.ToArray()) CloseHud(slot);
@@ -1306,7 +1309,8 @@ public partial class WeaponPaints
                 var snapshotsArray = snapshots.ToArray();
                 var draftsArray = snapshotsArray.Select(snapshot =>
                 {
-                    var draft = HudSkinCodec.Decode(snapshot).Draft;
+                    var native = choice == null && (defaultKnife || defaultGlove || equipmentKind == HudEquipmentKind.None && (item.Kit ?? 0) == 0);
+                    var draft = native ? new HudSkinDraft { Wear = 0.000001f } : HudSkinCodec.Decode(snapshot).Draft;
                     draft.SelectCustom(choice);
                     if (choice == null)
                     {
@@ -1867,9 +1871,9 @@ public partial class WeaponPaints
                     draft.Wear.ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture),
                     draft.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture),
                     (draft.StatTrak ? "ВКЛ" : "ВЫКЛ") + " · " + snapshots[0].KillCount,
-                    "Наклейки", charm.Name, CanNametag: selected.Category != "gloves", CanWear: selected.Capabilities?.Wear == true,
-                    CanStatTrak: selected.Category != "gloves",
-                    CanDecor: selected.Capabilities?.StickerSlots > 0, CanCharm: selected.Capabilities?.Keychain == true,
+                    "Наклейки", charm.Name, CanNametag: !NativeHudChoice(selected) && selected.Category != "gloves", CanWear: !NativeHudChoice(selected) && selected.Capabilities?.Wear == true, CanSeed: !NativeHudChoice(selected),
+                    CanStatTrak: !NativeHudChoice(selected) && selected.Category != "gloves",
+                    CanDecor: !NativeHudChoice(selected) && selected.Capabilities?.StickerSlots > 0, CanCharm: !NativeHudChoice(selected) && selected.Capabilities?.Keychain == true,
                     VisibleDecorSlots: selected.Capabilities?.StickerSlots > 0 ? 5 : 0,
                     SelectedDecorSlot: selected.Capabilities?.StickerSlots > 0 ? session.StickerSlot : -1,
                     Feature: feature, CanApply: HudCanApply(session), PlusRequired: false,

@@ -18,7 +18,7 @@ public partial class WeaponPaints
 
 			CBasePlayerWeapon? weapon = player.PlayerPawn.Value?.WeaponServices?.ActiveWeapon.Value;
 
-			if (weapon == null) return HookResult.Continue;
+			if (weapon == null || !HasWeaponOverride(player, weapon)) return HookResult.Continue;
 
 			int weaponDefIndex = weapon.AttributeManager.Item.ItemDefinitionIndex;
 

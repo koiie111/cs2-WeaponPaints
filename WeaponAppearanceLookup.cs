@@ -24,7 +24,7 @@ public partial class WeaponPaints
 			}
 
 			// Check if the specified weapon has a paint/skin change
-			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || !value.HasCustomization) return false;
+			if (!teamWeapons.TryGetValue(weaponDefIndex, out var value) || !value.HasCustomization || (weaponDefIndex < 500 && value.Paint <= 0)) return false;
 
 			weaponInfo = value; // Assign the out variable when it exists
 			return true;

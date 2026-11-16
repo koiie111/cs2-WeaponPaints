@@ -42,6 +42,8 @@ jobs:
         run: dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release
       - name: Pet refresh and entitlement checks
         run: dotnet run --project tests/PetRefreshTests/PetRefreshTests.csproj -c Release
+      - name: Native inventory snapshot and policy checks
+        run: dotnet run --project tests/NativeInventoryTests/NativeInventoryTests.csproj -c Release
       - name: Composition compatibility checks
         run: dotnet run --project tests/CompositionTests/CompositionTests.csproj -c Release
       - name: Agent and patch application checks

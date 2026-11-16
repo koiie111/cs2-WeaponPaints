@@ -239,13 +239,15 @@ public partial class WeaponPaints
 			{
 				// Attempt to get the existing knives
 				playerKnives[team] = knifeKey;
+                if (knifeKey == "weapon_knife" && GPlayerWeaponsInfo.TryGetValue(player.Slot, out var resetTeams) && resetTeams.TryGetValue(team, out var resetItems))
+                    foreach (var index in NativeInventoryStore.Knives) resetItems[index] = new WeaponInfo();
 			}
 			
 			if (_gBCommandsAllowed && (LifeState_t)player.LifeState == LifeState_t.LIFE_ALIVE)
 				RefreshWeapons(player, 42);
 
 			if (WeaponSync != null)
-				_ = ObserveAsync(async () => await WeaponSync.SyncKnifeToDatabase(playerInfo, knifeKey, teamsToCheck));
+				_ = ObserveAsync(async () => await (knifeKey == "weapon_knife" ? WeaponSync.ResetInventoryAsync(playerInfo.SteamId!, teamsToCheck.Select(t => (int)t).ToArray(),42,"knife") : WeaponSync.SyncKnifeToDatabase(playerInfo, knifeKey, teamsToCheck)));
 		};
 		foreach (var knifePair in knivesOnly)
 		{
@@ -334,6 +336,11 @@ public partial class WeaponPaints
 						// Ensure there's an entry for the team in playerSkins
 						var teamWeapons = playerSkins.GetOrAdd(team, _ => new ConcurrentDictionary<int, WeaponInfo>());
 
+                        if (paintId == 0 && weaponDefIndex < 500)
+                        {
+                            teamWeapons[weaponDefIndex] = new WeaponInfo();
+                            continue;
+                        }
 						// Attempt to get or add the existing WeaponInfo
 						var value = teamWeapons.GetOrAdd(weaponDefIndex, _ => new WeaponInfo());
 
@@ -353,8 +360,15 @@ public partial class WeaponPaints
 						IpAddress = p.IpAddress?.Split(":")[0]
 					};
 
-					if (!_gBCommandsAllowed || (LifeState_t)p.LifeState != LifeState_t.LIFE_ALIVE ||
-					    WeaponSync == null) return;
+                    if (WeaponSync == null) return;
+                    if (paintId == 0 && weaponDefIndex < 500)
+                    {
+                        var reset = WeaponSync.ResetInventoryAsync(playerInfo.SteamId!, teamsToCheck.Select(t => (int)t).ToArray(), weaponDefIndex, "weapon");
+                        _ = ObserveAsync(async () => await reset);
+                        RefreshWeapons(p, weaponDefIndex);
+                        return;
+                    }
+                    if (!_gBCommandsAllowed || (LifeState_t)p.LifeState != LifeState_t.LIFE_ALIVE) return;
 					RefreshWeapons(p, weaponDefIndex);
 
 					try
@@ -531,6 +545,16 @@ public partial class WeaponPaints
 			DeferPlayer(player, GivePlayerGloves, 0.25f);
 		};
 
+        glovesSelectionMenu.AddMenuOption("Свой предмет из Steam", (player, option) =>
+        {
+            if (!Utility.IsPlayerValid(player) || player == null || WeaponSync == null) return;
+            var teams = player.TeamNum < 2 ? new[] { CsTeam.Terrorist, CsTeam.CounterTerrorist } : [player.Team];
+            var choices = GPlayersGlove.GetOrAdd(player.Slot, _ => new());
+            foreach(var team in teams) choices[team] = 0;
+            var reset = WeaponSync.ResetInventoryAsync(player.SteamID.ToString(), teams.Select(t => (int)t).ToArray(),0,"glove");
+            _ = ObserveAsync(async () => await reset);
+            GivePlayerGloves(player);
+        });
 		// Add weapon options to the weapon selection menu
 		foreach (var paintName in GlovesList.Select(gloveObject => gloveObject["paint_name"]?.ToString() ?? "").Where(paintName => paintName.Length > 0))
 		{

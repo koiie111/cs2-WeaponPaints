@@ -18,6 +18,9 @@ WP.Loading.Clear();wp.Death(ev);Check(info.StatTrakCount==102,"kill after SQL al
 info.StatTrak=false;wp.Death(ev);Check(info.StatTrakCount==102,"disabled StatTrak does not increment");
 info.StatTrak=true;ev.Userid=attacker;wp.Death(ev);Check(info.StatTrakCount==102,"suicide does not increment");
 ev.Userid=victim;WP.Skins.Clear();WP.Loading[1]=456;wp.Death(ev);Check(info.StatTrakCount==102,"empty snapshot on a fresh connection cannot inherit an old count");
+WP.Loading.Clear();WP.Skins[1]=new() { [2]=new() { [7]=info } };info.Paint=0;info.StatTrak=true;
+var writes=WP.Writes.Count;var count=info.StatTrakCount;wp.Death(ev);
+Check(info.StatTrakCount==count && WP.Writes.Count==writes,"native paint zero cannot receive virtual kills even with legacy StatTrak enabled");
 Console.WriteLine($"PASS: {checks} linked StatTrak death-handler checks");
 
 namespace CounterStrikeSharp.API.Modules.Utils { public enum HookResult { Continue } }
@@ -34,6 +37,7 @@ namespace CounterStrikeSharp.API.Core {
  public class GameEventInfo { }
 }
 namespace WeaponPaints { public partial class WeaponPaints {
+ bool HasWeaponOverride(CCSPlayerController player,CBasePlayerWeapon weapon)=>true;
  public static Dictionary<int,long> Loading=new(); private static Dictionary<int,long> PlayerDataLoading=>Loading;
  public static Dictionary<int,Dictionary<int,Dictionary<int,WeaponInfo>>> Skins=new(); private static Dictionary<int,Dictionary<int,Dictionary<int,WeaponInfo>>> GPlayerWeaponsInfo=>Skins;
  public static List<(nint Handle,string Name,float Value)> Writes=new();

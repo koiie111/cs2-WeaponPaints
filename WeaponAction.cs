@@ -15,11 +15,22 @@ namespace WeaponPaints
 		private void GivePlayerWeaponSkin(CCSPlayerController player, CBasePlayerWeapon weapon)
 		{
 			if (!Config.Additional.SkinEnabled) return;
-			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out _)) return;
+			if (!GPlayerWeaponsInfo.TryGetValue(player.Slot, out _)) { RestoreNativeWeapon(player, weapon); return; }
 			
 			var designerName = weapon.DesignerName ?? "";
 			bool isKnife = designerName.Contains("knife") || designerName.Contains("bayonet");
 			
+            if (PlayerDataLoading.ContainsKey(player.Slot)) return;
+            var nativeDefinition = (int)weapon.AttributeManager.Item.ItemDefinitionIndex;
+            var explicitInventory = GPlayerWeaponsInfo.TryGetValue(player.Slot, out var nativeTeams) &&
+                nativeTeams.TryGetValue(player.Team, out var nativeItems) && nativeItems.TryGetValue(nativeDefinition, out var nativeChoice) && nativeChoice.Paint <= 0;
+            if (UsesInventory(player, nativeDefinition, isKnife) && (isKnife || explicitInventory || !Config.Additional.GiveRandomSkin))
+            {
+                RestoreNativeWeapon(player, weapon);
+                return;
+            }
+            if (!RememberNativeWeapon(player, weapon)) return;
+
 			switch (isKnife)
 			{
 				case true when !HasChangedKnife(player, out var _):
@@ -87,7 +98,10 @@ namespace WeaponPaints
 			}
 
 			if (!HasChangedPaint(player, weaponDefIndex, out var weaponInfo) || weaponInfo == null)
-				return;
+            {
+                if (!isKnife) return;
+                weaponInfo = new WeaponInfo { Paint = 0, Wear = 0.000001f };
+            }
 
 			//Log($"Apply on {weapon.DesignerName}({weapon.AttributeManager.Item.ItemDefinitionIndex}) paint {gPlayerWeaponPaints[steamId.SteamId64][weapon.AttributeManager.Item.ItemDefinitionIndex]} seed {gPlayerWeaponSeed[steamId.SteamId64][weapon.AttributeManager.Item.ItemDefinitionIndex]} wear {gPlayerWeaponWear[steamId.SteamId64][weapon.AttributeManager.Item.ItemDefinitionIndex]}");
 
@@ -246,6 +260,8 @@ namespace WeaponPaints
             if (pawn == null || !pawn.IsValid) { completed(false); return; }
             var item = pawn.EconGloves;
 
+            if (!_nativeGloves.TryGetValue(player.Slot, out var original) || original.Steam != player.SteamID || original.Pawn != player.PlayerPawn.Raw || original.Team != (int)player.Team)
+                _nativeGloves[player.Slot] = (player.SteamID, player.PlayerPawn.Raw, (int)player.Team, CaptureEcon(item));
             item.ItemDefinitionIndex = gloveId;
 
             UpdatePlayerEconItemId(item);
@@ -282,8 +298,12 @@ namespace WeaponPaints
             if (pawn == null || !pawn.IsValid) { completed(false); return; }
             if (!_gloveOverrides.TryGetValue(player.Slot, out var owner) || owner != (player.SteamID, pawn.EntityHandle.Raw))
             { completed(true); return; }
+            if (!_nativeGloves.TryGetValue(player.Slot, out var original) || original.Steam != player.SteamID || original.Pawn != player.PlayerPawn.Raw || original.Team != (int)player.Team)
+            { completed(false); return; }
+            RestoreEcon(pawn.EconGloves, original.Econ);
+            _nativeGloves.Remove(player.Slot);
             _gloveOverrides.Remove(player.Slot);
-            GloveNetwork.Clear(pawn);
+            GloveNetwork.Notify(pawn);
             SetBodygroup(pawn, "first_or_third_person", 0);
             var identity = DeferredPlayer.Capture(player);
             AddOneShot(.2f, () => {

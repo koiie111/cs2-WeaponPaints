@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="../../Hud/HudCustomProducts.cs" Link="HudCustomProducts.cs" />
     <Compile Include="../../Hud/HudCosmeticStore.cs" Link="HudCosmeticStore.cs" />
+    <Compile Include="../../NativeInventoryStore.cs" Link="NativeInventoryStore.cs" />
     <Compile Include="../../Hud/HudSkinStore.cs" Link="HudSkinStore.cs" />
     <Compile Include="../../Hud/HudSkinDraft.cs" Link="HudSkinDraft.cs" />
     <Compile Include="../../Hud/HudSkinPatch.cs" Link="HudSkinPatch.cs" />

@@ -22,6 +22,12 @@ public partial class WeaponPaints
     private readonly ConcurrentDictionary<int,ConcurrentDictionary<CsTeam,string>> GPlayersKnife = new();
     private readonly Dictionary<int,string> WeaponDefindex = new() { [7] = "weapon_ak47" };
     private readonly Lazy<Dictionary<string,int>> KnifeDefindexes = new(() => new());
+    private sealed record NativeWeapon(object Value);
+    private readonly Dictionary<uint,NativeWeapon> _nativeWeapons = new();
+    private bool UsesInventory(CCSPlayerController player,int definition,bool knife) =>
+        (bool)live!.GetType().GetMethod("UsesInventory", BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,[player,definition,knife])!;
+    private void RestoreNativeWeapon(CCSPlayerController player,CBasePlayerWeapon weapon) =>
+        live!.GetType().GetMethod("RestoreNativeWeapon", BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(live,[player,weapon]);
     private BasePlugin? live;
     private MethodInfo? paint;
     private Probe? probe;
