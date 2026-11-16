@@ -1,6 +1,6 @@
 using WeaponPaints.Hud;
 static void Check(bool value, string message) { if (!value) throw new Exception(message); }
-var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v7.json");
+var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v8.json");
 var renderer = new HudRenderer(contract);
 var image0 = new HudWriteKey(false,"image_0","art-finishes-0");
 Check(contract.Authored(image0)=="1" && contract.Authored(new(false,"tab_standard","active"))=="1", "authored classes missing");
@@ -43,7 +43,15 @@ Check(Val(false,"decor_2","active")=="1" && Val(false,"decor_1","active")=="miss
 Check(Val(false,"decor_art_0","bank-2")=="1" && Val(false,"decor_art_0","cell-3")=="1", "sticker image missing");
 Check(Val(false,"decor_1","hasItem")=="1", "item without art lost");
 Check(Val(false,"decor_2","hasItem")=="missing", "empty slot incorrectly filled");
-Check(Val(false,"charm_art","bank-4")=="1" && Val(false,"charm_art","cell-5")=="1", "charm image missing");
+Check(Val(false,"charm_art","bank-4")=="missing", "empty charm must not display stale artwork");
+Check(Val(true,"wp_root","charm")=="" && Val(false,"charm","empty")=="1", "empty charm must show centred plus");
+var charmQueue = new HudDeltaQueue(contract.Authored); charmQueue.Replace(frame);
+while (charmQueue.TryPeek(out var charmWrite)) charmQueue.Commit(charmWrite);
+frame=renderer.Render(view with { Screen=HudScreen.Settings, Settings=decorations with { Charm="Крошка Ава" }, Modal=null });
+Check(Val(true,"wp_root","charm")=="Крошка Ава" && Val(false,"charm","empty")=="missing" && Val(false,"charm_art","bank-4")=="1" && Val(false,"charm_art","cell-5")=="1", "occupied charm must keep its name and image");
+charmQueue.Replace(frame); var charmChanges=new List<HudWrite>();
+while (charmQueue.TryPeek(out var charmWrite)) { charmChanges.Add(charmWrite); charmQueue.Commit(charmWrite); }
+Check(charmChanges.Any(w=>w.Key==new HudWriteKey(false,"charm","empty") && w.Value=="0"), "empty charm class did not clear");
 frame=renderer.Render(view with { Screen=HudScreen.Settings, Settings=decorations with { PreviewImage=new HudImage(0,0,PetIcon:true) }, Modal=null });
 Check(Val(false,"preview_art","art-pet-0")=="1", "verified native pet icon missing");
 frame=renderer.Render(view with { Screen=HudScreen.Home, Section=HudSection.Pet });

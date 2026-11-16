@@ -79,6 +79,18 @@ catch (InvalidDataException) { }
 patch = HudSkinPatchPlanner.Build(original, changeSticker, limits, known, new HashSet<uint>(), 0, true);
 Check(patch.Columns.Keys.Count(x=>x.StartsWith("weapon_sticker_")) == 5 && (int)patch.Columns["weapon_composition_version"] == 1, "legacy conversion was incomplete");
 Check(!patch.Columns.ContainsKey("weapon_stattrak_count"), "editor must not write kill count");
+var oldOffset = original.Copy(); oldOffset.Stickers[0] = new(1,0,99,0,0,1,0);
+var changedFinish = oldOffset.Copy(); changedFinish.Paint++; changedFinish.Stickers[2] = new(1,2,0,0,0,1,0);
+var preservedPatch = HudSkinPatchPlanner.Build(oldOffset,changedFinish,limits,known,new HashSet<uint>(),1,true);
+Check(!preservedPatch.Columns.ContainsKey("weapon_sticker_0") && preservedPatch.Columns.ContainsKey("weapon_sticker_2"), "changing a finish and another sticker must preserve the unedited legacy offset");
+var oldCharm = oldOffset.Copy(); oldCharm.Keychain = new HudKeychain(17,99,0,0,0,0);
+var finishWithCharm = oldCharm.Copy(); finishWithCharm.Paint++;
+var charmPatch = HudSkinPatchPlanner.Build(oldCharm,finishWithCharm,limits,known,new HashSet<uint>(),1,true);
+Check(!charmPatch.Columns.ContainsKey("weapon_keychain"), "finish change must preserve an untouched legacy charm");
+finishWithCharm.Keychain = finishWithCharm.Keychain! with { X=98 };
+Check(finishWithCharm.ValidateStockIssue(limits,known,new HashSet<uint>{17},oldCharm)==HudSkinValidationIssue.Charm, "changed invalid charm must remain blocked");
+changedFinish.Stickers[0] = changedFinish.Stickers[0] with { X=98 };
+Check(changedFinish.ValidateStockIssue(limits,known,new HashSet<uint>(),oldOffset)==HudSkinValidationIssue.StickerPosition, "editing an out-of-range sticker offset must report its field");
 var surface = new FakeSurface();
 var scheduled = new Queue<Action>();
 var coordinator = new HudSessionCoordinator(surface, scheduled.Enqueue, k => k.Variable ? "" : "0", frameBudget: 1, perViewerBudget: 1);

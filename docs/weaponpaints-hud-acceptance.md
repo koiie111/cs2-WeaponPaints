@@ -1,20 +1,29 @@
 # Temporary WeaponPaints HUD addon: review and acceptance
 
 This procedure is a plan, not a record of a completed test. The addon and the
-Workshop item are separate from Clans and all shared items. The resource names
-are versioned `weaponpaints_v6`; change the resource paths and the explicit
+Workshop item are separate from Clans and all shared items. The current source
+resource names are versioned `weaponpaints_v8`; change the resource paths and the explicit
 allowlist together for a subsequent incompatible build, rather than overwriting
 an old layout at the same path. The server plugin must request that exact
 compiled layout. Do not ship the plugin, maps, `gameinfo`, or stock textures in
 the addon. Stock images are game-provided references.
 
+## 16 November status
+
+V8 exists as source only: it has not been compiled, published, or accepted in
+an actual client. Its pager uses matching-height containers, and an empty charm
+shows a centred plus; browser geometry and static checks do not prove native
+font or layout alignment. V7 and earlier published resource paths remain frozen.
+See [the runtime guide](panorama-hud-runtime.md) for the controller and its
+current limitations.
+
 ## Prepare and review
 
-1. Generate the separate source tree with `python hud-mockup/tools/generate_live.py --version 6` and validate it with `python hud-mockup/tools/check_live_contract.py hud-mockup/live-addon-v6 --version 6`. Compile it using a
+1. Generate the separate source tree with `python hud-mockup/tools/generate_live.py --version 8` and validate it with `python hud-mockup/tools/check_live_contract.py hud-mockup/live-addon-v8 --version 8`. Compile it using a
    dedicated addon tree, and inspect the generated layout, CSS, texture and
    client-facing preview. Verify the plugin requests the versioned layout.
-2. Run `python hud-mockup/tools/pack_temporary_v6.py --compiled-root <dedicated-compiled-addon> --out <fresh-output.vpk>`.
-   The wrapper asserts the exact v6 source and compiled names; `pack.py` creates
+2. Run `python hud-mockup/tools/pack_temporary_v8.py --compiled-root <dedicated-compiled-addon> --out <fresh-output.vpk>`.
+   The wrapper asserts the exact v8 source and compiled names; `pack.py` creates
    a source-derived archive and SHA-256 manifest using `vpk.py`. Review every
    manifest entry and its hashes. Independently list and verify the archive with
    a VPK reader before considering it for upload. Confirm that no stock textures,

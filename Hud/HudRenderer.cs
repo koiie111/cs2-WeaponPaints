@@ -93,7 +93,10 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             var s = view.Settings ?? throw new InvalidDataException("Settings screen requires settings state");
             Text("preview_name", s.PreviewName); Image("preview_art", s.PreviewImage); Tier("preview_panel", s.Rarity);
             Text("nametag", s.Nametag); Text("wear", s.Wear); Text("seed", s.Seed); Text("stattrak", s.StatTrak);
-            Text("decor", s.Decor); Text("charm", s.Charm);
+            Text("decor", s.Decor);
+            var emptyCharm = string.IsNullOrWhiteSpace(s.Charm);
+            Text("charm", s.Charm);
+            if (emptyCharm) Class("charm", "empty");
             if (s.DecorItems is { Count: > 5 }) throw new InvalidDataException("Too many decoration slots");
             for (var i = 0; i < 5; i++)
             {
@@ -102,7 +105,7 @@ internal sealed class HudRenderer(HudLayoutContract contract)
                 Image("decor_art_" + i, present ? decoration!.Image : null);
                 if (present) Class("decor_" + i, "hasItem");
             }
-            Image("charm_art", s.CharmImage);
+            Image("charm_art", emptyCharm ? null : s.CharmImage);
             if (!s.CanApply) Class("apply", "disabled");
             if (s.PlusRequired) Class("plus", "show");
             var feature = s.Feature;

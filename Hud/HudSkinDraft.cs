@@ -21,6 +21,7 @@ internal sealed record HudAxis(float Min, float Max)
 internal sealed record HudCompositionLimits(
     HudAxis Wear, uint StickerAnchors, HudAxis StickerX, HudAxis StickerY,
     HudAxis? KeychainX, HudAxis? KeychainY, HudAxis? KeychainZ);
+internal enum HudSkinValidationIssue { None, Structure, Seed, Wear, Nametag, StickerId, StickerAnchor, StickerPosition, StickerWear, StickerScale, StickerRotation, Charm }
 
 /// <summary>Editable copy; selecting a custom model cannot mutate the stock draft.</summary>
 internal sealed class HudSkinDraft
@@ -47,30 +48,38 @@ internal sealed class HudSkinDraft
     // Call only for stock writes. A custom choice is selection-only and must
     // never serialize its controls over the saved stock row.
     internal bool ValidateStock(HudCompositionLimits limits, IReadOnlySet<uint> knownStickers,
+        IReadOnlySet<uint> knownKeychains, HudSkinDraft? original = null) =>
+        ValidateStockIssue(limits, knownStickers, knownKeychains, original) == HudSkinValidationIssue.None;
+
+    internal HudSkinValidationIssue ValidateStockIssue(HudCompositionLimits limits, IReadOnlySet<uint> knownStickers,
         IReadOnlySet<uint> knownKeychains, HudSkinDraft? original = null)
     {
-        if (CustomModel != null || Paint < 0 || Stickers.Length != 5 || original is { Stickers.Length: not 5 }) return false;
+        if (CustomModel != null || Paint < 0 || Stickers.Length != 5 || original is { Stickers.Length: not 5 }) return HudSkinValidationIssue.Structure;
         bool paintChanged = original == null || Paint != original.Paint;
-        if ((original == null || Seed != original.Seed) && (Seed is < 0 or > 1000)) return false;
-        if ((paintChanged || original == null || Wear != original.Wear) && !limits.Wear.Contains(Wear)) return false;
+        if ((original == null || Seed != original.Seed) && (Seed is < 0 or > 1000)) return HudSkinValidationIssue.Seed;
+        if ((paintChanged || original == null || Wear != original.Wear) && !limits.Wear.Contains(Wear)) return HudSkinValidationIssue.Wear;
         if ((original == null || Nametag != original.Nametag)
-            && (Encoding.UTF8.GetByteCount(Nametag) > 128 || Nametag.Any(char.IsControl))) return false;
+            && (Encoding.UTF8.GetByteCount(Nametag) > 128 || Nametag.Any(char.IsControl))) return HudSkinValidationIssue.Nametag;
         for (int i = 0; i < Stickers.Length; i++)
         {
             var sticker = Stickers[i];
-            if (!paintChanged && original != null && sticker == original.Stickers[i]) continue;
+            // An unchanged decoration belongs to the same definition, even if its finish changes.
+            if (original != null && sticker == original.Stickers[i]) continue;
             if (sticker.Id == 0) continue;
-            if (!knownStickers.Contains(sticker.Id) || sticker.Anchor >= limits.StickerAnchors
-                || !limits.StickerX.Contains(sticker.X) || !limits.StickerY.Contains(sticker.Y)
-                || !new HudAxis(0, 1).Contains(sticker.Wear) || !new HudAxis(.1f, 5).Contains(sticker.Scale)
-                || !new HudAxis(-180, 180).Contains(sticker.Rotation)) return false;
+            if (!knownStickers.Contains(sticker.Id)) return HudSkinValidationIssue.StickerId;
+            if (sticker.Anchor >= limits.StickerAnchors) return HudSkinValidationIssue.StickerAnchor;
+            if (!limits.StickerX.Contains(sticker.X) || !limits.StickerY.Contains(sticker.Y)) return HudSkinValidationIssue.StickerPosition;
+            if (!new HudAxis(0, 1).Contains(sticker.Wear)) return HudSkinValidationIssue.StickerWear;
+            if (!new HudAxis(.1f, 5).Contains(sticker.Scale)) return HudSkinValidationIssue.StickerScale;
+            if (!new HudAxis(-180, 180).Contains(sticker.Rotation)) return HudSkinValidationIssue.StickerRotation;
         }
-        if (!paintChanged && original != null && Keychain == original.Keychain) return true;
-        if (Keychain is not { } c) return true;
+        if (original != null && Keychain == original.Keychain) return HudSkinValidationIssue.None;
+        if (Keychain is not { } c) return HudSkinValidationIssue.None;
         return c.Id > 0 && (c.Id == 37 || knownKeychains.Contains(c.Id))
             && limits.KeychainX?.Contains(c.X) == true && limits.KeychainY?.Contains(c.Y) == true
             && limits.KeychainZ?.Contains(c.Z) == true && c.Seed <= 100000
-            && (c.Id == 37 ? c.SlabSticker > 0 && knownStickers.Contains(c.SlabSticker) : c.SlabSticker == 0);
+            && (c.Id == 37 ? c.SlabSticker > 0 && knownStickers.Contains(c.SlabSticker) : c.SlabSticker == 0)
+            ? HudSkinValidationIssue.None : HudSkinValidationIssue.Charm;
     }
     internal string[] EncodedStickers() => Stickers.Select(s => s.Id == 0 ? "0;0;0;0;0;0;0" :
         FormattableString.Invariant($"{s.Id};{s.Anchor};{s.X};{s.Y};{s.Wear};{s.Scale};{s.Rotation}")).ToArray();
