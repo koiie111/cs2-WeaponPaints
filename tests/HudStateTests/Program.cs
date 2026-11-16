@@ -57,6 +57,17 @@ Check(models.Count == 1 && models.Items[0].Name == "AK-47", "base model grid mix
 var finishes = (await catalogue.PrepareAsync(new("weapons", 7, false, "красная", 4, 10), CancellationToken.None)).Page(4, 10);
 Check(finishes.Count == 1 && finishes.Page == 0 && finishes.Items[0].Id == 258, "search/pagination/definition filtering failed");
 Check((await catalogue.PrepareAsync(new("charms", null, false, "", 0, 15), CancellationToken.None)).Page(0, 15).Count == 1, "embedded sticker slab variants duplicated in charm list");
+const string art = "s2r://panorama/images/econ/example.vtex";
+var gloveBase = new HudCatalogItem { Id=10, Bank=0, Cell=10, Category="gloves", Definition=5030, Name="Driver", Base=true };
+var gloveFinish = new HudCatalogItem { Id=12, Bank=0, Cell=12, Category="gloves", Definition=5030, Name="Finish", Resource=art, ArtBank=0, ArtCell=12, ArtKind="native" };
+var otherGlove = new HudCatalogItem { Id=11, Bank=0, Cell=11, Category="gloves", Definition=5031, Name="Other", Resource=art, ArtBank=0, ArtCell=11, ArtKind="native" };
+var fallback = new HudCatalog(new[] { otherGlove, gloveFinish, gloveBase });
+Check(ReferenceEquals(fallback.ModelArtwork(gloveBase), gloveFinish), "model image must come from the same definition");
+Check(ReferenceEquals(fallback.ModelArtwork(gloveFinish), gloveFinish), "mapped own image must remain unchanged");
+var noImage = new HudCatalogItem { Id=13, Bank=0, Cell=13, Category="gloves", Definition=5032, Name="Unknown", Base=true };
+Check(fallback.ModelArtwork(noImage)==null, "unrelated model artwork must not be substituted");
+var missingFinish = new HudCatalogItem { Id=14, Bank=0, Cell=14, Category="gloves", Definition=5030, Name="Missing finish" };
+Check(fallback.ModelArtwork(missingFinish)==null, "finish without artwork must not acquire model fallback");
 try { _ = new HudCatalog(new [] { new HudCatalogItem { Id=258, Bank=0, Cell=2, Category="weapons", Name="bad" } }); throw new Exception("invalid bank accepted"); }
 catch (InvalidDataException) { }
 var onlyName = original.Copy(); onlyName.Nametag = "renamed";

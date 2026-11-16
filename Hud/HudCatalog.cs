@@ -85,6 +85,7 @@ internal sealed class HudCatalog
     private readonly Dictionary<string, IReadOnlySet<uint>> _kits;
     private readonly Dictionary<(string Category, int Kit), HudCatalogItem> _byKit;
     private readonly Dictionary<(string Category, int Definition), HudCatalogItem> _baseByDefinition;
+    private readonly Dictionary<(string Category, int Definition), HudCatalogItem> _modelArtwork;
     private readonly Dictionary<int, HudCatalogItem> _ids;
     internal int Count => _ids.Count;
     internal HudCatalog(IEnumerable<HudCatalogItem> entries)
@@ -115,6 +116,10 @@ internal sealed class HudCatalog
         _baseByDefinition = _ids.Values.Where(item => item.Base && item.Definition.HasValue)
             .GroupBy(item => (item.Category, item.Definition!.Value)).Where(group => group.Count() == 1)
             .ToDictionary(group => group.Key, group => group.Single());
+        _modelArtwork = _ids.Values.Where(item => !item.Base && item.Definition.HasValue && item.ArtKind == "native"
+                && item.Resource != null && item.ArtBank.HasValue && item.ArtCell.HasValue)
+            .GroupBy(item => (item.Category, item.Definition!.Value))
+            .ToDictionary(group => group.Key, group => group.OrderBy(item => item.Id).First());
     }
     internal static async Task<HudCatalog> LoadAsync(string path, CancellationToken token)
     {
@@ -127,6 +132,13 @@ internal sealed class HudCatalog
     internal IReadOnlySet<uint> KitIds(string category) => _kits.GetValueOrDefault(category) ?? EmptyKits;
     internal HudCatalogItem? FindKit(string category, uint kit) => kit <= int.MaxValue ? _byKit.GetValueOrDefault((category, (int)kit)) : null;
     internal HudCatalogItem? FindBase(string category, int definition) => _baseByDefinition.GetValueOrDefault((category, definition));
+    // Only model-card artwork uses a representative finish; identities and choices stay on the base model.
+    internal HudCatalogItem? ModelArtwork(HudCatalogItem model)
+    {
+        if (model.Resource != null && model.ArtBank.HasValue && model.ArtCell.HasValue) return model;
+        return model.Base && model.Definition is int definition
+            ? _modelArtwork.GetValueOrDefault((model.Category, definition)) : null;
+    }
     // The caller holds the resulting immutable selection for page changes. Filtering
     // and string search run on a worker and never perform SQL or native calls.
     internal Task<HudCatalogSelection> PrepareAsync(HudCatalogQuery query, CancellationToken token)

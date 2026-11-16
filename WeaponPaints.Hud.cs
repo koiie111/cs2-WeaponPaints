@@ -1611,8 +1611,13 @@ public partial class WeaponPaints
             HudBrowserLevel.Finishes => HudScreen.Finishes,
             _ => HudScreen.Category
         };
-        var cards = page?.Items.Select(item => new HudCard(browser.Level == HudBrowserLevel.Finishes ? HudFinishName(item) : item.Name,
-            item.Resource == null ? "Нет изображения" : "", HudItemImage(item), item.Rarity, HudKnownEquipped(session, item, Effective))).ToArray() ?? [];
+        var cards = page?.Items.Select(item =>
+        {
+            var art = browser.Level == HudBrowserLevel.Models ? _hudCatalog?.ModelArtwork(item) : item;
+            var image = art == null ? null : HudItemImage(art);
+            return new HudCard(browser.Level == HudBrowserLevel.Finishes ? HudFinishName(item) : item.Name,
+                image == null ? "Нет изображения" : "", image, item.Rarity, HudKnownEquipped(session, item, Effective));
+        }).ToArray() ?? [];
         var customOptions = session.CustomTab ? HudCustomOptions(session) : [];
         if (session.CustomTab && !session.Editing)
             cards = customOptions.Skip(session.CustomPage * 10).Take(10)
