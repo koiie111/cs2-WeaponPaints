@@ -20,7 +20,7 @@ internal sealed record HudStoredSkin(HudSkinKey Key, int? SourceTeam, string?[] 
 internal sealed record HudSkinTarget(HudStoredSkin Expected, HudSkinDraft Draft,
     HudCompositionLimits Limits, IReadOnlySet<uint> Stickers, IReadOnlySet<uint> Keychains,
     bool PaintKnown, string? Equipment);
-internal enum HudApplyResult { Saved, Conflict, PlusRequired, CustomUnavailable, Invalid }
+internal enum HudApplyResult { Saved, Conflict, CustomUnavailable, Invalid }
 
 /// <summary>Transaction adapter; constructed with the plugin's existing per-account FIFO and stripe lock.</summary>
 internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedOperations operations,
@@ -155,7 +155,6 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
                     if (externalGuard != null && !externalGuard()) return await Rollback(transaction, HudApplyResult.CustomUnavailable).ConfigureAwait(false);
                     if (first.CustomSupported && !await MatchesCustomDatabase(connection, transaction, customIdentity, cancellationToken).ConfigureAwait(false))
                         return await Rollback(transaction, HudApplyResult.CustomUnavailable).ConfigureAwait(false);
-                    if (!await HasPlusAsync(connection, transaction, first.SteamId, cancellationToken).ConfigureAwait(false)) return await Rollback(transaction, HudApplyResult.PlusRequired).ConfigureAwait(false);
                     foreach (var target in targets)
                         if (target.Draft.CustomModel is { } model && !await CustomAllowedAsync(connection, transaction, first.SteamId, customModels[model], cancellationToken).ConfigureAwait(false))
                             return await Rollback(transaction, HudApplyResult.CustomUnavailable).ConfigureAwait(false);
@@ -180,7 +179,6 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
                                 return await Rollback(transaction, HudApplyResult.Conflict).ConfigureAwait(false);
                         }
                     }
-                    if (!await HasPlusAsync(connection, transaction, first.SteamId, cancellationToken).ConfigureAwait(false)) return await Rollback(transaction, HudApplyResult.PlusRequired).ConfigureAwait(false);
                     foreach (var target in targets)
                         if (target.Draft.CustomModel is { } model && !await CustomAllowedAsync(connection, transaction, first.SteamId, customModels[model], cancellationToken).ConfigureAwait(false))
                             return await Rollback(transaction, HudApplyResult.CustomUnavailable).ConfigureAwait(false);
@@ -212,9 +210,6 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
 
     private static async Task<HudApplyResult> Rollback(MySqlTransaction transaction, HudApplyResult result)
     { await transaction.RollbackAsync().ConfigureAwait(false); return result; }
-
-    private static async Task<bool> HasPlusAsync(MySqlConnection connection, MySqlTransaction transaction, string steam, CancellationToken cancellationToken) =>
-        await connection.ExecuteScalarAsync<bool?>(new CommandDefinition("SELECT expires_at>CONVERT_TZ(UTC_TIMESTAMP(),'+00:00','+03:00') FROM plus_active WHERE steam_id=@steam FOR UPDATE", new { steam }, transaction, cancellationToken: cancellationToken)).ConfigureAwait(false) == true;
 
     private async Task<bool> CustomAllowedAsync(MySqlConnection connection, MySqlTransaction transaction, string steam, HudCustomModel model, CancellationToken cancellationToken)
     {

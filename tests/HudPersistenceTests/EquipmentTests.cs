@@ -15,7 +15,7 @@ internal static class EquipmentTests
             return new(old,draft,limits,new HashSet<uint>(),new HashSet<uint>(),true,equipment);
         }
         async Task Reset() {
-            await sql.ExecuteAsync("DELETE FROM wp_player_skins; DELETE FROM wp_player_knife; DELETE FROM wp_player_gloves; DELETE FROM plus_active; INSERT INTO plus_active VALUES (@steam,DATE_ADD(CONVERT_TZ(UTC_TIMESTAMP(),'+00:00','+03:00'),INTERVAL 1 HOUR))",new{steam});
+            await sql.ExecuteAsync("DELETE FROM wp_player_skins; DELETE FROM wp_player_knife; DELETE FROM wp_player_gloves; DELETE FROM plus_active",new{steam});
         }
         HudSkinKey Glove(int team,int definition)=>new(steam,team,definition,"",false,HudEquipmentKind.Glove);
         HudSkinKey Knife(int team,int definition)=>new(steam,team,definition,"weapon_knife",false,HudEquipmentKind.Knife);

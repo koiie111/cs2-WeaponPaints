@@ -74,7 +74,7 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             {
                 var panel = "item_" + i; var image = "image_" + i;
                 if (i >= view.Cards.Count) { Hidden(panel, true); Image(image, null); Text("item_" + i, ""); Text("sub_" + i, ""); continue; }
-                var card = view.Cards[i]; Text("item_" + i, card.Name); Text("sub_" + i, card.Subtitle);
+                var card = view.Cards[i]; Text("item_" + i, card.Name); Text("sub_" + i, card.Equipped ? card.EquippedLabel ?? "Установлен" : card.Subtitle);
                 Image(image, card.Image);
                 if (view.Screen is HudScreen.Category or HudScreen.Models) Class(panel, "accent-" + (i % 5));
                 else Tier(panel, card.Rarity);
@@ -94,6 +94,15 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             Text("preview_name", s.PreviewName); Image("preview_art", s.PreviewImage); Tier("preview_panel", s.Rarity);
             Text("nametag", s.Nametag); Text("wear", s.Wear); Text("seed", s.Seed); Text("stattrak", s.StatTrak);
             Text("decor", s.Decor); Text("charm", s.Charm);
+            if (s.DecorItems is { Count: > 5 }) throw new InvalidDataException("Too many decoration slots");
+            for (var i = 0; i < 5; i++)
+            {
+                var decoration = s.DecorItems != null && i < s.DecorItems.Count ? s.DecorItems[i] : null;
+                var present = decoration != null && !string.IsNullOrWhiteSpace(decoration.Name);
+                Image("decor_art_" + i, present ? decoration!.Image : null);
+                if (present) Class("decor_" + i, "hasItem");
+            }
+            Image("charm_art", s.CharmImage);
             if (!s.CanApply) Class("apply", "disabled");
             if (s.PlusRequired) Class("plus", "show");
             var feature = s.Feature;

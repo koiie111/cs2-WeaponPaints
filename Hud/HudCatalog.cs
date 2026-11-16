@@ -85,6 +85,7 @@ internal sealed class HudCatalog
     private readonly Dictionary<string, IReadOnlySet<uint>> _kits;
     private readonly Dictionary<(string Category, int Kit), HudCatalogItem> _byKit;
     private readonly Dictionary<(string Category, int Definition), HudCatalogItem> _baseByDefinition;
+    private readonly Dictionary<(string Category, int Definition, int Kit), HudCatalogItem> _finishByIdentity;
     private readonly Dictionary<(string Category, int Definition), HudCatalogItem> _modelArtwork;
     private readonly Dictionary<int, HudCatalogItem> _ids;
     internal int Count => _ids.Count;
@@ -116,6 +117,9 @@ internal sealed class HudCatalog
         _baseByDefinition = _ids.Values.Where(item => item.Base && item.Definition.HasValue)
             .GroupBy(item => (item.Category, item.Definition!.Value)).Where(group => group.Count() == 1)
             .ToDictionary(group => group.Key, group => group.Single());
+        _finishByIdentity = _ids.Values.Where(item => !item.Base && item.Definition.HasValue && item.Kit is > 0)
+            .GroupBy(item => (item.Category, item.Definition!.Value, item.Kit!.Value))
+            .Where(group => group.Count() == 1).ToDictionary(group => group.Key, group => group.Single());
         _modelArtwork = _ids.Values.Where(item => !item.Base && item.Definition.HasValue && item.ArtKind == "native"
                 && item.Resource != null && item.ArtBank.HasValue && item.ArtCell.HasValue)
             .GroupBy(item => (item.Category, item.Definition!.Value))
@@ -132,6 +136,8 @@ internal sealed class HudCatalog
     internal IReadOnlySet<uint> KitIds(string category) => _kits.GetValueOrDefault(category) ?? EmptyKits;
     internal HudCatalogItem? FindKit(string category, uint kit) => kit <= int.MaxValue ? _byKit.GetValueOrDefault((category, (int)kit)) : null;
     internal HudCatalogItem? FindBase(string category, int definition) => _baseByDefinition.GetValueOrDefault((category, definition));
+    internal HudCatalogItem? FindFinish(string category, int definition, int kit) => kit == 0
+        ? FindBase(category, definition) : _finishByIdentity.GetValueOrDefault((category, definition, kit));
     // Only model-card artwork uses a representative finish; identities and choices stay on the base model.
     internal HudCatalogItem? ModelArtwork(HudCatalogItem model)
     {

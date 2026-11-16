@@ -54,6 +54,11 @@ public partial class WeaponPaints
         internal bool PetTouched { get; set; }
     }
 
+    private static bool HudRequiresPlus(HudControllerSession session) =>
+        session.CosmeticChanges?.Any(change => change.Expected.Key.Kind is HudCosmeticKind.Graffiti or HudCosmeticKind.Pet) == true;
+    private static bool HudCanApply(HudControllerSession session) =>
+        !session.SaveUncertain && (!HudRequiresPlus(session) || session.Plus);
+
     private readonly Dictionary<int, HudControllerSession> _hudSessions = [];
     // A committed write followed by a deferred/failed refresh cannot establish the applied loadout.
     private readonly HudLoadoutCertainty _hudUnconfirmedSlots = new();
@@ -149,7 +154,7 @@ public partial class WeaponPaints
         {
             if (_hudSurface?.Owns(layout) != true || _hudCoordinator == null || _hudContract?.Buttons.Contains(button) != true
                 || !_hudSessions.TryGetValue(player.Slot, out var session) || !_hudCoordinator.CanClick(session.Native)
-                || session.Prompt != null || !session.Native.Owner.OwnsController(player.SteamID, player.EntityHandle.Raw)) return;
+                || !HudPromptAllowsClick(session.Prompt, button) || !session.Native.Owner.OwnsController(player.SteamID, player.EntityHandle.Raw)) return;
             HudClick(session, button);
         });
         RegisterListener<Listeners.OnMapStart>(_ => ResetHud());
@@ -266,6 +271,11 @@ public partial class WeaponPaints
 
     private void HudClick(HudControllerSession session, string button)
     {
+        if (session.Prompt != null)
+        {
+            if (button == "state_0") EndHudPrompt(session);
+            return;
+        }
         if (session.Message != null)
         {
             if (session.ConflictDialog)
@@ -296,7 +306,7 @@ public partial class WeaponPaints
             if (button == "state_0")
             {
                 session.ConfirmDiscard = false;
-                if (session.Plus && !session.SaveUncertain)
+                if (HudCanApply(session))
                 {
                     if (session.ResumeEditor)
                     {
@@ -533,6 +543,8 @@ public partial class WeaponPaints
         HandleHudIntent(session, intent);
     }
 
+    private static bool HudPromptAllowsClick(HudPromptLease? prompt, string button) => prompt == null || button == "state_0";
+
     private void BeginHudConflictReload(HudControllerSession session)
     {
         if (_hudCoordinator?.IsLive(session.Native) != true || session.Selected is not { } item) return;
@@ -605,7 +617,7 @@ public partial class WeaponPaints
                 Server.NextFrame(() =>
                 {
                     if (_hudCoordinator?.IsQueryCurrent(session.Native, generation) != true) return;
-                    session.Native.Busy = false; session.CustomFiltered = task.Result; session.CustomPage = 0; session.CustomChoice = null;
+                    session.Native.Busy = false; session.CustomFiltered = task.Result; session.CustomPage = 0;
                     if (cleaned.Length != 0 && session.CustomFiltered.Length == 0)
                         session.Message = new HudModalView("Ничего не найдено", "Измените поисковый запрос.", ["Понятно"]);
                     RenderHud(session);
@@ -680,6 +692,7 @@ public partial class WeaponPaints
         };
         var options = field is "nametag" or "pet_name" ? " (clear — очистить, cancel — отмена)" : " (cancel — отмена)";
         player.PrintToChat(" [Скины] " + hint + options);
+        RenderHud(session);
         var cancellation = session.PromptTimer.Token;
         _ = Task.Run(async () =>
         {
@@ -695,6 +708,48 @@ public partial class WeaponPaints
     private void EndHudPromptIfCurrent(HudControllerSession session, HudPromptLease lease)
     {
         if (ReferenceEquals(session.Prompt, lease)) EndHudPrompt(session);
+    }
+
+    private static HudModalView HudPromptModal(HudControllerSession session, string field)
+    {
+        var title = field switch
+        {
+            "wear" => "Износ", "seed" => "Паттерн", "nametag" => "Название оружия",
+            "pet_seed" => "Паттерн питомца", "pet_name" => "Имя питомца",
+            "search" or "custom_search" => "Поиск",
+            _ => HudFeaturePromptTitle(session, field)
+        };
+        var hint = field switch
+        {
+            "wear" => "Введите в игровой чат, например 0.15.",
+            "seed" => "Введите в игровой чат, например 123.",
+            "nametag" => "Введите название в игровой чат, например Мой AK-47. Для очистки введите clear.",
+            "pet_seed" => "Введите в игровой чат, например 123.",
+            "pet_name" => "Введите имя в игровой чат, например Цыпа. Для очистки введите clear.",
+            "search" or "custom_search" => "Введите запрос в игровой чат, например AK-47.",
+            _ => HudFeaturePromptHint(session, field) + "."
+        };
+        return new HudModalView(title, "Откройте игровой чат. " + hint + " Для отмены введите cancel.", []);
+    }
+
+    private static string HudFeaturePromptTitle(HudControllerSession session, string field)
+    {
+        if (!field.StartsWith("feature:", StringComparison.Ordinal) || !int.TryParse(field[8..], out var row))
+            return "Настройка предмета";
+        return (session.Feature, row) switch
+        {
+            (HudFeatureKind.Sticker, 1) => "Точка крепления наклейки",
+            (HudFeatureKind.Sticker, 2) => "Смещение наклейки X",
+            (HudFeatureKind.Sticker, 3) => "Смещение наклейки Y",
+            (HudFeatureKind.Sticker, 4) => "Износ наклейки",
+            (HudFeatureKind.Sticker, 5) => "Масштаб наклейки",
+            (HudFeatureKind.Sticker, 6) => "Поворот наклейки",
+            (HudFeatureKind.Charm, 1) => "Положение брелока X",
+            (HudFeatureKind.Charm, 2) => "Положение брелока Y",
+            (HudFeatureKind.Charm, 3) => "Положение брелока Z",
+            (HudFeatureKind.Charm, 4) => "Паттерн брелока",
+            _ => "Настройка предмета"
+        };
     }
 
     private static string HudFeaturePromptHint(HudControllerSession session, string field)
@@ -846,11 +901,13 @@ public partial class WeaponPaints
         session.PromptTimer?.Cancel();
         session.PromptTimer?.Dispose();
         session.PromptTimer = null;
+        if (_hudSurface == null) { RenderHud(session); return; }
         var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
-        if (player == null || _hudSurface == null) return;
+        if (player == null) { RenderHud(session); return; }
         if (_hudSurface.HasForeignCapture(player) || CounterStrikeSharp.API.Modules.Menu.MenuManager.GetActiveMenu(player) != null)
         { CloseHud(player.Slot); return; }
         _hudSurface.Capture(player, true);
+        RenderHud(session);
     }
 
     private static bool HudDirty(HudControllerSession session) => (session.Editing || session.ResumeEditor) &&
@@ -927,8 +984,7 @@ public partial class WeaponPaints
                                     return;
                                 }
                             }
-                            else if (!session.ResumeEditor) session.Selected = session.Browser.Level == HudBrowserLevel.Finishes
-                                ? session.Browser.CurrentPage?.Items.FirstOrDefault() : null;
+                            else if (!session.ResumeEditor) ReconcileHudPreview(session);
                             if (session.Browser.CurrentPage?.Count == 0 && session.Browser.Search.Length != 0)
                                 session.Message = new HudModalView("Ничего не найдено", "Измените поисковый запрос.", ["Понятно"]);
                             if (!session.ResumeEditor && session.Browser.Level == HudBrowserLevel.Cosmetics
@@ -1000,7 +1056,7 @@ public partial class WeaponPaints
         }
         else if (intent.Kind is HudBrowserIntentKind.Render or HudBrowserIntentKind.Back)
         {
-            session.Selected = null;
+            if (session.Browser.Level != HudBrowserLevel.Finishes && !session.ResumeEditor) session.Selected = null;
             RenderHud(session);
         }
     }
@@ -1126,7 +1182,7 @@ public partial class WeaponPaints
                             changes.Add(new HudCosmeticChange(patch, patch.Value ?? new HudNumberValue(0)));
                         }
                 }
-                var expiry = await skinStore.LoadPlusExpiryAsync(steam, token);
+                var expiry = kind == HudCosmeticKind.Graffiti ? await skinStore.LoadPlusExpiryAsync(steam, token) : null;
                 Server.NextFrame(() =>
                 {
                     if (_hudCoordinator?.IsQueryCurrent(session.Native, generation) != true) return;
@@ -1148,7 +1204,7 @@ public partial class WeaponPaints
 
     private void ApplyHudCosmetic(HudControllerSession session)
     {
-        if (_hudCoordinator?.IsLive(session.Native) != true || !session.Plus || session.CosmeticChanges is not { Length: > 0 } changes
+        if (_hudCoordinator?.IsLive(session.Native) != true || !HudCanApply(session) || session.CosmeticChanges is not { Length: > 0 } changes
             || session.SaveUncertain || _hudCosmeticPolicy == null || WeaponSync == null) return;
         if (session.Feature == HudFeatureKind.Pet && !session.PetTouched) { FinishSavedHud(session); return; }
         changes = changes.Where(HudCosmeticChanged).ToArray();
@@ -1247,7 +1303,6 @@ public partial class WeaponPaints
                     snapshots.Add(await store.LoadAsync(new HudSkinKey(steam, team,
                         defaultKnife ? (team == 2 ? 59 : 42) : defaultGlove ? (team == 2 ? 5028 : 5029) : definition,
                         weapon, custom?.Supported == true, equipmentKind), token));
-                var expiry = await store.LoadPlusExpiryAsync(steam, token);
                 var snapshotsArray = snapshots.ToArray();
                 var draftsArray = snapshotsArray.Select(snapshot =>
                 {
@@ -1271,7 +1326,6 @@ public partial class WeaponPaints
                     session.Custom = custom;
                     session.Drafts = draftsArray;
                     session.Limits = limits;
-                    session.Plus = expiry > DateTimeOffset.UtcNow;
                     session.Feature = choice == null ? HudFeatureKind.None : HudFeatureKind.Custom;
                     session.Editing = true;
                     CompleteHudReload(session);
@@ -1289,7 +1343,7 @@ public partial class WeaponPaints
 
     private void ApplyHudSkin(HudControllerSession session)
     {
-        if (_hudCoordinator?.IsLive(session.Native) != true || !session.Plus || session.Selected is not { } item
+        if (_hudCoordinator?.IsLive(session.Native) != true || !HudCanApply(session) || session.Selected is not { } item
             || session.Snapshots is not { } snapshots || session.Drafts is not { } drafts || session.Limits is not { } limits
             || session.SaveUncertain || _hudCatalog is not { } catalog || WeaponSync == null || snapshots.Length != drafts.Length) return;
         var stickers = catalog.KitIds("stickers");
@@ -1354,7 +1408,6 @@ public partial class WeaponPaints
                         session.Message = result switch
                         {
                         HudApplyResult.Conflict => new("Данные изменились", "Настройки изменены в другом месте.", ["Перечитать", "Остаться"]),
-                            HudApplyResult.PlusRequired => new("Нужен 4ill+", "Подписка закончилась. Настройки не сохранены.", ["Понятно"]),
                             HudApplyResult.CustomUnavailable => new("Кастомный скин недоступен", "Не удалось подтвердить доступ или подключение CustomWeapons.", ["Понятно"]),
                             _ => new("Не удалось сохранить", "Проверьте параметры предмета и повторите попытку.", ["Понятно"])
                         };
@@ -1506,6 +1559,24 @@ public partial class WeaponPaints
     private static HudImage? HudItemImage(HudCatalogItem item) => item.Resource != null && item.ArtBank is int bank && item.ArtCell is int cell
         ? new HudImage(bank, cell, item.TintIndex) : null;
 
+    private static HudDecorSlot[] HudDecorItems(HudSkinDraft draft, HudCatalog? catalog) => draft.Stickers.Select(sticker =>
+    {
+        if (sticker.Id == 0) return new HudDecorSlot("", null);
+        var entry = catalog?.FindKit("stickers", sticker.Id);
+        var name = entry?.Name ?? $"Наклейка #{sticker.Id}";
+        if (name.StartsWith("Наклейка | ", StringComparison.Ordinal)) name = name[11..];
+        return new HudDecorSlot(name, entry == null ? null : HudItemImage(entry));
+    }).ToArray();
+
+    private static (string Name, HudImage? Image) HudCharmItem(HudSkinDraft draft, HudCatalog? catalog)
+    {
+        if (draft.Keychain is not { Id: > 0 } chain) return ("", null);
+        var item = catalog?.FindKit("charms", chain.Id);
+        var name = item?.Name ?? $"Брелок #{chain.Id}";
+        if (name.StartsWith("Брелок | ", StringComparison.Ordinal)) name = name[9..];
+        return (name, item == null ? null : HudItemImage(item));
+    }
+
     private static string HudFinishName(HudCatalogItem item)
     {
         if (item.Base) return "По умолчанию";
@@ -1541,14 +1612,49 @@ public partial class WeaponPaints
 
     private static int[] HudTeams(int filter) => filter switch { 2 => [2], 3 => [3], _ => [2, 3] };
 
-    private bool HudKnownCustomEquipped(HudControllerSession session, string choice, Func<int, string, (bool Known, bool Supported, string? Model)> effective)
+    private static (bool Equipped, string? Label) HudEquippedBadge(int filter, Func<int, bool> isEquipped)
+    {
+        var t = filter != 3 && isEquipped(2);
+        var ct = filter != 2 && isEquipped(3);
+        return (t || ct, t && ct ? "Установлен" : t ? "Установлен · T" : ct ? "Установлен · CT" : null);
+    }
+
+    private static string HudBackLabel(bool editing, HudSection section, string groupTitle, string weaponTitle, string categoryTitle) =>
+        editing ? weaponTitle : section == HudSection.Weapons && groupTitle.Length != 0 ? groupTitle : categoryTitle;
+
+    private void ReconcileHudPreview(HudControllerSession session)
+    {
+        var browser = session.Browser;
+        if (browser.Level != HudBrowserLevel.Finishes) { session.Selected = null; return; }
+        if (session.Selected is { } previous && previous.Definition == browser.Definition && previous.Category == browser.Category) return;
+        session.Selected = null;
+        if (_hudCatalog != null && browser.Definition is int definition)
+        {
+            var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
+            var teams = HudTeams(browser.Team);
+            if (browser.Team == 0 && player?.TeamNum == 3) teams = [3, 2];
+            foreach (var team in teams)
+            {
+                if (!GPlayerWeaponsInfo.TryGetValue(session.Native.Owner.Slot, out var sides)
+                    || !sides.TryGetValue((CsTeam)team, out var weapons)
+                    || !weapons.TryGetValue(definition, out var paint)) continue;
+                var item = _hudCatalog.FindFinish(browser.Category, definition, paint.Paint);
+                if (item != null && HudKnownEquipped(session, item,
+                    (side, weapon) => HudCustomBridge.Effective(session.Native.Owner, side, weapon), team))
+                { session.Selected = item; break; }
+            }
+        }
+        session.Selected ??= browser.CurrentPage?.Items.FirstOrDefault();
+    }
+
+    private bool HudKnownCustomEquipped(HudControllerSession session, string choice, Func<int, string, (bool Known, bool Supported, string? Model)> effective, int? teamOverride = null)
     {
         if (session.Custom is not { } custom || Config.PanoramaHud.CustomWeaponsIntegration != "required"
             || PlayerDataLoading.ContainsKey(session.Native.Owner.Slot) || _hudUnconfirmedSlots.IsUncertain(session.Native.Owner.SteamId)
             || _externalPlayerApplies.ContainsKey(session.Native.Owner.Slot) || _commandRefreshes.ContainsKey(session.Native.Owner.Slot)) return false;
         try
         {
-            return HudTeams(session.Browser.Team).All(team =>
+            return HudTeams(teamOverride ?? session.Browser.Team).All(team =>
             {
                 var actual = effective(team, custom.Weapon);
                 return actual.Known && actual.Supported && actual.Model == choice;
@@ -1557,12 +1663,12 @@ public partial class WeaponPaints
         catch { return false; }
     }
 
-    private bool HudKnownEquipped(HudControllerSession session, HudCatalogItem item, Func<int, string, (bool Known, bool Supported, string? Model)> effective)
+    private bool HudKnownEquipped(HudControllerSession session, HudCatalogItem item, Func<int, string, (bool Known, bool Supported, string? Model)> effective, int? teamOverride = null)
     {
         var slot = session.Native.Owner.Slot;
         if (PlayerDataLoading.ContainsKey(slot) || _hudUnconfirmedSlots.IsUncertain(session.Native.Owner.SteamId)
             || _externalPlayerApplies.ContainsKey(slot) || _commandRefreshes.ContainsKey(slot)) return false;
-        var teams = HudTeams(session.Browser.Team);
+        var teams = HudTeams(teamOverride ?? session.Browser.Team);
         if (session.Browser.Level == HudBrowserLevel.Cosmetics && _hudCosmetics?.TryGet(item.Id, out var entry) == true)
         {
             return entry.Kind switch
@@ -1615,15 +1721,20 @@ public partial class WeaponPaints
         {
             var art = browser.Level == HudBrowserLevel.Models ? _hudCatalog?.ModelArtwork(item) : item;
             var image = art == null ? null : HudItemImage(art);
+            var badge = HudEquippedBadge(browser.Team, team => HudKnownEquipped(session, item, Effective, team));
             return new HudCard(browser.Level == HudBrowserLevel.Finishes ? HudFinishName(item) : item.Name,
-                image == null ? "Нет изображения" : "", image, item.Rarity, HudKnownEquipped(session, item, Effective));
+                image == null ? "Нет изображения" : "", image, item.Rarity, badge.Equipped, badge.Label);
         }).ToArray() ?? [];
         var customOptions = session.CustomTab ? HudCustomOptions(session) : [];
         if (session.CustomTab && !session.Editing)
             cards = customOptions.Skip(session.CustomPage * 10).Take(10)
-                .Select(option => new HudCard(option.Value, option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? "" : "Нет изображения",
-                    option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? new HudImage(0, 0, CustomAtlas: true) : null,
-                    null, HudKnownCustomEquipped(session, option.Key, Effective))).ToArray();
+                .Select(option =>
+                {
+                    var badge = HudEquippedBadge(browser.Team, team => HudKnownCustomEquipped(session, option.Key, Effective, team));
+                    return new HudCard(option.Value, option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? "" : "Нет изображения",
+                        option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? new HudImage(0, 0, CustomAtlas: true) : null,
+                        null, badge.Equipped, badge.Label);
+                }).ToArray();
         var title = browser.Section switch
         {
             HudSection.Weapons => "ОРУЖИЕ", HudSection.Knives => "НОЖИ", HudSection.Gloves => "ПЕРЧАТКИ",
@@ -1635,8 +1746,9 @@ public partial class WeaponPaints
         var breadcrumb = "";
         if (session.Selected is { } heading && (session.Editing || browser.Level == HudBrowserLevel.Finishes))
         {
-            breadcrumb = title;
             var separator = heading.Name.IndexOf(" | ", StringComparison.Ordinal);
+            var weaponTitle = separator >= 0 ? heading.Name[..separator] : heading.Name;
+            breadcrumb = HudBackLabel(session.Editing, browser.Section, session.GroupTitle, weaponTitle, title);
             title = session.Editing ? (session.CustomTab && session.CustomChoice != null
                 && session.Custom?.Names.TryGetValue(session.CustomChoice, out var customTitle) == true ? customTitle : HudFinishName(heading))
                 : separator >= 0 ? heading.Name[..separator] : heading.Name;
@@ -1707,7 +1819,7 @@ public partial class WeaponPaints
                     pet != null ? new HudImage(0, 0, PetIcon: true) : cosmeticReset || agentReset ? null : HudItemImage(selected), selected.Rarity, "", "", "", "", "Нашивки", "",
                     CanNametag: false, CanWear: false, CanSeed: false, CanStatTrak: false, CanDecor: agent, CanCharm: false,
                     VisibleDecorSlots: agent ? 3 : 0, SelectedDecorSlot: agent ? session.StickerSlot : -1,
-                    Feature: feature, CanApply: session.Plus && !session.SaveUncertain, PlusRequired: !session.Plus);
+                    Feature: feature, CanApply: HudCanApply(session), PlusRequired: HudRequiresPlus(session) && !session.Plus);
             }
             if (session.CustomTab)
             {
@@ -1749,23 +1861,26 @@ public partial class WeaponPaints
                 }
                 var previewName = session.Feature == HudFeatureKind.Custom ? feature!.Name : selected.Name;
                 var previewImage = session.Feature == HudFeatureKind.Custom ? feature!.Image : HudItemImage(selected);
+                var decorItems = HudDecorItems(draft, _hudCatalog);
+                var charm = HudCharmItem(draft, _hudCatalog);
                 settings = new HudSettingsView(previewName, previewImage, selected.Rarity, HudShortLabel(draft.Nametag),
                     draft.Wear.ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture),
                     draft.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture),
                     (draft.StatTrak ? "ВКЛ" : "ВЫКЛ") + " · " + snapshots[0].KillCount,
-                    "Наклейки", "Брелок", CanNametag: selected.Category != "gloves", CanWear: selected.Capabilities?.Wear == true,
+                    "Наклейки", charm.Name, CanNametag: selected.Category != "gloves", CanWear: selected.Capabilities?.Wear == true,
                     CanStatTrak: selected.Category != "gloves",
                     CanDecor: selected.Capabilities?.StickerSlots > 0, CanCharm: selected.Capabilities?.Keychain == true,
                     VisibleDecorSlots: selected.Capabilities?.StickerSlots > 0 ? 5 : 0,
                     SelectedDecorSlot: selected.Capabilities?.StickerSlots > 0 ? session.StickerSlot : -1,
-                    Feature: feature, CanApply: session.Plus && !session.SaveUncertain, PlusRequired: !session.Plus);
+                    Feature: feature, CanApply: HudCanApply(session), PlusRequired: false,
+                    DecorItems: decorItems, CharmImage: charm.Image);
             }
         }
         var view = new HudViewModel(screen, browser.Section, breadcrumb, title, "СТОРОНА  ·  " + (browser.Team switch { 2 => "T", 3 => "CT", _ => "ОБЕ" }),
             cards, session.CustomTab && !session.Editing ? session.CustomPage : page?.Page ?? 0,
             session.CustomTab && !session.Editing ? Math.Max(1, (customOptions.Length + 9) / 10) : page?.Pages ?? 1,
             session.CustomTab && !session.Editing ? customOptions.Length : page?.Count ?? 0,
-            Hero: hero, Settings: settings, Modal: session.Message ?? (session.ConfirmDiscard
+            Hero: hero, Settings: settings, Modal: session.Prompt is { } prompt ? HudPromptModal(session, prompt.Field) : session.Message ?? (session.ConfirmDiscard
                 ? new HudModalView("Несохранённые изменения", "Сохранить изменения перед выходом?", ["Применить", "Не сохранять", "Остаться"]) : null),
             TeamVisible: !session.ResumeEditor && browser.Section is not (HudSection.Graffiti or HudSection.Pet),
             CustomTab: session.CustomTab, BackVisible: browser.Level != HudBrowserLevel.Home,

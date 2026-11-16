@@ -36,6 +36,12 @@ the session opens; navigation, search and page changes use that snapshot.
 Transactions recheck access when applying. No performance claim is established
 by offline tests.
 
+Only graffiti and pets require an active 4ill+ subscription. Weapon finishes,
+knives, gloves, agents, music, pins, stickers and charms are available without
+4ill+. Custom models additionally require their own CustomWeapons access when
+private. Mixed transactions containing graffiti or a pet require 4ill+ for the
+whole transaction; the check is repeated inside the transaction before commit.
+
 Native checkpoint, 13 November 2026: an isolated four-panel test confirmed
 singular `background-size: contain` on this retail client. The earlier `contains`
 spelling generated repeated parsing warnings and was removed from V6. The V6

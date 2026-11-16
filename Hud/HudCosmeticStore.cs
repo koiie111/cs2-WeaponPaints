@@ -61,6 +61,7 @@ internal sealed class HudCosmeticStore(Func<Task<MySqlConnection>> connect, Orde
         var input=changes.ToArray(); var allowed=policy.Allowed.ToDictionary(p=>p.Key,p=>p.Value.ToHashSet()); var pets=policy.Pets.ToHashSet(); var hats=policy.Hats.ToHashSet(StringComparer.Ordinal);
         if(input.Length is <1 or >32 || input.Any(c=>!ValidKey(c.Expected.Key) || !CorrectValue(c.Expected.Key.Kind,c.Value)) || input.Select(c=>c.Expected.Key).Distinct().Count()!=input.Length || input.Any(c=>c.Expected.Key.SteamId!=input[0].Expected.Key.SteamId) || input.Any(c=>c.Value is HudPetValue pet ? !pets.Contains(new HudPetIdentity(pet.Id,pet.Stage,pet.Variant)) || !hats.Contains(pet.Hat ?? "") : !allowed.TryGetValue(new HudCosmeticScope(c.Expected.Key.Kind,c.Expected.Key.Team),out var set)||!set.Contains(c.Value))) return HudCosmeticResult.Invalid;
         input=input.Select(c=>c.Value is HudPetValue p ? c with { Value = p with { Name = p.Name!.Trim(' ') } } : c).ToArray();
+        var requiresPlus = input.Any(c => c.Expected.Key.Kind is HudCosmeticKind.Graffiti or HudCosmeticKind.Pet);
         string steam=input[0].Expected.Key.SteamId;
         using var order=await EnterAsync(steam,token).ConfigureAwait(false);
         var gate=stripe(steam); await gate.WaitAsync(token).ConfigureAwait(false);
@@ -71,11 +72,11 @@ internal sealed class HudCosmeticStore(Func<Task<MySqlConnection>> connect, Orde
             try {
                 await using var tx=await db.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,token).ConfigureAwait(false);
                 try {
-                    if(!await HasPlus(db,tx,steam,token).ConfigureAwait(false)) return await Rollback(tx,HudCosmeticResult.PlusRequired);
+                    if(requiresPlus && !await HasPlus(db,tx,steam,token).ConfigureAwait(false)) return await Rollback(tx,HudCosmeticResult.PlusRequired);
                     foreach(var change in input.OrderBy(c=>c.Expected.Key.Kind).ThenBy(c=>c.Expected.Key.Team).ThenBy(c=>c.Expected.Key.Slot))
                         if(await ReadAsync(db,tx,change.Expected.Key,true,token).ConfigureAwait(false)!=change.Expected) return await Rollback(tx,HudCosmeticResult.Conflict);
                     foreach(var change in input) await WriteAsync(db,tx,change,token).ConfigureAwait(false);
-                    if(!await HasPlus(db,tx,steam,token).ConfigureAwait(false)) return await Rollback(tx,HudCosmeticResult.PlusRequired);
+                    if(requiresPlus && !await HasPlus(db,tx,steam,token).ConfigureAwait(false)) return await Rollback(tx,HudCosmeticResult.PlusRequired);
                     token.ThrowIfCancellationRequested(); await tx.CommitAsync(CancellationToken.None).ConfigureAwait(false); return HudCosmeticResult.Saved;
                 } catch { await tx.RollbackAsync(CancellationToken.None).ConfigureAwait(false); throw; }
             } finally { try { await db.ExecuteScalarAsync<int?>("SELECT RELEASE_LOCK(@name)",new{name}).ConfigureAwait(false); } catch { /* Connection disposal releases a session lock. */ } }

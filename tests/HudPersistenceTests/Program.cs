@@ -50,10 +50,10 @@ try
     }
     Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_seed FROM wp_player_skins WHERE steamid=@steam AND weapon_team=2",new {steam})==0,"identity mismatch mutated skin");
     await sql.ExecuteAsync("UPDATE plus_active SET expires_at='2000-01-01' WHERE steam_id=@steam",new {steam});
-    Check(await Apply(pending)==HudApplyResult.PlusRequired,"expired Plus must reject");
-    Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_seed FROM wp_player_skins WHERE steamid=@steam AND weapon_team=2",new {steam})==0,"expired Plus mutated skin");
-    await sql.ExecuteAsync("UPDATE plus_active SET expires_at=DATE_ADD(CONVERT_TZ(UTC_TIMESTAMP(),'+00:00','+03:00'),INTERVAL 1 HOUR) WHERE steam_id=@steam",new {steam});
-    Check(await Apply(pending)==HudApplyResult.Saved,"renewed Plus should permit unchanged snapshot");
+    Check(await Apply(pending)==HudApplyResult.Saved,"expired Plus must not block weapon selection");
+    await sql.ExecuteAsync("DELETE FROM plus_active WHERE steam_id=@steam",new {steam});
+    pending=await Target(key2,d=>d.Seed=18);
+    Check(await Apply(pending)==HudApplyResult.Saved,"missing Plus must not block weapon selection");
     await Reset(); pending=await Target(key2,d=>d.Seed=18);
     await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_nametag='website update' WHERE steamid=@steam AND weapon_team=2",new {steam});
     Check(await Apply(pending)==HudApplyResult.Conflict,"website conflict must reject");
@@ -64,7 +64,8 @@ try
     await sql.ExecuteAsync("DROP TRIGGER hud_fail_second");
     Check(fault,"second team failure must propagate");
     Check(await sql.ExecuteScalarAsync<int>("SELECT SUM(weapon_seed) FROM wp_player_skins WHERE steamid=@steam",new {steam})==0,"both-side transaction was not rolled back");
-    await Reset(); pending=await Target(key2,d=> { for(uint i=0;i<5;i++) d.Stickers[i]=new(101+i,i,0,0,0,1,0); d.Keychain=new(37,0,0,0,1,106); });
+    await Reset(); await sql.ExecuteAsync("DELETE FROM plus_active WHERE steam_id=@steam",new{steam});
+    pending=await Target(key2,d=> { for(uint i=0;i<5;i++) d.Stickers[i]=new(101+i,i,0,0,0,1,0); d.Keychain=new(37,0,0,0,1,106); });
     Check(await Apply(pending)==HudApplyResult.Saved,"five stickers and slab save failed");
     var stored=await store.LoadAsync(key2); var decoded=HudSkinCodec.Decode(stored).Draft;
     Check(decoded.Stickers.Select(s=>s.Id).SequenceEqual(new uint[]{101,102,103,104,105}),"five sticker round trip");
@@ -96,7 +97,7 @@ try
     await sql.ExecuteAsync("UPDATE cw_access SET sid=33 WHERE steamid64=@steam",new {steam});
     await sql.ExecuteAsync("UPDATE cw_skins SET active=0 WHERE model='rare'"); Check(await Apply(pending)==HudApplyResult.CustomUnavailable,"inactive model");
     await sql.ExecuteAsync("UPDATE cw_skins SET active=1 WHERE model='rare'; INSERT INTO cw_skins (model,name,active) VALUES ('rare','Other',1)"); Check(await Apply(pending)==HudApplyResult.CustomUnavailable,"ambiguous model");
-    await sql.ExecuteAsync("DELETE FROM cw_skins WHERE name='Other'"); Check(await Apply(pending)==HudApplyResult.Saved,"valid custom entitlement");
+    await sql.ExecuteAsync("DELETE FROM cw_skins WHERE name='Other'; DELETE FROM plus_active WHERE steam_id=@steam",new {steam}); Check(await Apply(pending)==HudApplyResult.Saved,"valid custom entitlement works without Plus");
     Check(await sql.ExecuteScalarAsync<string>("SELECT model FROM cw_site_selections WHERE steamid64=@steam AND weapon_team=2",new {steam})=="rare","custom selection missing");
     Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_paint_id FROM wp_player_skins WHERE steamid=@steam AND weapon_team=2",new {steam})==44,"custom selection mutated stock paint");
     await Reset();

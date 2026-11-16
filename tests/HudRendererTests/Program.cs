@@ -1,6 +1,6 @@
 using WeaponPaints.Hud;
 static void Check(bool value, string message) { if (!value) throw new Exception(message); }
-var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v6.json");
+var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v7.json");
 var renderer = new HudRenderer(contract);
 var image0 = new HudWriteKey(false,"image_0","art-finishes-0");
 Check(contract.Authored(image0)=="1" && contract.Authored(new(false,"tab_standard","active"))=="1", "authored classes missing");
@@ -12,6 +12,9 @@ string Val(bool variable,string panel,string name) => frame.GetValueOrDefault(ne
 Check(Val(false,"wp_root","show")=="missing", "renderer must not reveal the surface");
 Check(Val(false,"image_0","art-finishes-0")=="0" && Val(false,"image_0","bank-2")=="1" && Val(false,"image_0","cell-3")=="1", "sample image leaked or bank missing");
 Check(Val(false,"item_0","tier-d32ce6")=="1" && Val(false,"item_0","selected")=="1", "rarity or equipped state missing");
+Check(Val(true,"wp_root","sub_0")=="Установлен", "equipped label missing");
+var oneTeam = renderer.Render(view with { Cards=[card with { EquippedLabel="Установлен · CT" }] });
+Check(oneTeam.GetValueOrDefault(new(true,"wp_root","sub_0"))=="Установлен · CT", "team-specific label missing");
 var preview = renderer.Render(view with { Cards=[card with { Equipped=false }], Hero=view.Hero! with { Title="Preview only" } });
 Check(preview.GetValueOrDefault(new(false,"item_0","selected")) != "1" && preview.Values.Contains("Preview only"), "preview must not acquire an equipped marker");
 Check(Val(false,"item_1","is-hidden")=="1" && Val(true,"wp_root","hero_seed")=="Паттерн: 123", "empty cell or hero label wrong");
@@ -31,9 +34,16 @@ Check(Val(false,"feature_art","art-custom-0")=="1" && Val(false,"feature_art","a
 Check(Val(false,"apply","disabled")=="1" && Val(false,"plus","show")=="1" && Val(false,"modal_layer","show")=="1", "entitlement/modal missing");
 Check(Val(false,"feature_slot_1","active")=="1", "selected patch slot missing");
 Check(Val(false,"state_1","is-hidden")=="1" && Val(false,"feature_slot_2","is-hidden")=="missing", "modal or patch slot visibility wrong");
-var decorations = settings with { Feature=null, VisibleDecorSlots=5, SelectedDecorSlot=2 };
+frame=renderer.Render(view with { Screen=HudScreen.Settings, Settings=settings, Modal=new HudModalView("Износ", "Откройте игровой чат. Например 0.15. Для отмены введите cancel.", []) });
+Check(Val(false,"modal_layer","show")=="1" && Enumerable.Range(0,3).All(i => Val(false,"state_"+i,"is-hidden")=="1"), "chat prompt must show no inaccessible buttons");
+var decorations = settings with { Feature=null, VisibleDecorSlots=5, SelectedDecorSlot=2,
+    DecorItems=[new("Стрелок", new HudImage(2,3)),new("Очень длинное название наклейки", null)], CharmImage=new HudImage(4,5) };
 frame=renderer.Render(view with { Screen=HudScreen.Settings, Settings=decorations, Modal=null });
 Check(Val(false,"decor_2","active")=="1" && Val(false,"decor_1","active")=="missing", "sticker slot selection wrong");
+Check(Val(false,"decor_art_0","bank-2")=="1" && Val(false,"decor_art_0","cell-3")=="1", "sticker image missing");
+Check(Val(false,"decor_1","hasItem")=="1", "item without art lost");
+Check(Val(false,"decor_2","hasItem")=="missing", "empty slot incorrectly filled");
+Check(Val(false,"charm_art","bank-4")=="1" && Val(false,"charm_art","cell-5")=="1", "charm image missing");
 frame=renderer.Render(view with { Screen=HudScreen.Settings, Settings=decorations with { PreviewImage=new HudImage(0,0,PetIcon:true) }, Modal=null });
 Check(Val(false,"preview_art","art-pet-0")=="1", "verified native pet icon missing");
 frame=renderer.Render(view with { Screen=HudScreen.Home, Section=HudSection.Pet });

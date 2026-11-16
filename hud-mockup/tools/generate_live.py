@@ -17,7 +17,7 @@ MOCK = ROOT / "addon"
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", choices=("2", "3", "4", "6"), default="6")
+    parser.add_argument("--version", choices=("2", "3", "4", "6", "7"), default="7")
     args = parser.parse_args()
     version = args.version
     live = ROOT / ("live-addon" if version == "2" else f"live-addon-v{version}")
@@ -27,7 +27,7 @@ def main():
     for directory in (layout_dir, style_dir, material_dir):
         directory.mkdir(parents=True, exist_ok=True)
     xml = ET.parse(MOCK / "panorama/layout/custom_game/weaponpaints.xml").getroot()
-    if version in ("3", "4", "6"):
+    if version in ("3", "4", "6", "7"):
         replace_font_icons(xml)
     includes = xml.find("styles")
     if includes is None:
@@ -43,11 +43,32 @@ def main():
         "include",
         {"src": f"s2r://panorama/styles/custom_game/weaponpaints_stock_v{version}.vcss_c"},
     )
-    if version in ("3", "4", "6"):
+    if version in ("3", "4", "6", "7"):
         sort = xml.find(".//Button[@id='sort']/Label")
         if sort is None:
             raise ValueError("Approved layout has no sort label")
         sort.set("text", "{s:sort}")
+    if version == "7":
+        # Only the first wide tile carries the inter-row gap. The last small
+        # tile has no trailing gutter; both rows then fit their parent exactly.
+        for panel_id, css_class in (("category_pistols", "mosaicGap"), ("category_zeus", "mosaicLast")):
+            panel = xml.find(f".//Button[@id='{panel_id}']")
+            if panel is None:
+                raise ValueError("Missing home mosaic tile: " + panel_id)
+            panel.set("class", panel.get("class", "") + " " + css_class)
+    if version == "7":
+        strip = xml.find(".//Panel[@id='decor_slots']")
+        charm = xml.find(".//Button[@id='charm']")
+        if strip is None or charm is None:
+            raise ValueError("Missing decoration controls")
+        strip.set("class", strip.get("class", "") + " decorStrip")
+        for i in range(5):
+            slot = strip.find(f"Button[@id='decor_{i}']")
+            if slot is None:
+                raise ValueError("Missing decoration slot")
+            ET.SubElement(slot, "Panel", {"id": f"decor_art_{i}", "class": "decorThumb art", "hittest": "false"})
+        charm.set("class", charm.get("class", "") + " charmValue")
+        ET.SubElement(charm, "Panel", {"id": "charm_art", "class": "charmThumb art", "hittest": "false"})
     ET.indent(xml)
     (layout_dir / f"weaponpaints_v{version}.xml").write_text(
         ET.tostring(xml, encoding="unicode"), encoding="utf8"
@@ -73,7 +94,7 @@ def main():
     if version in ("3", "4"):
         css, _ = explicit_image_fitting(css)
         css += "\n" + shell_and_hero_overrides()
-    elif version == "6":
+    elif version in ("6", "7"):
         # Retail MINI v5: `contain` fits; `contains` caused warning floods.
         # Keep background fitting on ONE shared .art rule, never 14k copies.
         original = ".art { background-size: contains; background-repeat: no-repeat; background-position: center; }"
@@ -84,8 +105,24 @@ def main():
         css += "\n" + shell_and_hero_overrides().replace("background-size: contains;", "background-size: contain;")
         if "background-size: contains" in css:
             raise ValueError("Invalid retail contains value remains")
-    if version in ("4", "6"):
+    if version in ("4", "6", "7"):
         css += "\n" + (ROOT / "tools/live_native_modal_v4.css").read_text(encoding="utf8")
+    if version == "7":
+        old = ".mosaic.wide { width: 555px; height: 224px; margin-right: 0px; margin-bottom: 12px;"
+        new = ".mosaic.wide { width: 555px; height: 224px; margin-right: 0px; margin-bottom: 0px;"
+        if css.count(old) != 1:
+            raise ValueError("Unexpected home mosaic styling")
+        css = css.replace(old, new)
+        css += """
+.mosaic.wide.mosaicGap { margin-bottom: 12px; }
+.mosaicBottom .mosaic.mosaicLast { margin-right: 0px; }
+.item.selected .itemSub { color: #56d99b; font-size: 12px; font-weight: bold; }
+.decorStrip .decorSlot { width: 102px; height: 50px; }
+.decorStrip .decorSlot.hasItem .buttonText { visibility: collapse; }
+.decorThumb { width: 52px; height: 38px; horizontal-align: center; vertical-align: center; }
+.charmThumb { width: 32px; height: 22px; vertical-align: center; }
+.charmValue .buttonText { margin-left: 36px; width: 166px; text-overflow: shrink min( 9px ) ellipsis; }
+"""
     # The live controller needs a visible current slot and page bounds.
     # These native Panorama rules intentionally do not alter the approved mockup.
     css += "\n.decorSlot.active { border: 1px solid #79c7ef; }\n.page.disabled { opacity: 0.45; }\n.app.rendering .main { opacity: 0; }\n"

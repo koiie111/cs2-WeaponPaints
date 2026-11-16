@@ -44,7 +44,32 @@ Click("nav_music");Click("state_1");Check(!(bool)Get(session,"Editing")! && Get(
 Set(session,"Editing",true);Click("team");Check((bool)Get(session,"ConfirmDiscard")! && (int)Get(session,"PendingTeam")! == 2,"dirty team change prompts");
 Click("state_2");Check(Get(session,"PendingTeam")==null,"cancel team change clears intent");
 Click("back");Check((bool)Get(session,"ConfirmDiscard")!,"dirty back prompts");
-Set(session,"Plus",false);Click("state_0");Check(!(bool)Get(session,"ConfirmDiscard")! && (bool)Get(session,"Editing")!,"save prompt cannot proceed without Plus");
+Set(session,"Plus",false);
+Check((bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"music remains available without Plus");
+foreach(var freeKind in new[]{"Agent","Patch","Music","Pin"})
+{
+    var freeKey=New(T("HudCosmeticKey"),"76561198000000001",EnumValue("HudCosmeticKind",freeKind),2,0);
+    var freeSnapshot=New(T("HudCosmeticSnapshot"),freeKey,false,null,null);
+    var freeChanges=Array.CreateInstance(T("HudCosmeticChange"),1);
+    freeChanges.SetValue(New(T("HudCosmeticChange"),freeSnapshot,baseline),0);Set(session,"CosmeticChanges",freeChanges);
+    Check((bool)Call(null,plugin.GetType(),"HudCanApply",session)!,freeKind+" remains available without Plus");
+}
+var graffitiKey=New(T("HudCosmeticKey"),"76561198000000001",EnumValue("HudCosmeticKind","Graffiti"),0,0);
+var graffitiValue=New(T("HudGraffitiValue"),1671,3);
+var graffitiSnapshot=New(T("HudCosmeticSnapshot"),graffitiKey,false,null,null);
+var graffitiChange=New(T("HudCosmeticChange"),graffitiSnapshot,graffitiValue);
+var gatedChanges=Array.CreateInstance(T("HudCosmeticChange"),2);gatedChanges.SetValue(change,0);gatedChanges.SetValue(graffitiChange,1);
+Set(session,"CosmeticChanges",gatedChanges);
+Check(!(bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"mixed graffiti change requires Plus");
+var petKey=New(T("HudCosmeticKey"),"76561198000000001",EnumValue("HudCosmeticKind","Pet"),0,0);
+var petSnapshot=New(T("HudCosmeticSnapshot"),petKey,false,null,null);
+var petValue=New(T("HudPetValue"),true,true,3,1,0,0U,"","");
+var petChanges=Array.CreateInstance(T("HudCosmeticChange"),1);petChanges.SetValue(New(T("HudCosmeticChange"),petSnapshot,petValue),0);
+Set(session,"CosmeticChanges",petChanges);Check(!(bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"pet requires Plus");
+Set(session,"CosmeticChanges",null);Check((bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"weapon draft is available without Plus");
+Set(session,"CosmeticChanges",gatedChanges);
+Click("state_0");Check(!(bool)Get(session,"ConfirmDiscard")! && (bool)Get(session,"Editing")!,"gated save prompt cannot proceed without Plus");
+Set(session,"CosmeticChanges",array);
 Click("back");Set(session,"Plus",true);Set(session,"SaveUncertain",true);Click("state_0");Check(!(bool)Get(session,"ConfirmDiscard")! && (bool)Get(session,"Editing")!,"uncertain prior save cannot retry");
 Set(session,"Feature",EnumValue("HudFeatureKind","Pet"));Set(session,"PetTouched",false);Check(!Dirty(),"untouched pet is clean");Set(session,"PetTouched",true);Check(Dirty(),"edited pet is dirty");
 Set(session,"Feature",EnumValue("HudFeatureKind","None"));Set(session,"Editing",false);Check(!Dirty(),"closed editor is clean");
@@ -109,6 +134,33 @@ noCustomSnapshots.SetValue(emptyFallbackStored,0);noCustomDrafts.SetValue(Get(em
 Check(Dirty(),"an inherited explicit stock marker must remain dirty until materialized");
 Set(session,"Snapshots",snapshotsArray);Set(session,"Drafts",fallbackDrafts);
 
+// Presentation derives from the decoded snapshot/draft, including existing decorations.
+object CatalogItem(int id,string category,int kit,string name) { var x=New(T("HudCatalogItem")); Set(x,"Id",id);Set(x,"Bank",id/256);Set(x,"Cell",id%256);Set(x,"Category",category);Set(x,"Kit",kit);Set(x,"Name",name);Set(x,"Resource","s2r://panorama/images/test.vtex");Set(x,"ArtBank",id/256);Set(x,"ArtCell",id%256);return x; }
+var catalogItems=Array.CreateInstance(T("HudCatalogItem"),2);catalogItems.SetValue(CatalogItem(501,"stickers",123,"Наклейка | Стрелок"),0);catalogItems.SetValue(CatalogItem(502,"charms",45,"Брелок | Звезда"),1);
+var catalog=New(T("HudCatalog"),(object)catalogItems);
+var decorationRaw=(string?[])raw.Clone();decorationRaw[5]="123;0;0;0;0;1;0";decorationRaw[10]="45;0;0;0;0";
+var decorationSnapshot=New(T("HudStoredSkin"),skinKey,2,decorationRaw,0,null,null);var decorationDraft=Get(Call(null,T("HudSkinCodec"),"Decode",decorationSnapshot)!,"Draft")!;
+var decorSlots=(Array)Call(null,plugin.GetType(),"HudDecorItems",decorationDraft,catalog)!;
+Check((string)Get(decorSlots.GetValue(0)!,"Name")! == "Стрелок" && Get(decorSlots.GetValue(0)!,"Image")!=null,"saved sticker name and artwork follow decoded draft");
+Check((string)Get(decorSlots.GetValue(1)!,"Name")! == "","empty sticker slot stays empty");
+var charmView=Call(null,plugin.GetType(),"HudCharmItem",decorationDraft,catalog)!;
+Check((string)Get(charmView,"Item1")! == "Звезда" && Get(charmView,"Item2")!=null,"saved charm name and artwork follow decoded draft");
+var draftStickers=(Array)Get(decorationDraft,"Stickers")!;draftStickers.SetValue(New(T("HudSticker"),(uint)0,(uint)0,0f,0f,0f,1f,0f),0);
+decorSlots=(Array)Call(null,plugin.GetType(),"HudDecorItems",decorationDraft,catalog)!;Check((string)Get(decorSlots.GetValue(0)!,"Name")! == "","cleared sticker updates presentation immediately");
+draftStickers.SetValue(New(T("HudSticker"),(uint)123,(uint)0,0f,0f,0f,1f,0f),1);
+decorSlots=(Array)Call(null,plugin.GetType(),"HudDecorItems",decorationDraft,catalog)!;Check((string)Get(decorSlots.GetValue(1)!,"Name")! == "Стрелок" && Get(decorSlots.GetValue(1)!,"Image")!=null,"newly selected sticker updates name and image immediately");
+Set(decorationDraft,"Keychain",null);charmView=Call(null,plugin.GetType(),"HudCharmItem",decorationDraft,catalog)!;Check((string)Get(charmView,"Item1")! == "" && Get(charmView,"Item2")==null,"cleared charm updates presentation immediately");
+var badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(team=>team==2))!;
+Check((bool)Get(badge,"Item1")! && (string)Get(badge,"Item2")! == "Установлен · T","Both badge identifies only confirmed T");
+badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(team=>team==3))!;Check((string)Get(badge,"Item2")! == "Установлен · CT","Both badge identifies only confirmed CT");
+badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(_=>true))!;Check((string)Get(badge,"Item2")! == "Установлен","Both badge requires both confirmed sides");
+badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(_=>false))!;Check(!(bool)Get(badge,"Item1")!,"unconfirmed preview never gets equipped marker");
+Check((string)Call(null,plugin.GetType(),"HudBackLabel",false,EnumValue("HudSection","Weapons"),"ВИНТОВКИ","AK-47","ОРУЖИЕ")! == "ВИНТОВКИ","finishes breadcrumb names parent group");
+Check((string)Call(null,plugin.GetType(),"HudBackLabel",true,EnumValue("HudSection","Weapons"),"ВИНТОВКИ","AK-47","ОРУЖИЕ")! == "AK-47","settings breadcrumb names parent weapon");
+var promptModal=Call(null,plugin.GetType(),"HudPromptModal",session,"wear")!;
+Check((string)Get(promptModal,"Title")! == "Износ" && ((string)Get(promptModal,"Text")!).Contains("Откройте игровой чат") && ((string)Get(promptModal,"Text")!).Contains("0.15") && ((string)Get(promptModal,"Text")!).Contains("cancel") && ((IReadOnlyList<string>)Get(promptModal,"Actions")!).Count==0,"wear prompt explains chat, example and cancellation without inaccessible buttons");
+Set(session,"Feature",EnumValue("HudFeatureKind","Sticker"));promptModal=Call(null,plugin.GetType(),"HudPromptModal",session,"feature:3")!;Check(((string)Get(promptModal,"Title")!).Contains("Y") && ((string)Get(promptModal,"Text")!).Contains("0.1"),"sticker prompt identifies edited field and example");Set(session,"Feature",EnumValue("HudFeatureKind","None"));
+
 var configType=asm.GetType("WeaponPaints.WeaponPaintsConfig",true)!;var config=New(configType);Set(plugin,"Config",config);var hud=Get(config,"PanoramaHud")!;
 var musicSection=EnumValue("HudSection","Music");
 Set(hud,"Enabled",false);Check(!(bool)Call(plugin,plugin.GetType(),"RouteHudAlias",null,musicSection)!,"disabled HUD permits legacy alias");
@@ -128,6 +180,28 @@ var il=setter.GetILGenerator();il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);i
 ((Action<object,object>)setter.CreateDelegate(typeof(Action<object,object>)))(plugin,coordinator);
 var liveNative=Call(coordinator,coordinator.GetType(),"Open",3,76561198000000003UL,(uint)303,(uint)404,(long)9)!;
 var liveSession=New(sessionType,liveNative,EnumValue("HudSize","Normal"));
+Check((bool)Call(null,plugin.GetType(),"HudPromptAllowsClick",lease,"state_0")!,"prompt permits cancel button");
+Check(!(bool)Call(null,plugin.GetType(),"HudPromptAllowsClick",lease,"item_0")!,"prompt blocks unrelated click");
+Set(liveSession,"Prompt",lease);Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_1");Check(ReferenceEquals(Get(liveSession,"Prompt"),lease),"non-cancel prompt click is ignored");
+Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_0");Check(Get(liveSession,"Prompt")==null,"cancel button ends the active prompt");
+// Drive actual controller/browser paging with a selected finish held off-page.
+var pagesSession=New(sessionType,liveNative,EnumValue("HudSize","Normal"));var pagesBrowser=Get(pagesSession,"Browser")!;
+var groupIntent=Call(pagesBrowser,pagesBrowser.GetType(),"OpenWeaponGroup",new HashSet<int>{7})!;
+var model=New(T("HudCatalogItem"));Set(model,"Id",1);Set(model,"Category","weapons");Set(model,"Definition",7);Set(model,"Name","AK-47");Set(model,"Base",true);
+var modelItems=Array.CreateInstance(T("HudCatalogItem"),1);modelItems.SetValue(model,0);var modelSelection=New(T("HudCatalogSelection"),(object)modelItems);
+Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(groupIntent,"Revision"),modelSelection)!,"model selection accepted");
+var finishIntent=Call(pagesBrowser,pagesBrowser.GetType(),"Select",0,Get(pagesBrowser,"Revision"))!;var finishItems=Array.CreateInstance(T("HudCatalogItem"),12);
+for(int i=0;i<12;i++){var x=New(T("HudCatalogItem"));Set(x,"Id",i+20);Set(x,"Category","weapons");Set(x,"Definition",7);Set(x,"Name","AK-47 | Finish "+i);Set(x,"Kit",i+1);finishItems.SetValue(x,i);}
+var finishSelection=New(T("HudCatalogSelection"),(object)finishItems);Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(finishIntent,"Revision"),finishSelection)!,"finish selection accepted");
+var chosen=finishItems.GetValue(0)!;Set(pagesSession,"Selected",chosen);var nextPage=Call(pagesBrowser,pagesBrowser.GetType(),"MovePage",1)!;
+Call(plugin,plugin.GetType(),"HandleHudIntent",pagesSession,nextPage);Check(ReferenceEquals(Get(pagesSession,"Selected"),chosen),"page change preserves selected preview");
+var newChoice=Call(pagesBrowser,pagesBrowser.GetType(),"Select",0,Get(pagesBrowser,"Revision"))!;Call(plugin,plugin.GetType(),"HandleHudIntent",pagesSession,newChoice);
+Check(ReferenceEquals(Get(pagesSession,"Selected"),finishItems.GetValue(10)),"clicking another card changes selected preview");
+var sortIntent=Call(pagesBrowser,pagesBrowser.GetType(),"NextSort")!;Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(sortIntent,"Revision"),finishSelection)!,"sorted selection accepted");
+Call(plugin,plugin.GetType(),"ReconcileHudPreview",pagesSession);Check(ReferenceEquals(Get(pagesSession,"Selected"),finishItems.GetValue(10)),"sort query preserves selected preview even off page");
+var searchIntent=Call(pagesBrowser,pagesBrowser.GetType(),"SetSearch","Finish 0")!;var searchItems=Array.CreateInstance(T("HudCatalogItem"),1);searchItems.SetValue(finishItems.GetValue(0),0);
+Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(searchIntent,"Revision"),New(T("HudCatalogSelection"),(object)searchItems))!,"filtered selection accepted");Call(plugin,plugin.GetType(),"ReconcileHudPreview",pagesSession);Check(ReferenceEquals(Get(pagesSession,"Selected"),finishItems.GetValue(10)),"search preserves preview absent from results");
+
 Set(liveSession,"Editing",true);Set(liveSession,"Drafts",fallbackDrafts);Set(liveSession,"Selected",New(T("HudCatalogItem")));
 object ConflictMessage()=>New(T("HudModalView"),"Conflict","Changed",new[]{"Reload","Stay"},false,"","","",false);
 Set(liveSession,"Message",ConflictMessage());Set(liveSession,"ConflictDialog",true);
