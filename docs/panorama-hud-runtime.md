@@ -1,13 +1,14 @@
 # WeaponPaints Panorama HUD: integration status
 
 This integration is under development. Do not deploy it as a finished HUD until
-the native-client acceptance and controller review are complete.
+the remaining feature, refresh and performance acceptance work is complete.
 
 `PanoramaHud.Enabled` defaults to `false`. When enabled, `css_whud` opens the
 HUD and `css_whud_scale normal|compact|small` selects its scale for the current
 session. The V9 layout and its matching contract and companion stock stylesheet must be
-available to the client. V9 has been compiled offline and has not been accepted
-in the native client. A browser approximation is not a native-client test.
+available to the client. The owner accepted the reviewed V9 appearance and
+observed Apply scenarios in the native client on 16 November 2026. A browser
+approximation is not a native-client test.
 
 `PanoramaHud.CustomWeaponsIntegration` defaults to `required`. In that mode a
 compatible, ready CustomWeapons HUD capability and matching database identity
@@ -47,8 +48,8 @@ pin=16, other/unknown=32; zero means no recorded subsystem failure. A count
 does not prove a particular in-game appearance. Diagnostics do not include
 player identities, item values, SQL text or raw error messages.
 
-Current known limitations include controller/game-host tests, real-client
-layout validation, complete feature behavior and native confirmation of refresh.
+Remaining work includes broader controller/game-host coverage, feature behavior,
+refresh confirmation across scenarios and full performance acceptance.
 Custom product and entitlement data is prefetched once in the background when
 the session opens; navigation, search and page changes use that snapshot.
 Transactions recheck access when applying. No performance claim is established
@@ -80,10 +81,14 @@ After that trial eight scoped account differences were restored and server 11
 returned to its original public configuration (final audit prefix `24982`). No
 CSSProfiler measurement was taken during the V8 trial.
 
-V9 adds the preview rarity line, a larger 4ill+ card and 19 custom images from
-editor renders. Its 512×308 BC7 textures total 582,499 bytes in the offline package;
-this is not a measurement of client memory or native visual quality. V9 has not
-been published or tested in-game.
+On 16 November the owner accepted V9 in the native client: the preview rarity
+line, larger 4ill+ card above Apply, and custom AK, AWP and Glock previews.
+A cold Glock T-side Apply and a subsequent both-team Apply with StatTrak, a
+sticker and a charm succeeded. These observations do not establish complete
+feature, refresh or load acceptance; the earlier intermittent V8 refresh issue
+has not had its underlying cause established. V9 uses 19 custom editor-render
+images; their compiled 512×308 BC7 textures total 582,499 bytes, not a client
+memory measurement.
 
 On 16 November, one 10-second instrumented window was recorded for each of HUD
 closed, open and idle, and closed again, on the same process with the owner
@@ -93,3 +98,14 @@ synchronous wrapper timings, not CPU time, full-frame cost or client FPS. The
 requested paging window contained no observed HUD-click callback and included
 death events, so it is not a paging benchmark. Further matched measurements and
 native acceptance are still required.
+
+Preliminary 17 November instrumented measurements are documented in the
+[measurement report](measurements/panorama-20261117/REPORT.md). Two paging windows and one successful Apply diagnostic have been recorded.
+The associated Apply-window trace contains an unexplained 46.289049 ms HUD-click
+wrapper peak; its button and cause are unknown. Three sampled windows have
+been collected; further attribution and performance acceptance remain pending.
+
+After the 17 November trial, the test server was verified restored to its
+original public configuration. Temporary profiling and round-rule changes were
+removed, pre-existing profiler logs preserved, and the two changed preference
+fields restored.

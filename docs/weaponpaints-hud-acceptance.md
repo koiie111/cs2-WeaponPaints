@@ -1,6 +1,7 @@
 # Temporary WeaponPaints HUD addon: review and acceptance
 
-This procedure is a plan, not a record of a completed test. The addon and the
+This procedure describes preparation and acceptance; the status below records
+the observed native checks and their limits. The addon and the
 Workshop item are separate from Clans and all shared items. The current source
 resource names are versioned `weaponpaints_v9`; change the resource paths and the explicit
 allowlist together for a subsequent incompatible build, rather than overwriting
@@ -17,11 +18,20 @@ investigation. Eight scoped account differences were restored and server 11 was
 returned to its original public configuration (final audit prefix `24982`); no
 CSSProfiler capture was made during that V8 trial.
 
-V9 has been compiled and packed offline but has not been published or accepted
-in an actual client. Its 19 compiled custom editor-render textures total 582,499 bytes;
-that result does not establish native appearance or runtime memory use. V8 and
-earlier published resource paths remain frozen. See [the runtime guide](panorama-hud-runtime.md)
-for the controller and its current limitations.
+The owner accepted V9 in the native client on 16 November: the rarity line,
+4ill+ card above Apply, and custom AK, AWP and Glock previews. A cold Glock
+T-side Apply and a later both-team Apply with StatTrak, a sticker and a charm
+succeeded. This does not establish complete feature, refresh or performance
+acceptance; the cause of the earlier intermittent V8 refresh issue remains
+unconfirmed. The 19 compiled custom textures total 582,499 bytes, not measured
+client memory. Published resource paths remain frozen. See [the runtime guide](panorama-hud-runtime.md)
+and [preliminary measurements](measurements/panorama-20261117/REPORT.md).
+
+After the 17 November trial, the original public configuration, plugin and
+protected configuration hashes were verified. Temporary profiling and the
+round rule were removed, pre-existing profiler logs preserved, and the two
+changed preference fields restored. The temporary Workshop item was made
+private and the test subscription removed.
 
 ## Prepare and review
 
@@ -98,7 +108,7 @@ its local state for traceability. Never alter shared or Clans Workshop items.
 ## Test-account preferences
 
 Before the first real Apply, take a private, scoped, restorable snapshot for
-Steam account `76561198776749975` only, using the runtime persistence owner's
+the explicitly designated test account only, using the runtime persistence owner's
 schema-aware procedure. Cover the existing WeaponPaints and CustomWeapons
 preferences for all skins, knife, gloves, music kits, pins, agents, patches,
 pet, graffiti, and `cw_site_selections`. Verify snapshot completeness and a
