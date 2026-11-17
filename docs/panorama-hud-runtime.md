@@ -5,10 +5,11 @@ the remaining feature, refresh and performance acceptance work is complete.
 
 `PanoramaHud.Enabled` defaults to `false`. When enabled, `css_whud` opens the
 HUD and `css_whud_scale normal|compact|small` selects its scale for the current
-session. The V9 layout and its matching contract and companion stock stylesheet must be
-available to the client. The owner accepted the reviewed V9 appearance and
-observed Apply scenarios in the native client on 16 November 2026. A browser
-approximation is not a native-client test.
+session. The V10 layout, matching contract and stock stylesheet must be
+available to the client. The V10 layout and installed-art changes have not been
+accepted in the native client. The owner accepted the earlier V9 appearance and
+observed Apply scenarios on 16 November 2026. A browser approximation is not
+a native-client test.
 
 `PanoramaHud.CustomWeaponsIntegration` defaults to `required`. In that mode a
 compatible, ready CustomWeapons HUD capability and matching database identity
@@ -47,6 +48,21 @@ trace phase and validation reason, and separate store/CW/refresh timings. The
 pin=16, other/unknown=32; zero means no recorded subsystem failure. A count
 does not prove a particular in-game appearance. Diagnostics do not include
 player identities, item values, SQL text or raw error messages.
+
+For opt-in main-thread timing, `wp_hud_timing summary`, `firstapply`, `max`
+or `last` selects a bounded summary or individual click sample. The samples
+are elapsed synchronous phases, not full-frame or CPU measurements; disabled
+diagnostics perform no sampling.
+
+Home and weapon-model artwork is captured into a per-session immutable index
+from loaded player state and the CustomWeapons capability. Browsing reads the
+index without SQL. Explicit T/CT views use that side; Both uses the current
+player side without changing the browser selection. Confirmed custom selections
+use matching renders; unknown or unavailable state falls back to a base image
+rather than claiming an installed selection. The index refreshes after confirmed
+refresh and invalidates when the published player snapshot identity or the
+CustomWeapons generation changes. V10's
+actual client appearance and these transitions still require native QA.
 
 Remaining work includes broader controller/game-host coverage, feature behavior,
 refresh confirmation across scenarios and full performance acceptance.

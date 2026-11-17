@@ -8,6 +8,10 @@ void Check(bool ok,string message) { if(!ok)throw new InvalidOperationException(
 var registry=HudBridgeRegistry.Instance;var service=new Fake();registry.SetCurrent(service);
 try {
  var owner=new HudViewerStamp(1,76561198000000001UL,101,102,1,1);
+ var initialGeneration=HudCustomBridge.CurrentGeneration();
+ Check(initialGeneration.HasValue && initialGeneration==registry.Generation,"generation checks active capability without snapshot");
+ TestCapability.Available=false;Check(HudCustomBridge.CurrentGeneration()==null,"missing capability invalidates cached generation");TestCapability.Available=true;
+ registry.SetCurrent(new Fake());Check(HudCustomBridge.CurrentGeneration()!=initialGeneration,"replacement invalidates cached generation");registry.SetCurrent(service);
  Check(HudCustomBridge.Effective(owner,2,"weapon_ak47") is { Known:true, Supported:true, Model:"precached" },"effective choice crosses V2 boundary");
  Check(TestCapability.Name=="customweapons:hud:v2", "must request V2 and never fall back to V1");
  TestCapability.Available=false;Check(!HudCustomBridge.Effective(owner,2,"weapon_ak47").Known,"missing V2 fails closed");TestCapability.Available=true;

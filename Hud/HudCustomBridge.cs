@@ -18,6 +18,15 @@ internal static class HudCustomBridge
     private static readonly PluginCapability<IHudBridge> Capability = new(HudBridgeRegistry.CapabilityName);
     internal static IHudBridge? Get() => Capability.Get();
 
+    // Cheap identity check for cached artwork; no snapshot or database access.
+    internal static long? CurrentGeneration()
+    {
+        var generation = HudBridgeRegistry.Instance.Generation;
+        var bridge = Get();
+        return ReferenceEquals(bridge, HudBridgeRegistry.Instance)
+            && generation == HudBridgeRegistry.Instance.Generation ? generation : null;
+    }
+
     // A missing provider, stale owner, pending write, or unavailable access is unknown.
     internal static (bool Known, bool Supported, string? Model) Effective(HudViewerStamp owner, int team, string weapon)
     {

@@ -2,11 +2,17 @@
 param(
     [string]$Cs2Root='E:\SteamLibrary\steamapps\common\Counter-Strike Global Offensive',
     [string]$Addon='cs2_4ill_weaponpaints_mockup',
+    [string]$SourceRoot=(Join-Path $PSScriptRoot 'addon'),
     [switch]$Compile
 )
 $ErrorActionPreference='Stop'
 if ($Addon -notmatch '^[a-z0-9_]+$') { throw 'Invalid addon name' }
-$source=Join-Path $PSScriptRoot 'addon'
+$source=(Resolve-Path -LiteralPath $SourceRoot -ErrorAction Stop).Path
+if (-not (Test-Path -LiteralPath $source -PathType Container)) { throw 'Source root must be a directory' }
+foreach ($directory in 'panorama','materials') {
+    if (-not (Test-Path -LiteralPath (Join-Path $source $directory) -PathType Container)) { throw "Missing source directory: $directory" }
+}
+if (-not (Test-Path -LiteralPath (Join-Path $source 'addoninfo.txt') -PathType Leaf)) { throw 'Missing source addoninfo.txt' }
 $contentRoot=[IO.Path]::GetFullPath((Join-Path $Cs2Root 'content\csgo_addons'))
 $target=[IO.Path]::GetFullPath((Join-Path $contentRoot $Addon))
 if (-not $target.StartsWith($contentRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Addon path escaped content tree' }

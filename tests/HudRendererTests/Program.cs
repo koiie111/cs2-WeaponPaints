@@ -1,6 +1,6 @@
 using WeaponPaints.Hud;
 static void Check(bool value, string message) { if (!value) throw new Exception(message); }
-var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v9.json");
+var contract = HudLayoutContract.Load(args.Length > 0 ? args[0] : "hud-mockup/catalog/hud-live-contract-v10.json");
 var renderer = new HudRenderer(contract);
 var image0 = new HudWriteKey(false,"image_0","art-finishes-0");
 Check(contract.Authored(image0)=="1" && contract.Authored(new(false,"tab_standard","active"))=="1", "authored classes missing");
@@ -68,3 +68,17 @@ Check(Val(false,"nav_weapons","active")=="0" && Val(false,"nav_pet","active")=="
 try { renderer.Render(view with { Screen=HudScreen.Settings, Settings=decorations with { SelectedDecorSlot=5 } }); throw new Exception("invalid selected slot accepted"); }
 catch (InvalidDataException) { }
 Console.WriteLine("HUD renderer contract/transition tests passed");
+
+var homeView = view with { Screen=HudScreen.Home, HomeImages=new Dictionary<string,HudHomeArtwork> { ["pistols"]=new(new HudImage(2, 7), "d32ce6") } };
+var homeFrame = renderer.Render(homeView);
+Check(homeFrame.GetValueOrDefault(new(false,"category_art_pistols","bank-2"))=="1", "home installed image bank missing");
+Check(homeFrame.GetValueOrDefault(new(false,"category_art_pistols","cell-7"))=="1", "home installed image cell missing");
+Check(homeFrame.GetValueOrDefault(new(false,"category_art_pistols","art-catalog-3"))=="0", "home sample artwork leaked");
+
+Check(homeFrame.GetValueOrDefault(new(false,"category_pistols","tier-8847ff"))=="0", "old category rarity remains");
+Check(homeFrame.GetValueOrDefault(new(false,"category_pistols","tier-d32ce6"))=="1", "installed rarity missing");
+Check(homeFrame.GetValueOrDefault(new(false,"header_divider","is-hidden"))=="1" && homeFrame.GetValueOrDefault(new(false,"back","is-hidden"))=="1", "home navigation should be hidden");
+
+var model = renderer.Render(view with { Screen=HudScreen.Models, Cards=[card], Hero=null });
+Check(model.GetValueOrDefault(new(false,"item_0","tier-d32ce6"))=="1", "installed model rarity missing");
+Check(model.GetValueOrDefault(new(false,"item_0","accent-0"))!="1", "model accent must not mask installed rarity");

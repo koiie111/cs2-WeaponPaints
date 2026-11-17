@@ -3,7 +3,7 @@
 This procedure describes preparation and acceptance; the status below records
 the observed native checks and their limits. The addon and the
 Workshop item are separate from Clans and all shared items. The current source
-resource names are versioned `weaponpaints_v9`; change the resource paths and the explicit
+resource names are versioned `weaponpaints_v10`; change the resource paths and the explicit
 allowlist together for a subsequent incompatible build, rather than overwriting
 an old layout at the same path. The server plugin must request that exact
 compiled layout. Do not ship the plugin, maps, `gameinfo`, or stock textures in
@@ -33,13 +33,26 @@ round rule were removed, pre-existing profiler logs preserved, and the two
 changed preference fields restored. The temporary Workshop item was made
 private and the test subscription removed.
 
+V10 introduces the updated navigation and cached, team-aware installed artwork.
+It has not yet been accepted in the native client; the V9 checks above remain
+historical evidence, not acceptance of V10.
+
+An isolated offline V10 compilation produced a 23-resource VPK of 2,889,910
+bytes, SHA-256 `84381509db185312c003af6e6aab5285a39b321eb27743dfa9146b3051918ac6`.
+The archive passed independent Source2Viewer CRC verification; all 42 staged
+source files matched the V10 source. The 19 compiled custom textures totalled
+582,499 bytes. These checks do not establish runtime memory usage or native
+client acceptance.
+
 ## Prepare and review
 
-1. Generate the separate source tree with `python hud-mockup/tools/generate_live.py --version 9` and validate it with `python hud-mockup/tools/check_live_contract.py hud-mockup/live-addon-v9 --version 9`. Compile it using a
-   dedicated addon tree, and inspect the generated layout, CSS, texture and
+1. Generate the separate source tree with `python hud-mockup/tools/generate_live.py --version 10` and validate it with `python hud-mockup/tools/check_live_contract.py hud-mockup/live-addon-v10 --version 10`. Compile it using a
+   dedicated addon tree, for example `./hud-mockup/build.ps1 -SourceRoot
+   <absolute-live-addon-v10> -Addon <fresh-addon-name> -Compile`, and inspect
+   the generated layout, CSS, textures and
    client-facing preview. Verify the plugin requests the versioned layout.
-2. Run `python hud-mockup/tools/pack_temporary_v9.py --compiled-root <dedicated-compiled-addon> --out <fresh-output.vpk>`.
-   The wrapper asserts the exact v9 source and compiled names; `pack.py` creates
+2. Run `python hud-mockup/tools/pack_temporary_v10.py --compiled-root <dedicated-compiled-addon> --out <fresh-output.vpk>`.
+   The wrapper asserts the exact v10 source and compiled names; `pack.py` creates
    a source-derived archive and SHA-256 manifest using `vpk.py`. Review every
    manifest entry and its hashes. Independently list and verify the archive with
    a VPK reader before considering it for upload. Confirm that no stock textures,

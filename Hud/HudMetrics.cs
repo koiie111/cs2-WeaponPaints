@@ -11,7 +11,7 @@ internal enum HudApplyPhase
 }
 
 /// <summary>Aggregate counters only. Reporting is explicit; no per-click logs.</summary>
-internal sealed class HudMetrics
+internal sealed partial class HudMetrics
 {
     private long _renderCount, _renderTicks, _renderMaxTicks;
     private long _applyCount, _applyTicks, _applyMaxTicks;

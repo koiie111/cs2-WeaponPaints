@@ -17,7 +17,7 @@ MOCK = ROOT / "addon"
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", choices=("2", "3", "4", "6", "7", "8", "9"), default="9")
+    parser.add_argument("--version", choices=("2", "3", "4", "6", "7", "8", "9", "10"), default="10")
     args = parser.parse_args()
     version = args.version
     live = ROOT / ("live-addon" if version == "2" else f"live-addon-v{version}")
@@ -27,7 +27,7 @@ def main():
     for directory in (layout_dir, style_dir, material_dir):
         directory.mkdir(parents=True, exist_ok=True)
     xml = ET.parse(MOCK / "panorama/layout/custom_game/weaponpaints.xml").getroot()
-    if version in ("3", "4", "6", "7", "8", "9"):
+    if version in ("3", "4", "6", "7", "8", "9", "10"):
         replace_font_icons(xml)
     includes = xml.find("styles")
     if includes is None:
@@ -43,12 +43,12 @@ def main():
         "include",
         {"src": f"s2r://panorama/styles/custom_game/weaponpaints_stock_v{version}.vcss_c"},
     )
-    if version in ("3", "4", "6", "7", "8", "9"):
+    if version in ("3", "4", "6", "7", "8", "9", "10"):
         sort = xml.find(".//Button[@id='sort']/Label")
         if sort is None:
             raise ValueError("Approved layout has no sort label")
         sort.set("text", "{s:sort}")
-    if version in ("7", "8", "9"):
+    if version in ("7", "8", "9", "10"):
         # Only the first wide tile carries the inter-row gap. The last small
         # tile has no trailing gutter; both rows then fit their parent exactly.
         for panel_id, css_class in (("category_pistols", "mosaicGap"), ("category_zeus", "mosaicLast")):
@@ -56,7 +56,7 @@ def main():
             if panel is None:
                 raise ValueError("Missing home mosaic tile: " + panel_id)
             panel.set("class", panel.get("class", "") + " " + css_class)
-    if version in ("7", "8", "9"):
+    if version in ("7", "8", "9", "10"):
         strip = xml.find(".//Panel[@id='decor_slots']")
         charm = xml.find(".//Button[@id='charm']")
         if strip is None or charm is None:
@@ -69,7 +69,7 @@ def main():
             ET.SubElement(slot, "Panel", {"id": f"decor_art_{i}", "class": "decorThumb art", "hittest": "false"})
         charm.set("class", charm.get("class", "") + " charmValue")
         ET.SubElement(charm, "Panel", {"id": "charm_art", "class": "charmThumb art", "hittest": "false"})
-    if version in ("8", "9"):
+    if version in ("8", "9", "10"):
         charm = xml.find(".//Button[@id='charm']")
         if charm is None:
             raise ValueError("Missing charm control")
@@ -89,7 +89,7 @@ def main():
         page.set("class", "buttonText pageNumber")
         box.append(page)
         footer.insert(index, box)
-    if version == "9":
+    if version in ("9", "10"):
         plus = xml.find(".//Panel[@id='plus']")
         apply = xml.find(".//Button[@id='apply']")
         if plus is None or apply is None:
@@ -103,6 +103,30 @@ def main():
         if title is None:
             raise ValueError("Missing 4ill+ title")
         title.set("text", "Доступно только с 4ill+")
+    if version == "10":
+        brand = xml.find(".//Label[@class='brand']")
+        if brand is None:
+            raise ValueError("Missing brand")
+        brand.set("text", "Скинченджер / 4ill.ru")
+        divider = xml.find(".//Panel[@class='headerDivider']")
+        if divider is None:
+            raise ValueError("Missing header divider")
+        divider.set("id", "header_divider")
+        for button in xml.findall(".//Button"):
+            if button.get("id", "").startswith("nav_"):
+                icon = button.find("Label[@class='navIcon']")
+                if icon is None:
+                    raise ValueError("Missing navigation icon")
+                icon.tag = "Panel"
+                icon.attrib.pop("text", None)
+                icon.set("class", "navIconRail")
+                ET.SubElement(icon, "Panel", {"class": "navPicture", "hittest": "false"})
+        for key in ("rifles", "pistols", "smg", "shotguns", "snipers", "heavy", "zeus"):
+            button = xml.find(f".//Button[@id='category_{key}']")
+            art = next((node for node in button if "tileImage" in node.get("class", "").split()), None) if button is not None else None
+            if art is None:
+                raise ValueError("Missing category artwork: " + key)
+            art.set("id", "category_art_" + key)
     ET.indent(xml)
     (layout_dir / f"weaponpaints_v{version}.xml").write_text(
         ET.tostring(xml, encoding="unicode"), encoding="utf8"
@@ -128,7 +152,7 @@ def main():
     if version in ("3", "4"):
         css, _ = explicit_image_fitting(css)
         css += "\n" + shell_and_hero_overrides()
-    elif version in ("6", "7", "8", "9"):
+    elif version in ("6", "7", "8", "9", "10"):
         # Retail MINI v5: `contain` fits; `contains` caused warning floods.
         # Keep background fitting on ONE shared .art rule, never 14k copies.
         original = ".art { background-size: contains; background-repeat: no-repeat; background-position: center; }"
@@ -139,9 +163,9 @@ def main():
         css += "\n" + shell_and_hero_overrides().replace("background-size: contains;", "background-size: contain;")
         if "background-size: contains" in css:
             raise ValueError("Invalid retail contains value remains")
-    if version in ("4", "6", "7", "8", "9"):
+    if version in ("4", "6", "7", "8", "9", "10"):
         css += "\n" + (ROOT / "tools/live_native_modal_v4.css").read_text(encoding="utf8")
-    if version in ("7", "8", "9"):
+    if version in ("7", "8", "9", "10"):
         old = ".mosaic.wide { width: 555px; height: 224px; margin-right: 0px; margin-bottom: 12px;"
         new = ".mosaic.wide { width: 555px; height: 224px; margin-right: 0px; margin-bottom: 0px;"
         if css.count(old) != 1:
@@ -157,7 +181,7 @@ def main():
 .charmThumb { width: 32px; height: 22px; vertical-align: center; }
 .charmValue .buttonText { margin-left: 36px; width: 166px; text-overflow: shrink min( 9px ) ellipsis; }
 """
-    if version in ("8", "9"):
+    if version in ("8", "9", "10"):
         css += """
 .pageNumberBox { width: 70px; height: 26px; }
 .pageNumberBox .pageNumber { horizontal-align: center; vertical-align: center; }
@@ -168,7 +192,7 @@ def main():
 .charmValue.empty .buttonText { visibility: collapse; }
 .charmValue.empty .charmPlus { visibility: visible; }
 """
-    if version == "9":
+    if version in ("9", "10"):
         # Border uses the same tier colour as catalog cards, without an image
         # or animation. The offer takes full width above the single Apply.
         css += """
@@ -181,10 +205,10 @@ def main():
 """
         for color in ("ded6cc", "b0c3d9", "5e98d9", "4b69ff", "8847ff", "d32ce6", "eb4b4b", "e4ae39"):
             css += f".previewColumn.tier-{color}, .heroArt.tier-{color} {{ border-bottom-color: #{color}; }}\n"
-    if version == "9":
+    if version in ("9", "10"):
         # V9 uses individually fitted, genuine editor renders. Stock images
         # remain game-provided; no texture atlas/crop shader is needed.
-        legacy = '.art-custom-0 { background-image: url("s2r://materials/weaponpaints/custom_v9.vtex"); }'
+        legacy = f'.art-custom-0 {{ background-image: url("s2r://materials/weaponpaints/custom_v{version}.vtex"); }}'
         if css.count(legacy) != 1:
             raise ValueError("Unexpected legacy custom image rule")
         css = css.replace(legacy, "")
@@ -192,6 +216,25 @@ def main():
         # These three taller transparent renders would otherwise be clipped by
         # the 225px hero viewport. Preserve aspect ratio and centre the canvas.
         css += "\n.heroImage.art-custom-10, .heroImage.art-custom-15, .heroImage.art-custom-16 { width: 400px; height: 240px; margin-top: -8px; }\n"
+    if version == "10":
+        nav_art = {
+            "weapons": "equipment/hkp2000", "knives": "equipment/knife",
+            "gloves": "equipment/clothing_hands", "agents": "equipment/customplayer",
+            "music": "ui/music_kit", "pins": "ui/pin", "graffiti": "equipment/spray0",
+            "pet": "equipment/pet",
+        }
+        for name, path in nav_art.items():
+            css += f'#nav_{name} .navPicture {{ background-image: url("s2r://panorama/images/icons/{path}.vsvg"); }}\n'
+        css += """
+.navIconRail { width: 32px; height: 32px; margin-left: 10px; margin-right: 11px; vertical-align: center; }
+.navPicture { width: 22px; height: 22px; horizontal-align: center; vertical-align: center; wash-color: #95acbb; background-size: contain; background-repeat: no-repeat; background-position: 50% 50%; }
+.nav.active .navPicture { wash-color: #b8def0; }
+#nav_knives .navPicture { width: 26px; height: 26px; transform: rotateZ( -30deg ); }
+.brand { width: 220px; font-size: 16px; letter-spacing: 0px; text-overflow: shrink min( 12px ) ellipsis; }
+.nav { height: 55px; }
+.navText { width: 158px; font-size: 18px; }
+.navIcon { font-size: 18px; }
+"""
     # The live controller needs a visible current slot and page bounds.
     # These native Panorama rules intentionally do not alter the approved mockup.
     css += "\n.decorSlot.active { border: 1px solid #79c7ef; }\n.page.disabled { opacity: 0.45; }\n.app.rendering .main { opacity: 0; }\n"
@@ -200,7 +243,7 @@ def main():
     if version in ("3", "4"):
         stock, _ = explicit_image_fitting(stock)
     (style_dir / f"weaponpaints_stock_v{version}.css").write_text(stock, encoding="utf8")
-    if version == "9":
+    if version in ("9", "10"):
         for ext in ("png", "vtex"):
             # Remove only these two earlier V9 generator products; V8 is frozen.
             stale = material_dir / f"custom_v9.{ext}"

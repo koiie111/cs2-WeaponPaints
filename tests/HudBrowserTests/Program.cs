@@ -65,3 +65,4 @@ var forged=browser.OpenSection(HudSection.Agents);
 Check(!browser.AcceptQuery(forged.Revision,new HudCatalogSelection([items[0]])), "foreign category results accepted");
 Check(browser.Select(0,browser.Revision).Kind==HudBrowserIntentKind.NoOp, "forged result clickable");
 Console.WriteLine("HUD browser navigation tests passed");
+InstalledArtworkTests.Run();

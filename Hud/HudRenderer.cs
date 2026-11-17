@@ -58,11 +58,28 @@ internal sealed class HudRenderer(HudLayoutContract contract)
         for (var index = 0; index < Navigation.Length; index++)
             Class(Navigation[index], "active", index == (int)view.Section);
         Text("breadcrumb", view.Breadcrumb); Text("title", view.Title); Text("team", view.Team);
-        Hidden("team", !view.TeamVisible); Hidden("back", !view.BackVisible);
+        Hidden("team", !view.TeamVisible);
+        Hidden("back", !view.BackVisible || view.Screen == HudScreen.Home);
+        Hidden("header_divider", !view.BackVisible || view.Screen == HudScreen.Home);
         var home = view.Screen == HudScreen.Home;
         var settings = view.Screen == HudScreen.Settings;
         var catalog = !home && !settings;
         Class(home ? "home" : settings ? "settings" : "catalog", "show");
+        if (home)
+        {
+            foreach (var category in new[] { "rifles", "pistols", "smg", "shotguns", "snipers", "heavy", "zeus" })
+            {
+                var item = view.HomeImages != null && view.HomeImages.TryGetValue(category, out var art) ? art : null;
+                Image("category_art_" + category, item?.Image);
+                if (item?.Rarity != null)
+                {
+                    var tile = "category_" + category;
+                    foreach (var name in contract.AuthoredClasses(tile).Where(x => x.StartsWith("tier-", StringComparison.Ordinal)))
+                        Class(tile, name, false);
+                    Tier(tile, item.Rarity);
+                }
+            }
+        }
         if (catalog)
         {
             var finishes = view.Screen == HudScreen.Finishes;
@@ -82,7 +99,7 @@ internal sealed class HudRenderer(HudLayoutContract contract)
                 if (i >= view.Cards.Count) { Hidden(panel, true); Image(image, null); Text("item_" + i, ""); Text("sub_" + i, ""); continue; }
                 var card = view.Cards[i]; Text("item_" + i, card.Name); Text("sub_" + i, card.Equipped ? card.EquippedLabel ?? "Установлен" : card.Subtitle);
                 Image(image, card.Image);
-                if (view.Screen is HudScreen.Category or HudScreen.Models) Class(panel, "accent-" + (i % 5));
+                if (view.Screen is HudScreen.Category or HudScreen.Models && card.Rarity == null) Class(panel, "accent-" + (i % 5));
                 else Tier(panel, card.Rarity);
                 if (card.Equipped) Class(panel, "selected");
             }

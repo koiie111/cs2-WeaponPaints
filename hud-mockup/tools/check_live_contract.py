@@ -1,7 +1,7 @@
 """Conservatively count the live entity's combined ID/class/dialog-variable contract."""
 import argparse, pathlib, re, xml.etree.ElementTree as ET
-p=argparse.ArgumentParser();p.add_argument('addon',type=pathlib.Path);p.add_argument('--limit',type=int,default=1024);p.add_argument('--version',choices=('2','3','4','6','7','8','9'));a=p.parse_args()
-base=a.addon/'panorama'; version=a.version or next((v for v in ('9','8','7','6','4','3','2') if (base/'layout/custom_game'/f'weaponpaints_v{v}.xml').exists()),None)
+p=argparse.ArgumentParser();p.add_argument('addon',type=pathlib.Path);p.add_argument('--limit',type=int,default=1024);p.add_argument('--version',choices=('2','3','4','6','7','8','9','10'));a=p.parse_args()
+base=a.addon/'panorama'; version=a.version or next((v for v in ('10','9','8','7','6','4','3','2') if (base/'layout/custom_game'/f'weaponpaints_v{v}.xml').exists()),None)
 if version is None: raise ValueError('No versioned live layout found')
 layout=base/'layout/custom_game'/f'weaponpaints_v{version}.xml'; tree=ET.parse(layout)
 ids=set();classes=set();variables=set();styles=[]
