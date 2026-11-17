@@ -33,9 +33,26 @@ round rule were removed, pre-existing profiler logs preserved, and the two
 changed preference fields restored. The temporary Workshop item was made
 private and the test subscription removed.
 
-V10 introduces the updated navigation and cached, team-aware installed artwork.
-It has not yet been accepted in the native client; the V9 checks above remain
-historical evidence, not acceptance of V10.
+V10 was exercised in the native client on 17 November. A Glock Apply saved
+successfully and CustomWeapons reconciliation completed, but the equipment
+refresh failed; after reconnecting, the owner observed the saved Gamma finish.
+The bounded console evidence contained eight replacement attempts reporting
+`Replacement was not acquired` and one exhausted Glock refresh. This identifies
+the failure path, not why the native acquisition failed.
+
+The first authorized Apply callback measured 42.599 ms of inclusive wall time:
+authorization 0.012 ms, dispatch 42.585 ms, and within dispatch ApplySkin
+21.669 ms, including validation 12.745 ms, CustomWeapons snapshot 4.105 ms,
+save setup 2.194 ms and saving render 0.278 ms. These scopes nest and must not
+be added together. The separate asynchronous outcome measured store 296.830 ms,
+CustomWeapons reconciliation 131.706 ms, equipment refresh 667.885 ms, and
+total 1156.179 ms. These are timings from one attempt, not CPU or full-frame
+measurements; no new profiler capture was made for this V10 observation.
+
+The subsequent bounded pending-acquisition change has managed adapter coverage
+but has not been verified in the native client. Do not accept or release this
+refresh change until a controlled native rerun confirms the outcome; the V9
+checks above are historical evidence, not acceptance of the changed version.
 
 An isolated offline V10 compilation produced a 23-resource VPK of 2,889,910
 bytes, SHA-256 `84381509db185312c003af6e6aab5285a39b321eb27743dfa9146b3051918ac6`.
