@@ -77,6 +77,7 @@ namespace WeaponPaints
     {
         public bool Enabled { get; set; } = false;
         public bool CollectionsEnabled { get; set; } = false;
+        public string CollectionsApiUrl { get; set; } = "";
         public string DefaultScale { get; set; } = "normal";
         public string CustomWeaponsIntegration { get; set; } = "required";
         public bool DiagnosticsEnabled { get; set; } = false;

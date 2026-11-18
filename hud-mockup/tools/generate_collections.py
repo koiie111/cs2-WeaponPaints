@@ -49,6 +49,7 @@ def main():
     for key in ("type", "search", "sort"):
         button(tools, key, "{s:wc_" + key + "}", "wcButton wcFilter")
     label(pane, "{s:wc_summary}", "wcSummary")
+    button(pane, "create", "{s:wc_action_create}")
     body = panel(pane, "wcBody")
     rows = panel(body, "wcRows")
     for i in range(6):
@@ -77,7 +78,14 @@ def main():
         art(slot, "wcSlotArt", f"slot_art_{i}")
         label(slot, f"{{s:wc_slot_{i}}}", "wcMeta")
     label(detail, "{s:wc_detail_footer}", "wcSummary")
-    button(detail, "detail_next", "{s:wc_detail_page}", "wcButton wcDetailNext")
+    tools = panel(detail, "wcDetailTools")
+    button(tools, "detail_next", "{s:wc_detail_page}", "wcButton")
+    for key in ("primary", "secondary", "manage", "link"):
+        button(tools, key, "{s:wc_action_" + key + "}")
+    options = panel(detail, "wcDetailTools")
+    for key in ("rename", "tags", "publish", "delete", "set_cover"):
+        button(options, key, "{s:wc_action_" + key + "}")
+    label(pane, "{s:wc_status}", "wcSummary")
     ET.indent(root)
     LAYOUT.parent.mkdir(parents=True, exist_ok=True)
     LAYOUT.write_text(ET.tostring(root, encoding="unicode"), encoding="utf8")

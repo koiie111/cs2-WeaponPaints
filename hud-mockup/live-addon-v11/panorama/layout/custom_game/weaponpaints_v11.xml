@@ -531,6 +531,9 @@
               </Button>
             </Panel>
             <Label class="wcSummary" text="{s:wc_summary}" hittest="false" />
+            <Button class="wcButton" id="wc_create">
+              <Label class="wcButtonText" text="{s:wc_action_create}" hittest="false" />
+            </Button>
             <Panel class="wcBody">
               <Panel class="wcRows">
                 <Button class="wcRow" id="wc_row_0">
@@ -630,11 +633,43 @@
                   <Label class="wcMeta" text="{s:wc_slot_5}" hittest="false" />
                 </Panel>
                 <Label class="wcSummary" text="{s:wc_detail_footer}" hittest="false" />
-                <Button class="wcButton wcDetailNext" id="wc_detail_next">
-                  <Label class="wcButtonText" text="{s:wc_detail_page}" hittest="false" />
-                </Button>
+                <Panel class="wcDetailTools">
+                  <Button class="wcButton" id="wc_detail_next">
+                    <Label class="wcButtonText" text="{s:wc_detail_page}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_primary">
+                    <Label class="wcButtonText" text="{s:wc_action_primary}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_secondary">
+                    <Label class="wcButtonText" text="{s:wc_action_secondary}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_manage">
+                    <Label class="wcButtonText" text="{s:wc_action_manage}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_link">
+                    <Label class="wcButtonText" text="{s:wc_action_link}" hittest="false" />
+                  </Button>
+                </Panel>
+                <Panel class="wcDetailTools">
+                  <Button class="wcButton" id="wc_rename">
+                    <Label class="wcButtonText" text="{s:wc_action_rename}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_tags">
+                    <Label class="wcButtonText" text="{s:wc_action_tags}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_publish">
+                    <Label class="wcButtonText" text="{s:wc_action_publish}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_delete">
+                    <Label class="wcButtonText" text="{s:wc_action_delete}" hittest="false" />
+                  </Button>
+                  <Button class="wcButton" id="wc_set_cover">
+                    <Label class="wcButtonText" text="{s:wc_action_set_cover}" hittest="false" />
+                  </Button>
+                </Panel>
               </Panel>
             </Panel>
+            <Label class="wcSummary" text="{s:wc_status}" hittest="false" />
           </Panel>
         </Panel>
       </Panel>

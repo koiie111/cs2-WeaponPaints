@@ -30,11 +30,14 @@
 .wcDetailHead, .wcSlot { width: 684px; margin: 0px 16px; }
 .wcDetailHead { height: 46px; margin-top: 12px; }
 .wcHeading { color: #e6f5ff; font-size: 20px; font-weight: bold; width: fill-parent-flow( 1.0 ); margin-top: 6px; }
-.wcSlot { height: 42px; border-bottom: 1px solid #304655; }
+.wcSlot { height: 36px; border-bottom: 1px solid #304655; }
 .wcSlotArt { width: 52px; height: 32px; vertical-align: center; margin: 0px 10px 0px 6px; }
 .wcSlot .wcMeta { vertical-align: center; max-width: 608px; }
 .wcDetail .wcSummary { margin-left: 16px; }
-.wcDetailNext { margin-left: 16px; }
+.wcDetailTools { margin: 5px 16px 0px; flow-children: right; }
+#wc_primary { background-color: #73bfe5; }
+#wc_primary .wcButtonText { color: #0a2635; }
+#wc_create { horizontal-align: right; margin-top: -35px; margin-bottom: 8px; }
 .wcCover.tier-ded6cc { border-bottom-color: #ded6cc; }
 .wcCover.tier-b0c3d9 { border-bottom-color: #b0c3d9; }
 .wcCover.tier-5e98d9 { border-bottom-color: #5e98d9; }

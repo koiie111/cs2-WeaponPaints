@@ -21,8 +21,14 @@ This browser reads the website workshop schema from the WeaponPaints database.
 It lists saved collections, saved crafts, and published works, with composition
 by side and workshop filters. Opening or paging reads up to seven records with
 a bounded query timeout. Card and composition selections use the loaded page.
-Account creation, equipment changes, publication, and craft application remain
-follow-up work. Keep the flag disabled on production until joint acceptance.
+Set `PanoramaHud.CollectionsApiUrl` to the site's HTTPS
+`/api/weaponpaints/workshop/v1` endpoint and provide the dedicated 64-character
+hex secret via `WP_WORKSHOP_GAME_KEY` in the server process environment. Opening
+the tab loads the account and slot limits once. A mutation refreshes the
+account when it may affect the library. The API response confirms the site
+transaction and whether it queued an equipment refresh. Native application is
+verified separately in CS2. Keep the flag disabled on production until joint
+acceptance.
 
 `PanoramaHud.CustomWeaponsIntegration` defaults to `required`. In that mode a
 compatible, ready CustomWeapons HUD capability and matching database identity

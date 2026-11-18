@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace WeaponPaints.Hud;
 
 internal sealed record HudWorkshopWork(ulong Id, string Title, string Preview, string? Cover, bool Archived,
-    bool Active, bool Published, uint Likes, uint Installs);
+    bool Active, bool Published, uint Likes, uint Installs, ulong Revision, bool Owned, bool Liked);
 
 internal sealed record HudWorkshopPage(IReadOnlyList<HudWorkshopWork> Works, bool More);
 
@@ -31,7 +31,9 @@ internal static class HudCollectionsStore
         var sql = """
             SELECT w.id Id, w.title Title, CAST(w.preview AS CHAR) Preview, w.cover Cover,
                 (w.archived <> 0) Archived, COALESCE(w.id = a.active_id, 0) Active,
-                (w.public_at IS NOT NULL) Published, w.likes Likes, w.installs Installs
+                (w.public_at IS NOT NULL) Published, w.likes Likes, w.installs Installs, w.revision Revision,
+                (w.owner = @steamId) Owned,
+                EXISTS(SELECT 1 FROM skin_workshop_likes mine WHERE mine.work_id = w.id AND mine.steam_id = @steamId) Liked
             FROM skin_workshop_works w
             LEFT JOIN skin_workshop_accounts a ON a.steam_id = @steamId AND w.owner = a.steam_id
             WHERE w.kind = @kind AND w.deleted = 0
@@ -45,7 +47,7 @@ internal static class HudCollectionsStore
             new { steamId, kind, offset = page * PageSize, emptySearch = filter.Search.Length == 0, pattern },
             commandTimeout: 5, cancellationToken: token)).ConfigureAwait(false);
         var works = rows.Select(row => new HudWorkshopWork(row.Id, row.Title, row.Preview, row.Cover,
-            row.Archived, row.Active, row.Published, row.Likes, row.Installs)).ToArray();
+            row.Archived, row.Active, row.Published, row.Likes, row.Installs, row.Revision, row.Owned, row.Liked)).ToArray();
         return new(works.Take(PageSize).ToArray(), page < MaxPage && works.Length > PageSize);
     }
 
@@ -83,5 +85,8 @@ internal static class HudCollectionsStore
         public bool Published { get; set; }
         public uint Likes { get; set; }
         public uint Installs { get; set; }
+        public ulong Revision { get; set; }
+        public bool Owned { get; set; }
+        public bool Liked { get; set; }
     }
 }

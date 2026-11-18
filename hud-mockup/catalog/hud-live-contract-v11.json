@@ -573,6 +573,9 @@
       "wcButton",
       "wcFilter"
     ],
+    "wc_create": [
+      "wcButton"
+    ],
     "wc_row_0": [
       "wcRow"
     ],
@@ -683,8 +686,34 @@
       "art"
     ],
     "wc_detail_next": [
-      "wcButton",
-      "wcDetailNext"
+      "wcButton"
+    ],
+    "wc_primary": [
+      "wcButton"
+    ],
+    "wc_secondary": [
+      "wcButton"
+    ],
+    "wc_manage": [
+      "wcButton"
+    ],
+    "wc_link": [
+      "wcButton"
+    ],
+    "wc_rename": [
+      "wcButton"
+    ],
+    "wc_tags": [
+      "wcButton"
+    ],
+    "wc_publish": [
+      "wcButton"
+    ],
+    "wc_delete": [
+      "wcButton"
+    ],
+    "wc_set_cover": [
+      "wcButton"
     ],
     "modal_layer": [
       "modalLayer"
@@ -782,6 +811,16 @@
     "sub_9",
     "team",
     "title",
+    "wc_action_create",
+    "wc_action_delete",
+    "wc_action_link",
+    "wc_action_manage",
+    "wc_action_primary",
+    "wc_action_publish",
+    "wc_action_rename",
+    "wc_action_secondary",
+    "wc_action_set_cover",
+    "wc_action_tags",
     "wc_detail_footer",
     "wc_detail_heading",
     "wc_detail_meta",
@@ -802,6 +841,7 @@
     "wc_slot_4",
     "wc_slot_5",
     "wc_sort",
+    "wc_status",
     "wc_summary",
     "wc_title_0",
     "wc_title_1",
@@ -900,13 +940,20 @@
     "tab_standard",
     "team",
     "wc_crafts",
+    "wc_create",
     "wc_ct",
+    "wc_delete",
     "wc_detail_next",
     "wc_feed",
+    "wc_link",
+    "wc_manage",
     "wc_mine",
     "wc_next",
     "wc_prev",
+    "wc_primary",
+    "wc_publish",
     "wc_reload",
+    "wc_rename",
     "wc_row_0",
     "wc_row_1",
     "wc_row_2",
@@ -914,8 +961,11 @@
     "wc_row_4",
     "wc_row_5",
     "wc_search",
+    "wc_secondary",
+    "wc_set_cover",
     "wc_sort",
     "wc_t",
+    "wc_tags",
     "wc_type",
     "wear",
     "wear_bs",

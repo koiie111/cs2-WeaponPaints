@@ -78,6 +78,13 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             Text("wc_search", works.Filter.Search.Length == 0 ? "Название или #тег" : works.Filter.Search);
             Text("wc_sort", works.Filter.SortLabel);
             Text("wc_summary", works.Summary);
+            Text("wc_status", works.Status);
+            foreach (var action in new[] { "create", "primary", "secondary", "manage", "rename", "tags", "publish", "delete", "set_cover", "link" })
+            {
+                var available = works.Actions.TryGetValue(action, out var label);
+                Hidden("wc_" + action, !available);
+                if (available) Text("wc_action_" + action, label);
+            }
             Text("wc_page", works.Loading || works.Failed || works.Rows.Count == 0 ? "" : (works.Page + 1).ToString());
             Hidden("wc_prev", works.Loading || works.Failed || works.Page == 0);
             Hidden("wc_next", !works.More);
@@ -101,8 +108,6 @@ internal sealed class HudRenderer(HudLayoutContract contract)
                 Text("wc_detail_heading", works.Craft ? "Наклейки" : "Состав коллекции");
                 Image("wc_cover_art", card.Image);
                 Tier("wc_cover", card.Rarity);
-                Hidden("wc_ct", works.Craft);
-                Hidden("wc_t", works.Craft);
                 Class("wc_ct", "active", works.Team == 3);
                 Class("wc_t", "active", works.Team == 2);
                 for (var i = 0; i < 6; i++)

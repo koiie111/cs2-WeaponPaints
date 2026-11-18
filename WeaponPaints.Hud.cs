@@ -119,6 +119,12 @@ public partial class WeaponPaints
                 : HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", HudSurface.ContractFile));
             _hudRenderer = new HudRenderer(_hudContract);
             _hudSurface = new HudSurface(Config.PanoramaHud.CollectionsEnabled);
+            if (Config.PanoramaHud.CollectionsEnabled)
+            {
+                _hudWorkshopApi = HudWorkshopApi.Create(Config.PanoramaHud.CollectionsApiUrl,
+                    Environment.GetEnvironmentVariable("WP_WORKSHOP_GAME_KEY"));
+                if (_hudWorkshopApi == null) Logger.LogWarning("Panorama collections mutations require a valid HTTPS endpoint and WP_WORKSHOP_GAME_KEY");
+            }
             _hudCoordinator = new HudSessionCoordinator(new HudGameSurface(_hudSurface, () => DataGeneration),
                 action => Server.NextFrame(action), _hudContract.Authored, diagnostics: Config.PanoramaHud.DiagnosticsEnabled);
             _hudLifetime = new CancellationTokenSource();
@@ -341,6 +347,11 @@ public partial class WeaponPaints
         if (session.Prompt != null)
         {
             if (button == "state_0") EndHudPrompt(session);
+            return;
+        }
+        if (session.Collections is { Modal: not null } collectionsModal)
+        {
+            CompleteHudCollectionsModal(session, collectionsModal, button);
             return;
         }
         if (session.Message != null)
@@ -798,6 +809,9 @@ public partial class WeaponPaints
             "pet_name" => "Введите имя питомца в чате, например Цыпа",
             "search" or "custom_search" => "Введите поисковый запрос в чате",
             "wc_search" => "Введите название или #тег в чате (clear — сбросить поиск)",
+            "wc_name" => "Введите название коллекции в чате",
+            "wc_rename" => "Введите новое название в чате",
+            "wc_tags" => "Введите до шести тегов через запятую (clear — очистить)",
             _ => HudFeaturePromptHint(session, field)
         };
         var options = field is "nametag" or "pet_name" ? " (clear — очистить, cancel — отмена)" : " (cancel — отмена)";
@@ -828,6 +842,8 @@ public partial class WeaponPaints
             "pet_seed" => "Паттерн питомца", "pet_name" => "Имя питомца",
             "search" or "custom_search" => "Поиск",
             "wc_search" => "Поиск в мастерской",
+            "wc_name" or "wc_rename" => "Название работы",
+            "wc_tags" => "Теги",
             _ => HudFeaturePromptTitle(session, field)
         };
         var hint = field switch
@@ -839,6 +855,8 @@ public partial class WeaponPaints
             "pet_name" => "Введите имя в игровой чат, например Цыпа. Для очистки введите clear.",
             "search" or "custom_search" => "Введите запрос в игровой чат, например AK-47.",
             "wc_search" => "Введите название или #тег. Для сброса поиска введите clear.",
+            "wc_name" or "wc_rename" => "Введите название, до 64 символов.",
+            "wc_tags" => "Введите до шести тегов через запятую. Для очистки введите clear.",
             _ => HudFeaturePromptHint(session, field) + "."
         };
         return new HudModalView(title, "Откройте игровой чат. " + hint + " Для отмены введите cancel.", []);
@@ -893,6 +911,12 @@ public partial class WeaponPaints
         var input = command.ArgString.Trim().Trim('"');
         if (!input.Equals("cancel", StringComparison.OrdinalIgnoreCase))
         {
+            if (prompt.Field is "wc_name" or "wc_rename" or "wc_tags" && session.Collections is { } workshop)
+            {
+                EndHudPrompt(session);
+                SubmitHudCollectionsText(session, workshop, prompt.Field, input);
+                return HookResult.Handled;
+            }
             if (prompt.Field == "wc_search" && session.Collections is { } collections)
             {
                 EndHudPrompt(session);

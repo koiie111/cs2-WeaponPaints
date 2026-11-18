@@ -1,0 +1,76 @@
+using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+namespace WeaponPaints.Hud;
+
+internal sealed class HudWorkshopApi(Uri endpoint, byte[] secret)
+{
+    private const string Path = "/api/weaponpaints/workshop/v1";
+    private static readonly HttpClient Client = new(new SocketsHttpHandler
+    {
+        AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(4),
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+    });
+
+    internal static HudWorkshopApi? Create(string url, string? key)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var endpoint) || endpoint.Scheme != Uri.UriSchemeHttps
+            || endpoint.AbsolutePath != Path || endpoint.UserInfo.Length != 0 || endpoint.Query.Length != 0
+            || endpoint.Fragment.Length != 0 || key is not { Length: 64 }
+            || !key.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'))
+            return null;
+        return new(endpoint, Convert.FromHexString(key));
+    }
+
+    internal async Task<JsonElement> CallAsync(ulong steamId, Dictionary<string, object> operation, CancellationToken token)
+    {
+        var input = new Dictionary<string, object>(operation)
+        {
+            ["steamId"] = steamId.ToString(CultureInfo.InvariantCulture)
+        };
+        var body = JsonSerializer.Serialize(input);
+        if (Encoding.UTF8.GetByteCount(body) > 8192) throw new ArgumentException("Workshop request is too large");
+        for (var attempt = 0; ; attempt++)
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+            deadline.CancelAfter(TimeSpan.FromSeconds(9));
+            try
+            {
+                var stamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+                var signature = HMACSHA256.HashData(secret, Encoding.UTF8.GetBytes($"weaponpaints-workshop-v1\n{stamp}\n{body}"));
+                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+                request.Headers.Add("X-WP-Timestamp", stamp);
+                request.Headers.Add("X-WP-Signature", Convert.ToHexStringLower(signature));
+                request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                using var response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
+                if ((int)response.StatusCode >= 500 || response.StatusCode == HttpStatusCode.RequestTimeout)
+                    throw new HttpRequestException("Workshop service unavailable");
+                if (response.Content.Headers.ContentType?.MediaType != "application/json")
+                    throw new HttpRequestException("Unexpected workshop response");
+                await response.Content.LoadIntoBufferAsync(2 * 1024 * 1024, deadline.Token).ConfigureAwait(false);
+                var bytes = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
+                using var json = JsonDocument.Parse(bytes);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var message = json.RootElement.TryGetProperty("message", out var field) && field.ValueKind == JsonValueKind.String
+                        ? field.GetString() : null;
+                    throw new HudWorkshopRejected(HudInput.CleanText(message, 200));
+                }
+                return json.RootElement.Clone();
+            }
+            catch (Exception error) when (attempt == 0 && !token.IsCancellationRequested
+                && error is HttpRequestException or OperationCanceledException)
+            {
+                // Reuse the serialized operation including its request ID after a lost response.
+                await Task.Delay(250, token).ConfigureAwait(false);
+            }
+        }
+    }
+}
+
+internal sealed class HudWorkshopRejected(string message) : Exception(message);

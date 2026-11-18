@@ -47,4 +47,5 @@ internal sealed record HudWorkshopFilter(bool Crafts = false, string Search = ""
 }
 internal sealed record HudCollectionsView(HudCollectionsTab Tab, string Summary, IReadOnlyList<HudCard> Rows,
     int Selected, int Page, bool More, bool Failed, bool Loading, int Team,
-    IReadOnlyList<HudCard> Composition, int CompositionCount, bool Craft, int DetailPage, HudWorkshopFilter Filter);
+    IReadOnlyList<HudCard> Composition, int CompositionCount, bool Craft, int DetailPage, HudWorkshopFilter Filter,
+    IReadOnlyDictionary<string, string> Actions, string Status);
