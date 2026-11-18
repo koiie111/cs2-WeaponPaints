@@ -28,6 +28,8 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
         internal long QueryGeneration { get; set; }
         internal Action? FrameCommitted { get; set; }
         internal bool FirstFrame { get; set; } = true;
+        internal Task? FramePreparation { get; set; }
+        internal Action? PublishPreparedFrame { get; set; }
     }
     private readonly Dictionary<int, Session> _sessions = [];
     // Keep actual applied state per slot after close, so a reused slot is reset
@@ -68,7 +70,22 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
 
     internal bool IsLive(Session session) => _sessions.TryGetValue(session.Owner.Slot, out var current)
         && ReferenceEquals(current, session) && !session.Lifetime.IsCancellationRequested && surface.IsCurrent(session.Owner);
-    internal bool CanClick(Session session) => IsLive(session) && session.Revealed && !session.Busy && session.Delta.PendingCount == 0;
+    internal bool CanClick(Session session) => IsLive(session) && session.Revealed && !session.Busy
+        && session.FramePreparation == null && session.Delta.PendingCount == 0;
+
+    internal void QueuePreparedFrame(Session session, Task preparation, Action publish)
+    {
+        session.FramePreparation = preparation;
+        session.PublishPreparedFrame = publish;
+        if (preparation.IsCompleted) Schedule();
+        else preparation.ConfigureAwait(false).GetAwaiter().OnCompleted(() =>
+        {
+            nextFrame(() =>
+            {
+                if (ReferenceEquals(session.FramePreparation, preparation)) Schedule();
+            });
+        });
+    }
     internal long BeginQuery(Session session)
     {
         if (!IsLive(session)) throw new InvalidOperationException("HUD session ended");
@@ -79,6 +96,8 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
     internal void Submit(Session session, IReadOnlyDictionary<HudWriteKey, string> frame, Action? committed = null)
     {
         if (!IsLive(session)) return;
+        session.FramePreparation = null;
+        session.PublishPreparedFrame = null;
         // On slot reuse the engine may either retain or clear per-player
         // overrides. Rewriting every known/desired key makes both cases converge.
         session.Delta.Replace(frame, force: session.FirstFrame);
@@ -112,18 +131,40 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
     }
     private void Drain()
     {
-        _scheduled = false;
-        if (_sessions.Count == 0) return;
+        try
+        {
+            if (_sessions.Count != 0) DrainViewers();
+        }
+        finally
+        {
+            _scheduled = false;
+            if (_sessions.Values.Any(s => s.Delta.PendingCount != 0 || s.FramePreparation is { IsCompleted: true })) Schedule();
+        }
+    }
+    private void DrainViewers()
+    {
         var started = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var initialWrites = Writes;
         DrainFrames++;
         var viewers = _sessions.Values.ToArray();
         var offset = (int)((uint)_roundRobin++ % (uint)viewers.Length);
         var remaining = frameBudget;
+        var published = false;
         for (int i = 0; i < viewers.Length && remaining > 0; i++)
         {
             var session = viewers[(offset + i) % viewers.Length];
+            if (session.Delta.PendingCount == 0 && (published || session.FramePreparation is not { IsCompleted: true })) continue;
             if (!IsLive(session)) { Close(session.Owner.Slot); continue; }
+            // Diff at most one completed collections frame per game frame, across all viewers.
+            if (!published && session.FramePreparation is { IsCompleted: true })
+            {
+                var publish = session.PublishPreparedFrame!;
+                session.FramePreparation = null;
+                session.PublishPreparedFrame = null;
+                published = true;
+                publish();
+                if (!IsLive(session)) continue;
+            }
             var perViewer = perViewerBudget;
             while (remaining > 0 && perViewer-- > 0 && session.Delta.TryPeek(out var write))
             {
@@ -131,7 +172,7 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
                 session.Delta.Commit(write);
                 Writes++; remaining--;
             }
-            if (IsLive(session) && session.Delta.PendingCount == 0)
+            if (IsLive(session) && !session.FirstFrame && session.Delta.PendingCount == 0)
             {
                 if (session.FrameBlocked)
                 {
@@ -153,16 +194,21 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
             _sampleIndex = (_sampleIndex + 1) % _drainMilliseconds.Length;
             _sampleCount = Math.Min(_sampleCount + 1, _drainMilliseconds.Length);
         }
-        if (_sessions.Values.Any(s => s.Delta.PendingCount != 0)) Schedule();
     }
     internal void Close(int slot)
     {
         if (!_sessions.Remove(slot, out var session)) return;
-        session.Lifetime.Cancel();
+        _ = CancelAndDisposeAsync(session.Lifetime);
+        session.FramePreparation = null;
+        session.PublishPreparedFrame = null;
         session.FrameCommitted = null;
         session.Delta.Cancel();
         if (surface.IsSameController(session.Owner)) surface.HideAndRelease(session.Owner);
-        session.Lifetime.Dispose();
+    }
+    internal static async Task CancelAndDisposeAsync(CancellationTokenSource source)
+    {
+        try { await source.CancelAsync().ConfigureAwait(false); }
+        finally { source.Dispose(); }
     }
     internal void ResetEntity()
     {

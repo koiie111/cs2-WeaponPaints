@@ -14,11 +14,11 @@ internal static class HudCollectionsStore
     internal const int PageSize = 6;
     internal const int MaxPage = 100;
 
-    internal static async Task<HudWorkshopPage> LoadAsync(Func<Task<MySqlConnection>> connect, string steamId,
+    internal static async Task<HudWorkshopPage> LoadAsync(Func<CancellationToken, Task<MySqlConnection>> connect, string steamId,
         HudCollectionsTab tab, HudWorkshopFilter filter, int page, CancellationToken token)
     {
         if (page is < 0 or > MaxPage) throw new ArgumentOutOfRangeException(nameof(page));
-        await using var connection = await connect().ConfigureAwait(false);
+        await using var connection = await connect(token).ConfigureAwait(false);
         var workshop = filter.IsPublic(tab);
         var order = filter.Sort switch
         {

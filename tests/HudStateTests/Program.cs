@@ -121,6 +121,41 @@ coordinator.Submit(blocked, new Dictionary<HudWriteKey,string>());
 while (scheduled.TryDequeue(out var callback)) callback();
 Check(coordinator.Count == 0, "foreign capture should block HUD reveal");
 coordinator.ResetEntity(); Check(coordinator.Count == 0, "map reset retained sessions");
+
+var readyCallbacks = new System.Collections.Concurrent.ConcurrentQueue<Action>();
+var workshopCoordinator = new HudSessionCoordinator(surface, readyCallbacks.Enqueue, _ => "");
+surface.Foreign = false;
+var players = Enumerable.Range(0, 32).Select(slot =>
+{
+    surface.Current[slot] = stamp with { Slot = slot };
+    return workshopCoordinator.Open(slot, stamp.SteamId, stamp.Controller, stamp.Pawn, stamp.MapGeneration);
+}).ToArray();
+var rendered = 0;
+foreach (var viewer in players)
+{
+    workshopCoordinator.QueuePreparedFrame(viewer, Task.CompletedTask, () => throw new Exception("obsolete frame published"));
+    workshopCoordinator.QueuePreparedFrame(viewer, Task.CompletedTask, () =>
+    {
+        rendered++;
+        workshopCoordinator.Submit(viewer, new Dictionary<HudWriteKey, string> { [variable] = "ready" });
+    });
+}
+workshopCoordinator.Close(players[0].Owner.Slot);
+for (var tick = 1; tick < players.Length; tick++)
+{
+    Check(readyCallbacks.TryDequeue(out var drain), "ready workshop frame was stranded");
+    drain!();
+    Check(rendered == tick, "workshop publications must be limited to one viewer per frame");
+}
+Check(readyCallbacks.IsEmpty && players.Skip(1).All(workshopCoordinator.CanClick), "workshop did not go idle");
+var preparing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+var published = false;
+workshopCoordinator.QueuePreparedFrame(players[1], preparing.Task, () => published = true);
+Check(readyCallbacks.IsEmpty && !workshopCoordinator.CanClick(players[1]), "waiting for a worker polled the game thread or accepted input");
+preparing.SetResult();
+Check(SpinWait.SpinUntil(() => !readyCallbacks.IsEmpty, TimeSpan.FromSeconds(3)), "worker completion did not wake the game thread");
+while (readyCallbacks.TryDequeue(out var ready)) ready();
+Check(published && workshopCoordinator.CanClick(players[1]), "completed workshop frame did not release input");
 Console.WriteLine("HUD queue, catalogue, identity, prompt, composition and input tests passed");
 
 

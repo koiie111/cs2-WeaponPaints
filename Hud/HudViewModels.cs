@@ -48,6 +48,6 @@ internal sealed record HudWorkshopFilter(bool OwnCrafts = false, string Search =
     };
 }
 internal sealed record HudCollectionsView(HudCollectionsTab Tab, string Summary, IReadOnlyList<HudCard> Rows,
-    int Selected, int Page, bool More, bool Failed, bool Loading, int Team,
+    int Selected, int Page, bool More, bool Failed, bool AccountFailed, bool Loading, int Team,
     IReadOnlyList<HudCard> Composition, int CompositionCount, bool Craft, int DetailPage, HudWorkshopFilter Filter,
     IReadOnlyDictionary<string, string> Actions, string Status, string Usage);

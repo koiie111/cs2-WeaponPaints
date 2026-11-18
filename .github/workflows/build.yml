@@ -72,6 +72,10 @@ jobs:
         run: dotnet run --project tests/RefreshCommandTests/RefreshCommandTests.csproj -c Release
       - name: HUD bounded retry checks
         run: dotnet run --project tests/HudRetryPolicyTests/HudRetryPolicyTests.csproj -c Release
+      - name: HUD frame budgets and layout transitions
+        run: |
+          dotnet run --project tests/HudStateTests -c Release
+          dotnet run --project tests/HudRendererTests -c Release
       - name: HUD apply diagnostics checks
         run: dotnet run --project tests/HudMetricsTests/HudMetricsTests.csproj -c Release
       - name: HUD CustomWeapons bridge checks

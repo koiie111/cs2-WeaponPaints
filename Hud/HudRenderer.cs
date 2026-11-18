@@ -97,7 +97,7 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             Hidden("wc_list_pager", works.Page == 0 && !works.More || works.Loading || works.Failed);
             Hidden("wc_prev", works.Loading || works.Failed || works.Page == 0);
             Hidden("wc_next", !works.More);
-            Hidden("wc_reload", !works.Failed);
+            Hidden("wc_reload", works.Loading || !(works.Failed || works.AccountFailed));
             Hidden("wc_detail", works.Selected < 0);
             for (var i = 0; i < 6; i++)
             {

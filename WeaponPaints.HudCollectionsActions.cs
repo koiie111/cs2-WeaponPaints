@@ -11,11 +11,11 @@ public partial class WeaponPaints
     {
         var actions = new Dictionary<string, string>();
         if (state.Loading) return actions;
-        if (_hudWorkshopApi != null && !state.Failed && state.Tab == HudCollectionsTab.Mine && !state.Full)
+        if (_hudWorkshopApi != null && state.Account != null && !state.Failed && state.Tab == HudCollectionsTab.Mine && !state.Full)
             actions["create"] = "+ Создать";
         if (entry is not { Work: var work }) return actions;
         if (work.Published) actions["link"] = "Ссылка";
-        if (_hudWorkshopApi == null || work.Owned && work.Archived) return actions;
+        if (_hudWorkshopApi == null || state.Account == null || work.Owned && work.Archived) return actions;
         if (state.Craft)
         {
             if (entry.Definition > 0)
@@ -93,8 +93,7 @@ public partial class WeaponPaints
                 ConfirmHudCollection(session, state, "Удалить работу?", $"«{work.Title}»", "Удалить", WorkshopOperation("delete", work));
                 break;
             case "set_cover":
-                var preview = HudCollectionsStore.ReadPreview(work);
-                var keys = state.Team == 3 ? preview.CT : preview.T;
+                var keys = state.Team == 3 ? entry.CtKeys : entry.TKeys;
                 ChooseHudCollectionCover(session, state, entry, keys, Math.Min(state.DetailPage * 6, keys.Length - 1));
                 break;
         }
@@ -183,14 +182,14 @@ public partial class WeaponPaints
         if (field == "wc_name")
         {
             if (!HudCollectionsActions(state, null).ContainsKey("create")) return;
-            RunHudWorkshopMutation(session, state, WorkshopOperation("create", null, ("name", HudInput.CleanText(input, 64))));
+            RunHudWorkshopMutation(session, state, WorkshopOperation("create", null, ("name", input)));
             return;
         }
         if (state.Rows.Length == 0 || !state.Manage) return;
         var work = state.Rows[state.Selected].Work;
         if (!work.Owned || work.Archived) return;
         if (field == "wc_rename")
-            RunHudWorkshopMutation(session, state, WorkshopOperation("change", work, ("name", HudInput.CleanText(input, 64))));
+            RunHudWorkshopMutation(session, state, WorkshopOperation("change", work, ("name", input)));
         else if (field == "wc_tags")
         {
             var tags = input.Equals("clear", StringComparison.OrdinalIgnoreCase) ? []
@@ -235,7 +234,7 @@ public partial class WeaponPaints
         state.Modal = null;
         state.ModalAction = null;
         action?.Invoke(choice);
-        RenderHud(session);
+        if (state.Modal == null && !state.Loading && !session.Native.Busy) RenderHud(session);
     }
 
     private void RunHudWorkshopMutation(HudControllerSession session, HudCollectionsSession state, Dictionary<string, object> operation) =>
