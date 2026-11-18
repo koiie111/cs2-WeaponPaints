@@ -49,10 +49,15 @@ CustomWeapons reconciliation 131.706 ms, equipment refresh 667.885 ms, and
 total 1156.179 ms. These are timings from one attempt, not CPU or full-frame
 measurements; no new profiler capture was made for this V10 observation.
 
-The subsequent bounded pending-acquisition change has managed adapter coverage
-but has not been verified in the native client. Do not accept or release this
-refresh change until a controlled native rerun confirms the outcome; the V9
-checks above are historical evidence, not acceptance of the changed version.
+On 18 November, commit `97cf975` passed the same first-Apply scenario in CS2.
+The owner joined T, selected Gamma Doppler on Glock-18 with wear 0.0123, and
+applied once. The Glock changed without reconnecting. Server diagnostics
+recorded one successful save, one CustomWeapons reconciliation and one
+successful equipment refresh, with no Apply failures. End-to-end time was
+1,009.310 ms. The first Apply callback took 18.092 ms of wall time and the
+longest recorded HUD callback was a navigation click at 29.653 ms. This
+single-player check covers the reported scenario. Repeated trials and
+CSSProfiler measurements were outside this short run.
 
 An isolated offline V10 compilation produced a 23-resource VPK of 2,889,910
 bytes, SHA-256 `84381509db185312c003af6e6aab5285a39b321eb27743dfa9146b3051918ac6`.
