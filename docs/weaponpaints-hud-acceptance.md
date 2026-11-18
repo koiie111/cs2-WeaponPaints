@@ -1,20 +1,80 @@
 # Temporary WeaponPaints HUD addon: review and acceptance
 
-This procedure is a plan, not a record of a completed test. The addon and the
-Workshop item are separate from Clans and all shared items. The resource names
-are versioned `weaponpaints_v6`; change the resource paths and the explicit
+This procedure describes preparation and acceptance; the status below records
+the observed native checks and their limits. The addon and the
+Workshop item are separate from Clans and all shared items. The current source
+resource names are versioned `weaponpaints_v10`; change the resource paths and the explicit
 allowlist together for a subsequent incompatible build, rather than overwriting
 an old layout at the same path. The server plugin must request that exact
 compiled layout. Do not ship the plugin, maps, `gameinfo`, or stock textures in
 the addon. Stock images are game-provided references.
 
+## 16 November status
+
+V8 was exercised in the native client: the owner reported successful T-side
+and both-team applies, including StatTrak, a sticker and a charm, alongside an
+intermittent saved-but-not-visibly-updated result. Apply therefore remains under
+investigation. Eight scoped account differences were restored and server 11 was
+returned to its original public configuration (final audit prefix `24982`); no
+CSSProfiler capture was made during that V8 trial.
+
+The owner accepted V9 in the native client on 16 November: the rarity line,
+4ill+ card above Apply, and custom AK, AWP and Glock previews. A cold Glock
+T-side Apply and a later both-team Apply with StatTrak, a sticker and a charm
+succeeded. This does not establish complete feature, refresh or performance
+acceptance; the cause of the earlier intermittent V8 refresh issue remains
+unconfirmed. The 19 compiled custom textures total 582,499 bytes, not measured
+client memory. Published resource paths remain frozen. See [the runtime guide](panorama-hud-runtime.md)
+and [preliminary measurements](measurements/panorama-20261117/REPORT.md).
+
+After the 17 November trial, the original public configuration, plugin and
+protected configuration hashes were verified. Temporary profiling and the
+round rule were removed, pre-existing profiler logs preserved, and the two
+changed preference fields restored. The temporary Workshop item was made
+private and the test subscription removed.
+
+V10 was exercised in the native client on 17 November. A Glock Apply saved
+successfully and CustomWeapons reconciliation completed, but the equipment
+refresh failed; after reconnecting, the owner observed the saved Gamma finish.
+The bounded console evidence contained eight replacement attempts reporting
+`Replacement was not acquired` and one exhausted Glock refresh. This identifies
+the failure path, not why the native acquisition failed.
+
+The first authorized Apply callback measured 42.599 ms of inclusive wall time:
+authorization 0.012 ms, dispatch 42.585 ms, and within dispatch ApplySkin
+21.669 ms, including validation 12.745 ms, CustomWeapons snapshot 4.105 ms,
+save setup 2.194 ms and saving render 0.278 ms. These scopes nest and must not
+be added together. The separate asynchronous outcome measured store 296.830 ms,
+CustomWeapons reconciliation 131.706 ms, equipment refresh 667.885 ms, and
+total 1156.179 ms. These are timings from one attempt, not CPU or full-frame
+measurements; no new profiler capture was made for this V10 observation.
+
+On 18 November, commit `97cf975` passed the same first-Apply scenario in CS2.
+The owner joined T, selected Gamma Doppler on Glock-18 with wear 0.0123, and
+applied once. The Glock changed without reconnecting. Server diagnostics
+recorded one successful save, one CustomWeapons reconciliation and one
+successful equipment refresh, with no Apply failures. End-to-end time was
+1,009.310 ms. The first Apply callback took 18.092 ms of wall time and the
+longest recorded HUD callback was a navigation click at 29.653 ms. This
+single-player check covers the reported scenario. Repeated trials and
+CSSProfiler measurements were outside this short run.
+
+An isolated offline V10 compilation produced a 23-resource VPK of 2,889,910
+bytes, SHA-256 `84381509db185312c003af6e6aab5285a39b321eb27743dfa9146b3051918ac6`.
+The archive passed independent Source2Viewer CRC verification; all 42 staged
+source files matched the V10 source. The 19 compiled custom textures totalled
+582,499 bytes. These checks do not establish runtime memory usage or native
+client acceptance.
+
 ## Prepare and review
 
-1. Generate the separate source tree with `python hud-mockup/tools/generate_live.py --version 6` and validate it with `python hud-mockup/tools/check_live_contract.py hud-mockup/live-addon-v6 --version 6`. Compile it using a
-   dedicated addon tree, and inspect the generated layout, CSS, texture and
+1. Generate the separate source tree with `python hud-mockup/tools/generate_live.py --version 10` and validate it with `python hud-mockup/tools/check_live_contract.py hud-mockup/live-addon-v10 --version 10`. Compile it using a
+   dedicated addon tree, for example `./hud-mockup/build.ps1 -SourceRoot
+   <absolute-live-addon-v10> -Addon <fresh-addon-name> -Compile`, and inspect
+   the generated layout, CSS, textures and
    client-facing preview. Verify the plugin requests the versioned layout.
-2. Run `python hud-mockup/tools/pack_temporary_v6.py --compiled-root <dedicated-compiled-addon> --out <fresh-output.vpk>`.
-   The wrapper asserts the exact v6 source and compiled names; `pack.py` creates
+2. Run `python hud-mockup/tools/pack_temporary_v10.py --compiled-root <dedicated-compiled-addon> --out <fresh-output.vpk>`.
+   The wrapper asserts the exact v10 source and compiled names; `pack.py` creates
    a source-derived archive and SHA-256 manifest using `vpk.py`. Review every
    manifest entry and its hashes. Independently list and verify the archive with
    a VPK reader before considering it for upload. Confirm that no stock textures,
@@ -83,7 +143,7 @@ its local state for traceability. Never alter shared or Clans Workshop items.
 ## Test-account preferences
 
 Before the first real Apply, take a private, scoped, restorable snapshot for
-Steam account `76561198776749975` only, using the runtime persistence owner's
+the explicitly designated test account only, using the runtime persistence owner's
 schema-aware procedure. Cover the existing WeaponPaints and CustomWeapons
 preferences for all skins, knife, gloves, music kits, pins, agents, patches,
 pet, graffiti, and `cw_site_selections`. Verify snapshot completeness and a

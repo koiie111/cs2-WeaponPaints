@@ -16,8 +16,13 @@ public partial class WeaponPaints
     {
         internal readonly HudSessionCoordinator.Session Native = native;
         internal readonly HudBrowser Browser = new();
+        internal HudInstalledArtwork InstalledArtwork = new([]);
+        internal bool InstalledArtworkReady;
+        internal long? InstalledArtworkGeneration;
+        internal object? InstalledArtworkSource;
         internal HudSize Size = size;
         internal long PublishedRevision;
+        internal long ApplyTrace;
         internal HudCatalogItem? Selected { get; set; }
         internal HudStoredSkin[]? Snapshots { get; set; }
         internal HudSkinDraft[]? Drafts { get; set; }
@@ -30,6 +35,9 @@ public partial class WeaponPaints
         internal bool ReloadingConflict { get; set; }
         internal bool SaveUncertain { get; set; }
         internal bool FinishAfterMessage { get; set; }
+        internal bool RefreshFailed { get; set; }
+        internal Action? RetryRefresh { get; set; }
+        internal long RefreshVersion { get; set; }
         internal bool CloseAfterSave { get; set; }
         internal HudSection? PendingSection { get; set; }
         internal int? PendingTeam { get; set; }
@@ -58,6 +66,18 @@ public partial class WeaponPaints
         session.CosmeticChanges?.Any(change => change.Expected.Key.Kind is HudCosmeticKind.Graffiti or HudCosmeticKind.Pet) == true;
     private static bool HudCanApply(HudControllerSession session) =>
         !session.SaveUncertain && (!HudRequiresPlus(session) || session.Plus);
+
+    private void TraceHudApply(HudControllerSession session, HudApplyPhase phase, HudSkinValidationIssue reason = HudSkinValidationIssue.None)
+    {
+        if (Config?.PanoramaHud?.DiagnosticsEnabled == true) _hudMetrics.RecordApply(true, phase, session.ApplyTrace, reason);
+    }
+
+    private void RecordHudRefreshFailures(int slot, ulong steam, uint controller, IReadOnlyList<string>? failures)
+    {
+        if (Config.PanoramaHud.DiagnosticsEnabled && _hudSessions.TryGetValue(slot, out var session)
+            && session.Native.Owner.OwnsController(steam, controller))
+            _hudMetrics.RecordRefreshFailures(true, session.ApplyTrace, failures);
+    }
 
     private readonly Dictionary<int, HudControllerSession> _hudSessions = [];
     // A committed write followed by a deferred/failed refresh cannot establish the applied loadout.
@@ -93,7 +113,7 @@ public partial class WeaponPaints
         }
         try
         {
-            _hudContract = HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", "hud-live-contract-v6.json"));
+            _hudContract = HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", HudSurface.ContractFile));
             _hudRenderer = new HudRenderer(_hudContract);
             _hudSurface = new HudSurface();
             _hudCoordinator = new HudSessionCoordinator(new HudGameSurface(_hudSurface, () => DataGeneration),
@@ -136,8 +156,23 @@ public partial class WeaponPaints
             if (!Config.PanoramaHud.DiagnosticsEnabled) { command.ReplyToCommand("HUD diagnostics disabled"); return; }
             var metrics = _hudMetrics.Snapshot();
             var ticksToMs = 1000d / System.Diagnostics.Stopwatch.Frequency;
+            var catalogCount = _hudCatalog?.Count ?? 0;
+            var ready = catalogCount > 0 && _hudCosmetics != null && _hudCosmeticPolicy != null
+                && _hudContract != null && _hudRenderer != null && _hudSurface != null && _hudCoordinator != null;
             command.ReplyToCommand((_hudCoordinator?.DrainSummary() ?? "HUD unavailable")
-                + FormattableString.Invariant($" render_count={metrics.RenderCount} render_max_ms={metrics.RenderMaxTicks * ticksToMs:F3} apply_count={metrics.ApplyCount} apply_max_ms={metrics.ApplyMaxTicks * ticksToMs:F3}"));
+                + $" ready={(ready ? 1 : 0)} catalog_count={catalogCount} layout={HudSurface.Layout} contract={HudSurface.ContractFile}"
+                + FormattableString.Invariant($" render_count={metrics.RenderCount} render_max_ms={metrics.RenderMaxTicks * ticksToMs:F3} apply_count={metrics.ApplyCount} apply_max_ms={metrics.ApplyMaxTicks * ticksToMs:F3}")
+                + " " + _hudMetrics.ApplyDiagnostics()
+                + " timing_details=wp_hud_timing");
+        });
+        AddCommand("wp_hud_timing", "HUD main-thread timing: summary, firstapply, max, last (server console)", (player, command) =>
+        {
+            if (player != null) return;
+            if (!Config.PanoramaHud.DiagnosticsEnabled) { command.ReplyToCommand("HUD diagnostics disabled"); return; }
+            var selector = command.GetArg(1);
+            if (selector is not ("summary" or "firstapply" or "max" or "last"))
+            { command.ReplyToCommand("usage: wp_hud_timing summary|firstapply|max|last"); return; }
+            command.ReplyToCommand(_hudMetrics.MainThreadDiagnostics(selector));
         });
         AddCommand("css_whud_scale", "HUD scale: normal, compact, small", (player, command) =>
         {
@@ -152,9 +187,28 @@ public partial class WeaponPaints
         AddCommandListener("say_team", HudChat);
         RegisterListener<Listeners.OnCustomHudClicked>((player, layout, button) =>
         {
-            if (_hudSurface?.Owns(layout) != true || _hudCoordinator == null || _hudContract?.Buttons.Contains(button) != true
-                || !_hudSessions.TryGetValue(player.Slot, out var session) || !_hudCoordinator.CanClick(session.Native)
-                || !HudPromptAllowsClick(session.Prompt, button) || !session.Native.Owner.OwnsController(player.SteamID, player.EntityHandle.Raw)) return;
+            if (_hudSurface?.Owns(layout) != true) return;
+            var diagnostics = Config.PanoramaHud.DiagnosticsEnabled;
+            using var clickTiming = _hudMetrics.TimeMainThreadClick(diagnostics, button);
+            HudControllerSession? session;
+            using (_hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ClickAuthorize))
+            {
+                if (_hudCoordinator == null || _hudContract?.Buttons.Contains(button) != true
+                    || !_hudSessions.TryGetValue(player.Slot, out session) || !_hudCoordinator.CanClick(session.Native)
+                    || !HudPromptAllowsClick(session.Prompt, button) || !session.Native.Owner.OwnsController(player.SteamID, player.EntityHandle.Raw))
+                {
+                    if (button == "apply") _hudMetrics.RecordApply(diagnostics, HudApplyPhase.ClickBlocked);
+                    return;
+                }
+            }
+            if (diagnostics) _hudMetrics.MarkMainThreadClickAuthorized();
+            using var dispatchTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ClickDispatch);
+            if (button == "apply")
+            {
+                session.ApplyTrace = _hudMetrics.BeginApply(Config.PanoramaHud.DiagnosticsEnabled);
+                if (session.Prompt != null || session.Message != null || session.ConfirmDiscard || !session.Editing)
+                    _hudMetrics.RecordApply(Config.PanoramaHud.DiagnosticsEnabled, HudApplyPhase.ClickIgnored, session.ApplyTrace);
+            }
             HudClick(session, button);
         });
         RegisterListener<Listeners.OnMapStart>(_ => ResetHud());
@@ -182,7 +236,7 @@ public partial class WeaponPaints
 
     private void RouteHudAliasSession(HudControllerSession session, HudSection section, bool canClick)
     {
-        if (!canClick || session.Prompt != null) return;
+        if (!canClick || session.Prompt != null || session.RefreshFailed) return;
         if (session.Editing || session.ResumeEditor)
         {
             session.PendingSection = section; session.PendingTeam = null;
@@ -233,6 +287,7 @@ public partial class WeaponPaints
             var native = _hudCoordinator.Open(player.Slot, player.SteamID, player.EntityHandle.Raw, player.PlayerPawn.Raw, DataGeneration);
             var session = new HudControllerSession(native, size);
             _hudSessions.Add(player.Slot, session);
+            UpdateHudInstalledArtwork(session);
             if (destination is { } section && section != HudSection.Weapons)
                 HandleHudIntent(session, session.Browser.OpenSection(section));
             else RenderHud(session);
@@ -281,6 +336,18 @@ public partial class WeaponPaints
         }
         if (session.Message != null)
         {
+            if (session.RefreshFailed)
+            {
+                if (button == "state_0" && session.RetryRefresh is { } retry)
+                {
+                    session.RefreshFailed = false; session.Message = null; retry();
+                }
+                else if (button == "state_1")
+                {
+                    session.RefreshFailed = false; session.RetryRefresh = null; session.Message = null; FinishSavedHud(session);
+                }
+                return;
+            }
             if (session.ConflictDialog)
             {
                 if (button == "state_0") BeginHudConflictReload(session);
@@ -308,6 +375,7 @@ public partial class WeaponPaints
         {
             if (button == "state_0")
             {
+                if (Config?.PanoramaHud?.DiagnosticsEnabled == true) session.ApplyTrace = _hudMetrics.BeginApply(true);
                 session.ConfirmDiscard = false;
                 if (HudCanApply(session))
                 {
@@ -319,7 +387,7 @@ public partial class WeaponPaints
                     else if (session.CosmeticChanges != null) ApplyHudCosmetic(session);
                     else ApplyHudSkin(session);
                 }
-                else { session.CloseAfterSave = false; session.PendingSection = null; session.PendingTeam = null; RenderHud(session); }
+                else { TraceHudApply(session, HudApplyPhase.PreconditionRejected); session.CloseAfterSave = false; session.PendingSection = null; session.PendingTeam = null; RenderHud(session); }
             }
             else if (button == "state_1") { session.ConfirmDiscard = false; FinishHudExit(session); }
             else if (button == "state_2") { session.ConfirmDiscard = false; session.CloseAfterSave = false; session.PendingSection = null; session.PendingTeam = null; RenderHud(session); }
@@ -665,6 +733,11 @@ public partial class WeaponPaints
                     if (_hudCoordinator?.IsLive(session.Native) != true || !HudCustomBridge.IsCurrent(captured)) return;
                     session.Prefetch = captured;
                     session.Products = products;
+                    if (HudArtworkAvailable(session))
+                    {
+                        UpdateHudInstalledArtwork(session);
+                        RenderHud(session);
+                    }
                 });
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -1208,33 +1281,52 @@ public partial class WeaponPaints
     private void ApplyHudCosmetic(HudControllerSession session)
     {
         if (_hudCoordinator?.IsLive(session.Native) != true || !HudCanApply(session) || session.CosmeticChanges is not { Length: > 0 } changes
-            || session.SaveUncertain || _hudCosmeticPolicy == null || WeaponSync == null) return;
-        if (session.Feature == HudFeatureKind.Pet && !session.PetTouched) { FinishSavedHud(session); return; }
+            || session.SaveUncertain || _hudCosmeticPolicy == null || WeaponSync == null)
+        { TraceHudApply(session, HudApplyPhase.PreconditionRejected); return; }
+        var diagnostics = Config.PanoramaHud.DiagnosticsEnabled;
+        using var applyTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplyCosmetic);
+        var prepareStarted = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        if (session.Feature == HudFeatureKind.Pet && !session.PetTouched) { TraceHudApply(session, HudApplyPhase.NoChanges); FinishSavedHud(session); return; }
         changes = changes.Where(HudCosmeticChanged).ToArray();
-        if (changes.Length == 0) { FinishSavedHud(session); return; }
+        if (changes.Length == 0) { TraceHudApply(session, HudApplyPhase.NoChanges); FinishSavedHud(session); return; }
+        if (diagnostics) _hudMetrics.RecordMainThreadPhase(HudMainThreadPhase.ApplyValidation, prepareStarted);
+        var setupStarted = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var store = WeaponSync.CreateHudCosmeticStore();
         var policy = _hudCosmeticPolicy;
         var metricStarted = Config.PanoramaHud.DiagnosticsEnabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        var trace = session.ApplyTrace;
+        _hudMetrics.RecordApply(diagnostics, HudApplyPhase.StoreStarted, trace);
+        var saveTimeout = TimeSpan.FromSeconds(Math.Clamp(Config.PanoramaHud.SaveTimeoutSeconds, 5, 90));
         var token = session.Native.Lifetime.Token;
         var generation = _hudCoordinator.BeginQuery(session.Native);
         session.Native.Busy = true;
         session.Message = new HudModalView("Сохранение", "Сохраняем настройки…", []);
-        RenderHud(session);
+        if (diagnostics) _hudMetrics.RecordMainThreadPhase(HudMainThreadPhase.ApplySaveSetup, setupStarted);
+        using (_hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplySavingRender)) RenderHud(session);
+        using var queueTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplyQueue);
         _ = Task.Run(async () =>
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
-            deadline.CancelAfter(TimeSpan.FromSeconds(15));
+            deadline.CancelAfter(saveTimeout);
             try
             {
                 var result = await store.ApplyAsync(changes, policy, deadline.Token);
+                _hudMetrics.RecordApply(diagnostics, result switch
+                {
+                    HudCosmeticResult.Saved => HudApplyPhase.StoreSaved,
+                    HudCosmeticResult.Conflict => HudApplyPhase.StoreConflict,
+                    HudCosmeticResult.PlusRequired => HudApplyPhase.StorePlusRequired,
+                    _ => HudApplyPhase.StoreInvalid
+                }, trace);
                 Server.NextFrame(() =>
                 {
-                    if (_hudCoordinator?.IsQueryCurrent(session.Native, generation) != true) return;
+                    if (_hudCoordinator?.IsQueryCurrent(session.Native, generation) != true) { _hudMetrics.RecordApply(diagnostics, HudApplyPhase.CallbackStale, trace); return; }
                     session.Native.Busy = false;
                     session.Message = null;
                     if (result == HudCosmeticResult.Saved)
                     {
                         _hudUnconfirmedSlots.Mark(session.Native.Owner.SteamId, cosmetic: true);
+                        session.RetryRefresh = () => StartHudRefresh(session);
                         StartHudRefresh(session); return;
                     }
                     session.Message = result switch
@@ -1247,9 +1339,10 @@ public partial class WeaponPaints
                     RenderHud(session);
                 });
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { _hudMetrics.RecordApply(diagnostics, HudApplyPhase.StoreCancelled, trace); }
             catch (Exception error)
             {
+                _hudMetrics.RecordApply(diagnostics, error is OperationCanceledException ? HudApplyPhase.StoreCancelled : HudApplyPhase.StoreError, trace);
                 Logger.LogError(error, "HUD cosmetic save failed");
                 Server.NextFrame(() => MarkHudSaveUncertain(session, generation));
             }
@@ -1349,7 +1442,11 @@ public partial class WeaponPaints
     {
         if (_hudCoordinator?.IsLive(session.Native) != true || !HudCanApply(session) || session.Selected is not { } item
             || session.Snapshots is not { } snapshots || session.Drafts is not { } drafts || session.Limits is not { } limits
-            || session.SaveUncertain || _hudCatalog is not { } catalog || WeaponSync == null || snapshots.Length != drafts.Length) return;
+            || session.SaveUncertain || _hudCatalog is not { } catalog || WeaponSync == null || snapshots.Length != drafts.Length)
+        { TraceHudApply(session, HudApplyPhase.PreconditionRejected); return; }
+        var diagnostics = Config.PanoramaHud.DiagnosticsEnabled;
+        using var applyTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplySkin);
+        var prepareStarted = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var stickers = catalog.KitIds("stickers");
         var charms = catalog.KitIds("charms");
         var targets = snapshots.Select((snapshot, index) => new HudSkinTarget(snapshot, drafts[index], limits, stickers, charms,
@@ -1364,46 +1461,91 @@ public partial class WeaponPaints
                 HudEquipmentKind.Glove => snapshot.Key.Definition.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 _ => null
             })).ToArray();
+        foreach (var target in targets)
+        {
+            if (target.Draft.CustomModel != null) continue;
+            var issue = target.Draft.ValidateStockIssue(target.Limits, target.Stickers, target.Keychains,
+                HudSkinCodec.Decode(target.Expected).Draft);
+            if (issue == HudSkinValidationIssue.None) continue;
+            TraceHudApply(session, HudApplyPhase.ValidationRejected, issue);
+            var field = issue switch
+            {
+                HudSkinValidationIssue.Seed => "паттерн",
+                HudSkinValidationIssue.Wear => "износ оружия",
+                HudSkinValidationIssue.Nametag => "имя оружия",
+                HudSkinValidationIssue.StickerId => "выбранную наклейку",
+                HudSkinValidationIssue.StickerAnchor => "точку крепления наклейки",
+                HudSkinValidationIssue.StickerPosition => "положение наклейки",
+                HudSkinValidationIssue.StickerWear => "износ наклейки",
+                HudSkinValidationIssue.StickerScale => "масштаб наклейки",
+                HudSkinValidationIssue.StickerRotation => "поворот наклейки",
+                HudSkinValidationIssue.Charm => "параметры брелока",
+                _ => "параметры предмета"
+            };
+            session.Message = new HudModalView("Некорректные параметры", $"Проверьте {field} для {(target.Expected.Key.Team == 2 ? "T" : "CT")}.", ["Понятно"]);
+            RenderHud(session);
+            return;
+        }
+        if (diagnostics) _hudMetrics.RecordMainThreadPhase(HudMainThreadPhase.ApplyValidation, prepareStarted);
+        var refreshTargets = targets.Select(target => (target.Expected.Key.Team, Model: target.Draft.CustomModel ?? "")).ToArray();
         var custom = session.Custom;
         if (custom != null)
         {
+            using var customTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplyCustomSnapshot);
             HudCustomState? current;
             try { current = HudCustomBridge.Snapshot(custom.Weapon, item.Definition!.Value); }
             catch (Exception error) { Logger.LogWarning(error, "CustomWeapons capability check failed"); current = null; }
             if (current == null || current.Generation != custom.Generation || current.ServerId != custom.ServerId || current.Database != custom.Database || current.Supported != custom.Supported || current.Fingerprint != custom.Fingerprint
                 || current.Models.Count != custom.Models.Count || current.Models.Any(entry => !custom.Models.TryGetValue(entry.Key, out var model) || model != entry.Value))
             {
+                TraceHudApply(session, HudApplyPhase.StoreCustomUnavailable);
                 Utilities.GetPlayerFromSlot(session.Native.Owner.Slot)?.PrintToChat(" [Скины] CustomWeapons недоступен; сохранение отменено.");
                 return;
             }
             custom = current;
         }
+        var setupStarted = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var store = custom == null ? WeaponSync.CreateHudSkinStore() : WeaponSync.CreateHudSkinStore(custom.ServerId, custom.Database);
         var metricStarted = Config.PanoramaHud.DiagnosticsEnabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        var trace = session.ApplyTrace;
+        _hudMetrics.RecordApply(diagnostics, HudApplyPhase.StoreStarted, trace);
+        var saveTimeout = TimeSpan.FromSeconds(Math.Clamp(Config.PanoramaHud.SaveTimeoutSeconds, 5, 90));
         var token = session.Native.Lifetime.Token;
         var generation = _hudCoordinator.BeginQuery(session.Native);
         session.Native.Busy = true;
         session.Message = new HudModalView("Сохранение", "Сохраняем настройки…", []);
-        RenderHud(session);
+        if (diagnostics) _hudMetrics.RecordMainThreadPhase(HudMainThreadPhase.ApplySaveSetup, setupStarted);
+        using (_hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplySavingRender)) RenderHud(session);
+        using var queueTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplyQueue);
         _ = Task.Run(async () =>
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
-            deadline.CancelAfter(TimeSpan.FromSeconds(15));
+            deadline.CancelAfter(saveTimeout);
             try
             {
                 var result = await store.ApplyAsync(targets, custom?.Models ?? new Dictionary<string, HudCustomModel>(), deadline.Token,
                     custom == null ? null : () => HudCustomBridge.IsCurrent(custom));
+                _hudMetrics.RecordApply(diagnostics, result switch
+                {
+                    HudApplyResult.Saved => HudApplyPhase.StoreSaved,
+                    HudApplyResult.Conflict => HudApplyPhase.StoreConflict,
+                    HudApplyResult.CustomUnavailable => HudApplyPhase.StoreCustomUnavailable,
+                    _ => HudApplyPhase.StoreInvalid
+                }, trace);
                 Server.NextFrame(() =>
                 {
-                    if (_hudCoordinator?.IsQueryCurrent(session.Native, generation) != true) return;
+                    if (_hudCoordinator?.IsQueryCurrent(session.Native, generation) != true) { _hudMetrics.RecordApply(diagnostics, HudApplyPhase.CallbackStale, trace); return; }
                     session.Native.Busy = false;
                     session.Message = null;
                     var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
                     if (result == HudApplyResult.Saved)
                     {
                         _hudUnconfirmedSlots.Mark(session.Native.Owner.SteamId, cosmetic: false);
+                        session.RetryRefresh = custom?.Supported == true
+                            ? () => ReconcileHudCustom(session, custom, refreshTargets)
+                            : () => StartHudRefresh(session);
                         if (player == null) { ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred); return; }
-                        if (custom?.Supported == true) { ReconcileHudCustom(session, custom, targets); return; }
+                        if (custom?.Supported == true) { ReconcileHudCustom(session, custom, refreshTargets); return; }
                         StartHudRefresh(session);
                         return;
                     }
@@ -1420,9 +1562,10 @@ public partial class WeaponPaints
                     RenderHud(session);
                 });
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { _hudMetrics.RecordApply(diagnostics, HudApplyPhase.StoreCancelled, trace); }
             catch (Exception error)
             {
+                _hudMetrics.RecordApply(diagnostics, error is OperationCanceledException ? HudApplyPhase.StoreCancelled : HudApplyPhase.StoreError, trace);
                 Logger.LogError(error, "HUD skin save failed");
                 Server.NextFrame(() => MarkHudSaveUncertain(session, generation));
             }
@@ -1440,60 +1583,92 @@ public partial class WeaponPaints
         RenderHud(session);
     }
 
-    private void ReconcileHudCustom(HudControllerSession session, HudCustomState custom, HudSkinTarget[] targets)
+    private static (int Team, string Model)? HudActiveCustomTarget((int Team, string Model)[] targets, int team)
     {
+        if (team is not (2 or 3)) return null;
+        var matches = targets.Where(target => target.Team == team).ToArray();
+        return matches.Length == 1 ? matches[0] : null;
+    }
+
+    private void ReconcileHudCustom(HudControllerSession session, HudCustomState custom, (int Team, string Model)[] targets)
+    {
+        if (_hudCoordinator?.IsLive(session.Native) != true) return;
+        var diagnostics = Config.PanoramaHud.DiagnosticsEnabled; var trace = session.ApplyTrace;
+        _hudMetrics.RecordApply(diagnostics, HudApplyPhase.CwStarted, trace);
         session.Native.Busy = true;
-        var remaining = targets.Length;
-        var reconciled = true;
+        session.Message = new HudModalView("Применение", "Обновляем предметы…", []);
+        RenderHud(session);
+        var version = ++session.RefreshVersion;
         var finished = false;
-        CancellationTokenSource? timer = null;
-        void Completed(bool success)
+        var attempts = 0;
+        var timer = CancellationTokenSource.CreateLinkedTokenSource(session.Native.Lifetime.Token);
+        var token = timer.Token;
+        var timeout = TimeSpan.FromSeconds(Math.Clamp(Config.PanoramaHud.RefreshTimeoutSeconds, 5, 90));
+        var phaseStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+        bool Current() => !finished && session.RefreshVersion == version && _hudCoordinator?.IsLive(session.Native) == true;
+        void Completed(HudCustomRefreshOutcome outcome, bool timedOut = false)
         {
-            if (finished || _hudCoordinator?.IsLive(session.Native) != true) return;
-            reconciled &= success;
-            if (--remaining != 0) return;
+            if (!Current()) return;
             finished = true;
-            timer?.Cancel(); timer?.Dispose(); timer = null;
-            session.Native.Busy = false;
-            var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
-            if (reconciled && player != null) StartHudRefresh(session);
-            else ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred);
+            timer.Cancel(); timer.Dispose();
+            _hudMetrics.RecordApply(diagnostics, timedOut ? HudApplyPhase.CwTimeout : outcome switch
+            {
+                HudCustomRefreshOutcome.Reconciled => HudApplyPhase.CwSucceeded,
+                HudCustomRefreshOutcome.Failed => HudApplyPhase.CwFailed,
+                _ => HudApplyPhase.CwDeferred
+            }, trace);
+            if (outcome == HudCustomRefreshOutcome.Reconciled) StartHudRefresh(session);
+            else ShowHudSavedOutcome(session, outcome == HudCustomRefreshOutcome.Failed ? HudRefreshOutcome.Failed : HudRefreshOutcome.Deferred);
         }
-        foreach (var target in targets)
+        void Attempt()
         {
+            if (!Current()) return;
+            if (System.Diagnostics.Stopwatch.GetElapsedTime(phaseStarted) >= timeout) { Completed(HudCustomRefreshOutcome.Deferred, timedOut: true); return; }
+            var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
+            if (player == null || !session.Native.Owner.OwnsController(player.SteamID, player.EntityHandle.Raw)
+                || HudActiveCustomTarget(targets, player.TeamNum) is not { } target)
+            { Completed(HudCustomRefreshOutcome.Deferred); return; }
+            attempts++;
             var delivered = false;
-            void Once(bool success) { if (delivered) return; delivered = true; Completed(success); }
-            try { HudCustomBridge.Refresh(custom, session.Native.Owner, target.Expected.Key.Team, target.Draft.CustomModel ?? "", Once); }
+            void Once(HudCustomRefreshOutcome outcome)
+            {
+                if (delivered || !Current()) return;
+                delivered = true;
+                var step = HudRetryPolicy.Decide(Current(), outcome == HudCustomRefreshOutcome.Deferred,
+                    attempts, System.Diagnostics.Stopwatch.GetElapsedTime(phaseStarted), timeout);
+                if (step.Decision == HudRetryDecision.Complete) { Completed(outcome); return; }
+                if (step.Decision == HudRetryDecision.Timeout) { Completed(HudCustomRefreshOutcome.Deferred, timedOut: true); return; }
+                if (step.Decision != HudRetryDecision.Retry) return;
+                _ = Task.Run(async () =>
+                {
+                    try { await Task.Delay(step.Delay, token); Server.NextFrame(Attempt); }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+                }, token);
+            }
+            try { HudCustomBridge.Refresh(custom, session.Native.Owner, target.Team, target.Model, Once); }
             catch (Exception error)
             {
                 Logger.LogWarning(error, "CustomWeapons reconciliation failed");
-                Once(false);
+                Once(HudCustomRefreshOutcome.Failed);
             }
         }
-        if (finished) return;
-        timer = CancellationTokenSource.CreateLinkedTokenSource(session.Native.Lifetime.Token);
-        var token = timer.Token;
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(10), token);
-                Server.NextFrame(() =>
-                {
-                    if (finished || _hudCoordinator?.IsLive(session.Native) != true) return;
-                    finished = true;
-                    timer?.Dispose(); timer = null;
-                    session.Native.Busy = false;
-                    ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred);
-                });
+                await Task.Delay(timeout, token);
+                Server.NextFrame(() => Completed(HudCustomRefreshOutcome.Deferred, timedOut: true));
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         }, token);
+        Attempt();
     }
 
     private void StartHudRefresh(HudControllerSession session)
     {
         if (_hudCoordinator?.IsLive(session.Native) != true) return;
+        var diagnostics = Config.PanoramaHud.DiagnosticsEnabled; var trace = session.ApplyTrace;
+        _hudMetrics.RecordApply(diagnostics, HudApplyPhase.RefreshStarted, trace);
         if (session.CosmeticChanges is { } changes && changes.Any(change => change.Expected.Key.Kind switch
         {
             HudCosmeticKind.Agent or HudCosmeticKind.Patch => !Config.Additional.AgentEnabled,
@@ -1502,27 +1677,40 @@ public partial class WeaponPaints
             HudCosmeticKind.Graffiti => !Config.Additional.GraffitiEnabled,
             HudCosmeticKind.Pet => !Config.Additional.PetsEnabled,
             _ => true
-        })) { ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred); return; }
+        })) { _hudMetrics.RecordApply(diagnostics, HudApplyPhase.RefreshDeferred, trace); ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred); return; }
         if (session.CosmeticChanges == null && session.Selected is { } selected
             && (selected.Category == "knives" && !Config.Additional.KnifeEnabled
                 || selected.Category == "gloves" && !Config.Additional.GloveEnabled
                 || !Config.Additional.SkinEnabled))
-        { ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred); return; }
+        { _hudMetrics.RecordApply(diagnostics, HudApplyPhase.RefreshDeferred, trace); ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred); return; }
         var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
-        if (player == null) return;
+        if (player == null || !session.Native.Owner.OwnsController(player.SteamID, player.EntityHandle.Raw))
+        { _hudMetrics.RecordApply(diagnostics, HudApplyPhase.RefreshDeferred, trace); ShowHudSavedOutcome(session, HudRefreshOutcome.Deferred); return; }
         session.Native.Busy = true;
         session.Message = new HudModalView("Применение", "Обновляем предметы…", []);
         RenderHud(session);
+        var version = ++session.RefreshVersion;
         var finished = false;
-        CancellationTokenSource? timer = null;
+        var attempts = 0;
+        var timer = CancellationTokenSource.CreateLinkedTokenSource(session.Native.Lifetime.Token);
+        var token = timer.Token;
+        var timeout = TimeSpan.FromSeconds(Math.Clamp(Config.PanoramaHud.RefreshTimeoutSeconds, 5, 90));
+        var phaseStarted = System.Diagnostics.Stopwatch.GetTimestamp();
         var agentOrPatch = session.CosmeticChanges?.Any(change => change.Expected.Key.Kind is HudCosmeticKind.Agent or HudCosmeticKind.Patch) == true;
         var partialAgentRefresh = agentOrPatch && !Config.Additional.SkinEnabled;
-        void Complete(HudRefreshOutcome outcome)
+        bool Current() => !finished && session.RefreshVersion == version && _hudCoordinator?.IsLive(session.Native) == true;
+        void Complete(HudRefreshOutcome outcome, bool timedOut = false)
         {
-            if (finished || _hudCoordinator?.IsLive(session.Native) != true) return;
+            if (!Current()) return;
             finished = true;
-            timer?.Cancel(); timer?.Dispose(); timer = null;
+            timer.Cancel(); timer.Dispose();
             var effectiveOutcome = partialAgentRefresh && outcome == HudRefreshOutcome.Applied ? HudRefreshOutcome.Deferred : outcome;
+            _hudMetrics.RecordApply(diagnostics, timedOut ? HudApplyPhase.RefreshTimeout : effectiveOutcome switch
+            {
+                HudRefreshOutcome.Applied => HudApplyPhase.RefreshApplied,
+                HudRefreshOutcome.Failed => HudApplyPhase.RefreshFailed,
+                _ => HudApplyPhase.RefreshDeferred
+            }, trace);
             if (effectiveOutcome == HudRefreshOutcome.Applied)
             {
                 _hudUnconfirmedSlots.Complete(session.Native.Owner.SteamId, session.CosmeticChanges != null);
@@ -1530,28 +1718,56 @@ public partial class WeaponPaints
             ShowHudSavedOutcome(session, effectiveOutcome);
         }
         var cosmeticOnly = session.CosmeticChanges != null && (!agentOrPatch || partialAgentRefresh);
-        RequestPlayerRefresh(player, false, fromHud: true, completed: Complete, cosmeticOnly: cosmeticOnly);
-        if (finished) return;
-        timer = CancellationTokenSource.CreateLinkedTokenSource(session.Native.Lifetime.Token);
-        var token = timer.Token;
+        void Attempt()
+        {
+            if (!Current()) return;
+            if (System.Diagnostics.Stopwatch.GetElapsedTime(phaseStarted) >= timeout) { Complete(HudRefreshOutcome.Deferred, timedOut: true); return; }
+            var current = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
+            if (current == null || !session.Native.Owner.OwnsController(current.SteamID, current.EntityHandle.Raw))
+            { Complete(HudRefreshOutcome.Deferred); return; }
+            attempts++;
+            var delivered = false;
+            void Once(HudRefreshOutcome outcome)
+            {
+                if (delivered || !Current()) return;
+                delivered = true;
+                var step = HudRetryPolicy.Decide(Current(), transient: outcome == HudRefreshOutcome.Deferred && !partialAgentRefresh, attempts,
+                    System.Diagnostics.Stopwatch.GetElapsedTime(phaseStarted), timeout);
+                if (step.Decision == HudRetryDecision.Timeout) { Complete(HudRefreshOutcome.Deferred, timedOut: true); return; }
+                if (step.Decision == HudRetryDecision.Complete) { Complete(outcome); return; }
+                if (step.Decision != HudRetryDecision.Retry) return;
+                _ = Task.Run(async () =>
+                {
+                    try { await Task.Delay(step.Delay, token); Server.NextFrame(Attempt); }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+                }, token);
+            }
+            RequestPlayerRefresh(current, false, fromHud: true, hudCompleted: Once, cosmeticOnly: cosmeticOnly);
+        }
         _ = Task.Run(async () =>
         {
-            try { await Task.Delay(TimeSpan.FromSeconds(15), token); Server.NextFrame(() => Complete(HudRefreshOutcome.Deferred)); }
+            try { await Task.Delay(timeout, token); Server.NextFrame(() => Complete(HudRefreshOutcome.Deferred, timedOut: true)); }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         }, token);
+        Attempt();
     }
 
     private void ShowHudSavedOutcome(HudControllerSession session, HudRefreshOutcome outcome)
     {
         if (_hudCoordinator?.IsLive(session.Native) != true) return;
         session.Native.Busy = false;
-        session.FinishAfterMessage = true;
+        session.RefreshFailed = outcome != HudRefreshOutcome.Applied;
+        if (!session.RefreshFailed)
+        {
+            UpdateHudInstalledArtwork(session);
+        }
+        session.FinishAfterMessage = !session.RefreshFailed;
+        if (!session.RefreshFailed) session.RetryRefresh = null;
         session.Message = new HudModalView("Настройки сохранены", outcome switch
         {
             HudRefreshOutcome.Applied => "Обновление завершено.",
-            HudRefreshOutcome.Deferred => "Применение отложено.",
-            _ => "Не удалось обновить предметы. Попробуйте после возрождения."
-        }, ["Понятно"]);
+            _ => "Настройки сохранены, но предмет не обновился."
+        }, session.RefreshFailed ? ["Повторить обновление", "Закрыть"] : ["Понятно"]);
         RenderHud(session);
     }
 
@@ -1562,6 +1778,10 @@ public partial class WeaponPaints
 
     private static HudImage? HudItemImage(HudCatalogItem item) => item.Resource != null && item.ArtBank is int bank && item.ArtCell is int cell
         ? new HudImage(bank, cell, item.TintIndex) : null;
+
+    private static HudImage? HudCustomImage(string? weapon, string? model) =>
+        weapon != null && model != null && HudCustomArtwork.Index(weapon, model) is int index
+            ? new HudImage(0, 0, CustomIndex: index) : null;
 
     private static HudDecorSlot[] HudDecorItems(HudSkinDraft draft, HudCatalog? catalog) => draft.Stickers.Select(sticker =>
     {
@@ -1704,8 +1924,20 @@ public partial class WeaponPaints
     private void RenderHud(HudControllerSession session)
     {
         if (_hudCoordinator == null || _hudRenderer == null || !_hudCoordinator.IsLive(session.Native)) return;
+        var diagnostics = Config.PanoramaHud.DiagnosticsEnabled;
+        using var renderTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.RenderTotal);
+        var viewStarted = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var browser = session.Browser;
         var page = browser.CurrentPage;
+        var playerTeam = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot)?.TeamNum ?? 0;
+        var artworkAvailable = HudArtworkAvailable(session);
+        if (!artworkAvailable) session.InstalledArtworkReady = false;
+        else if (HudInstalledArtwork.NeedsRefresh(session.InstalledArtworkReady, session.InstalledArtworkSource,
+            HudArtworkSource(session), Config.PanoramaHud.CustomWeaponsIntegration == "required", session.InstalledArtworkGeneration,
+            Config.PanoramaHud.CustomWeaponsIntegration == "required" ? HudArtworkGeneration() : null))
+        {
+            UpdateHudInstalledArtwork(session);
+        }
         var effectiveChoices = new Dictionary<(int Team, string Weapon), (bool Known, bool Supported, string? Model)>();
         (bool Known, bool Supported, string? Model) Effective(int team, string weapon)
         {
@@ -1723,11 +1955,16 @@ public partial class WeaponPaints
         };
         var cards = page?.Items.Select(item =>
         {
-            var art = browser.Level == HudBrowserLevel.Models ? _hudCatalog?.ModelArtwork(item) : item;
-            var image = art == null ? null : HudItemImage(art);
+            var installed = browser.Level == HudBrowserLevel.Models && artworkAvailable && item.Category == "weapons" && item.Definition is int index
+                ? session.InstalledArtwork.FindAppearance(browser.Team, playerTeam, index) : (null, null);
+            var image = browser.Level == HudBrowserLevel.Models && item.Category == "weapons"
+                ? installed.Item1 ?? HudItemImage(item)
+                : browser.Level == HudBrowserLevel.Models && _hudCatalog?.ModelArtwork(item) is { } artwork
+                    ? HudItemImage(artwork) : HudItemImage(item);
             var badge = HudEquippedBadge(browser.Team, team => HudKnownEquipped(session, item, Effective, team));
             return new HudCard(browser.Level == HudBrowserLevel.Finishes ? HudFinishName(item) : item.Name,
-                image == null ? "Нет изображения" : "", image, item.Rarity, badge.Equipped, badge.Label);
+                image == null ? "Нет изображения" : "", image,
+                browser.Level == HudBrowserLevel.Models && item.Category == "weapons" ? installed.Item2 : item.Rarity, badge.Equipped, badge.Label);
         }).ToArray() ?? [];
         var customOptions = session.CustomTab ? HudCustomOptions(session) : [];
         if (session.CustomTab && !session.Editing)
@@ -1735,9 +1972,8 @@ public partial class WeaponPaints
                 .Select(option =>
                 {
                     var badge = HudEquippedBadge(browser.Team, team => HudKnownCustomEquipped(session, option.Key, Effective, team));
-                    return new HudCard(option.Value, option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? "" : "Нет изображения",
-                        option.Key == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? new HudImage(0, 0, CustomAtlas: true) : null,
-                        null, badge.Equipped, badge.Label);
+                    var image = HudCustomImage(session.Custom?.Weapon, option.Key);
+                    return new HudCard(option.Value, image == null ? "Нет изображения" : "", image, null, badge.Equipped, badge.Label);
                 }).ToArray();
         var title = browser.Section switch
         {
@@ -1828,7 +2064,7 @@ public partial class WeaponPaints
             if (session.CustomTab)
             {
                 var name = session.CustomChoice != null && session.Custom?.Names.TryGetValue(session.CustomChoice, out var customName) == true ? customName : "Кастомные скины";
-                var image = session.CustomChoice == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? new HudImage(0, 0, CustomAtlas: true) : null;
+                var image = HudCustomImage(session.Custom?.Weapon, session.CustomChoice);
                 hero = new HudHero(name, "", "", "", "", image, null);
             }
             if (session.Editing && session.Drafts is { Length: > 0 } drafts && session.Snapshots is { Length: > 0 } snapshots)
@@ -1839,7 +2075,7 @@ public partial class WeaponPaints
                 {
                     var name = session.CustomChoice != null && session.Custom?.Names.TryGetValue(session.CustomChoice, out var customName) == true ? customName : "Кастомный скин";
                     feature = new HudFeatureView(HudFeatureKind.Custom, "Кастомный скин", name,
-                        session.CustomChoice == "daedalos" && session.Custom?.Weapon == "weapon_ak47" ? new HudImage(0, 0, CustomAtlas: true) : null, []);
+                        HudCustomImage(session.Custom?.Weapon, session.CustomChoice), []);
                 }
                 else if (session.Feature == HudFeatureKind.Sticker)
                 {
@@ -1880,6 +2116,17 @@ public partial class WeaponPaints
                     DecorItems: decorItems, CharmImage: charm.Image);
             }
         }
+        var homeImages = new Dictionary<string, HudHomeArtwork>();
+        if (screen == HudScreen.Home && _hudCatalog != null)
+        {
+            foreach (var group in HudWeaponGroups)
+            {
+                var appearance = artworkAvailable ? session.InstalledArtwork.GroupAppearance(browser.Team, playerTeam, group.Value) : (null, null);
+                var fallback = group.Value.Select(definition => _hudCatalog.FindBase("weapons", definition))
+                    .Where(item => item != null).Select(item => HudItemImage(item!)).FirstOrDefault(image => image != null);
+                homeImages[group.Key["category_".Length..]] = new HudHomeArtwork(appearance.Item1 ?? fallback, appearance.Item1 == null ? null : appearance.Item2);
+            }
+        }
         var view = new HudViewModel(screen, browser.Section, breadcrumb, title, "СТОРОНА  ·  " + (browser.Team switch { 2 => "T", 3 => "CT", _ => "ОБЕ" }),
             cards, session.CustomTab && !session.Editing ? session.CustomPage : page?.Page ?? 0,
             session.CustomTab && !session.Editing ? Math.Max(1, (customOptions.Length + 9) / 10) : page?.Pages ?? 1,
@@ -1889,16 +2136,22 @@ public partial class WeaponPaints
             TeamVisible: !session.ResumeEditor && browser.Section is not (HudSection.Graffiti or HudSection.Pet),
             CustomTab: session.CustomTab, BackVisible: browser.Level != HudBrowserLevel.Home,
             TabsVisible: browser.Level == HudBrowserLevel.Finishes, SearchVisible: true, SortVisible: true, Size: session.Size,
-            SortLabel: session.CustomTab ? (session.CustomDescending ? "По названию ↓" : "По названию ↑") : browser.Sort switch
+            HomeImages: homeImages, SortLabel: session.CustomTab ? (session.CustomDescending ? "По названию ↓" : "По названию ↑") : browser.Sort switch
             {
                 HudSort.NameDescending => "По названию ↓", HudSort.RarityAscending => "По редкости ↑",
                 HudSort.RarityDescending => "По редкости ↓", _ => "По названию ↑"
             });
+        if (diagnostics) _hudMetrics.RecordMainThreadPhase(HudMainThreadPhase.RenderView, viewStarted);
         try
         {
             var started = Config.PanoramaHud.DiagnosticsEnabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
             var frame = _hudRenderer.Render(view);
-            if (started != 0) _hudMetrics.RenderCompleted(started);
+            if (started != 0)
+            {
+                _hudMetrics.RenderCompleted(started);
+                _hudMetrics.RecordMainThreadPhase(HudMainThreadPhase.RenderFrame, started);
+            }
+            using var submitTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.RenderSubmit);
             _hudCoordinator.Submit(session.Native, frame, () => session.PublishedRevision = revision);
         }
         catch (Exception error) { Logger.LogError(error, "Panorama HUD rendering failed"); CloseHud(session.Native.Owner.Slot); }

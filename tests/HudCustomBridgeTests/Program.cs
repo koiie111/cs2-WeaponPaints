@@ -8,6 +8,10 @@ void Check(bool ok,string message) { if(!ok)throw new InvalidOperationException(
 var registry=HudBridgeRegistry.Instance;var service=new Fake();registry.SetCurrent(service);
 try {
  var owner=new HudViewerStamp(1,76561198000000001UL,101,102,1,1);
+ var initialGeneration=HudCustomBridge.CurrentGeneration();
+ Check(initialGeneration.HasValue && initialGeneration==registry.Generation,"generation checks active capability without snapshot");
+ TestCapability.Available=false;Check(HudCustomBridge.CurrentGeneration()==null,"missing capability invalidates cached generation");TestCapability.Available=true;
+ registry.SetCurrent(new Fake());Check(HudCustomBridge.CurrentGeneration()!=initialGeneration,"replacement invalidates cached generation");registry.SetCurrent(service);
  Check(HudCustomBridge.Effective(owner,2,"weapon_ak47") is { Known:true, Supported:true, Model:"precached" },"effective choice crosses V2 boundary");
  Check(TestCapability.Name=="customweapons:hud:v2", "must request V2 and never fall back to V1");
  TestCapability.Available=false;Check(!HudCustomBridge.Effective(owner,2,"weapon_ak47").Known,"missing V2 fails closed");TestCapability.Available=true;
@@ -21,17 +25,20 @@ try {
  service.Snapshot=original with {Models=[original.Models[0],original.Models[0]]};Check(HudCustomBridge.Snapshot("weapon_ak47",7)==null,"duplicate model ID denied");
  service.Snapshot=original;var definitions=new Dictionary<string,int>{{"weapon_ak47",7}};var all=HudCustomBridge.CaptureAll(definitions)!;
  Check(all.Weapons.Count==1 && all.Products.Count==2,"prefetch includes configured and nonprecached models");
- bool? callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);Check(callback==null && service.Pending!=null,"refresh queued");
- service.Complete(HudRefreshResult.Reconciled);Check(callback==true,"reconciled same snapshot");
+ HudCustomRefreshOutcome? callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);Check(callback==null && service.Pending!=null,"refresh queued");
+ service.Complete(HudRefreshResult.Reconciled);Check(callback==HudCustomRefreshOutcome.Reconciled,"reconciled same snapshot");
  foreach(var changed in new[]{original with {ServerId=34},original with {DatabaseName="other"},original with {DatabaseServerUuid="22222222-2222-2222-2222-222222222222"},original with {Models=[original.Models[0] with {Name="changed"},original.Models[1]]},original with {Models=[original.Models[0] with {Precached=false},original.Models[1]]}}) {
   service.Snapshot=original;callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);service.Snapshot=changed;service.Complete(HudRefreshResult.Reconciled);
-  Check(callback==false,"changed snapshot after queue must fail closed");
+  Check(callback==HudCustomRefreshOutcome.Failed,"changed snapshot after queue must fail closed");
  }
- service.Snapshot=original;callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);service.Complete(HudRefreshResult.Deferred);Check(callback==false,"deferred is not success");
+ service.Snapshot=original;callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);service.Complete(HudRefreshResult.Deferred);Check(callback==HudCustomRefreshOutcome.Deferred,"transient deferred is preserved");
+ service.Snapshot=original;callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);service.Complete(HudRefreshResult.Error);Check(callback==HudCustomRefreshOutcome.Failed,"permanent error is terminal");
+ service.Snapshot=original with {DatabaseReady=false};callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);
+ Check(callback==HudCustomRefreshOutcome.Deferred && service.Pending==null,"temporarily unavailable database is retryable without issuing refresh");
  service.Snapshot=original;callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);
  var reloaded=new Fake();registry.SetCurrent(reloaded);service.Complete(HudRefreshResult.Reconciled);
- Check(callback==false,"callback from superseded service must fail closed");registry.SetCurrent(service);
- TestCapability.Available=false;callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);Check(callback==false,"missing capability fails closed");TestCapability.Available=true;
+ Check(callback==HudCustomRefreshOutcome.Failed,"callback from superseded service must fail closed");registry.SetCurrent(service);
+ TestCapability.Available=false;callback=null;HudCustomBridge.Refresh(state,owner,3,"precached",v=>callback=v);Check(callback==HudCustomRefreshOutcome.Failed,"missing capability fails closed");TestCapability.Available=true;
  Check(((ICollection<KeyValuePair<string,HudCustomModel>>)state.Models).IsReadOnly,"state model map must be immutable");
  Check(((ICollection<KeyValuePair<string,HudCustomModel>>)state.AllModels).IsReadOnly,"all model map must be immutable");
  Check(((ICollection<KeyValuePair<string,string>>)state.Names).IsReadOnly,"model names must be immutable");

@@ -35,6 +35,12 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             foreach (var name in contract.AuthoredClasses(panel).Where(x => x.StartsWith("art-", StringComparison.Ordinal)))
                 Class(panel, name, false);
             if (image == null) return;
+            if (image.CustomIndex is { } customIndex)
+            {
+                if (customIndex is < 0 or > 18) throw new InvalidDataException("Invalid custom art index");
+                Class(panel, "art-custom-" + customIndex);
+                return;
+            }
             if (image.CustomAtlas) { Class(panel, "art-custom-0"); return; }
             if (image.PetIcon) { Class(panel, "art-pet-0"); return; }
             if (image.Bank is < 0 or > 255 || image.Cell is < 0 or > 255 || image.Tint is < 0 or > 19)
@@ -52,11 +58,28 @@ internal sealed class HudRenderer(HudLayoutContract contract)
         for (var index = 0; index < Navigation.Length; index++)
             Class(Navigation[index], "active", index == (int)view.Section);
         Text("breadcrumb", view.Breadcrumb); Text("title", view.Title); Text("team", view.Team);
-        Hidden("team", !view.TeamVisible); Hidden("back", !view.BackVisible);
+        Hidden("team", !view.TeamVisible);
+        Hidden("back", !view.BackVisible || view.Screen == HudScreen.Home);
+        Hidden("header_divider", !view.BackVisible || view.Screen == HudScreen.Home);
         var home = view.Screen == HudScreen.Home;
         var settings = view.Screen == HudScreen.Settings;
         var catalog = !home && !settings;
         Class(home ? "home" : settings ? "settings" : "catalog", "show");
+        if (home)
+        {
+            foreach (var category in new[] { "rifles", "pistols", "smg", "shotguns", "snipers", "heavy", "zeus" })
+            {
+                var item = view.HomeImages != null && view.HomeImages.TryGetValue(category, out var art) ? art : null;
+                Image("category_art_" + category, item?.Image);
+                if (item?.Rarity != null)
+                {
+                    var tile = "category_" + category;
+                    foreach (var name in contract.AuthoredClasses(tile).Where(x => x.StartsWith("tier-", StringComparison.Ordinal)))
+                        Class(tile, name, false);
+                    Tier(tile, item.Rarity);
+                }
+            }
+        }
         if (catalog)
         {
             var finishes = view.Screen == HudScreen.Finishes;
@@ -76,7 +99,7 @@ internal sealed class HudRenderer(HudLayoutContract contract)
                 if (i >= view.Cards.Count) { Hidden(panel, true); Image(image, null); Text("item_" + i, ""); Text("sub_" + i, ""); continue; }
                 var card = view.Cards[i]; Text("item_" + i, card.Name); Text("sub_" + i, card.Equipped ? card.EquippedLabel ?? "Установлен" : card.Subtitle);
                 Image(image, card.Image);
-                if (view.Screen is HudScreen.Category or HudScreen.Models) Class(panel, "accent-" + (i % 5));
+                if (view.Screen is HudScreen.Category or HudScreen.Models && card.Rarity == null) Class(panel, "accent-" + (i % 5));
                 else Tier(panel, card.Rarity);
                 if (card.Equipped) Class(panel, "selected");
             }
@@ -93,7 +116,10 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             var s = view.Settings ?? throw new InvalidDataException("Settings screen requires settings state");
             Text("preview_name", s.PreviewName); Image("preview_art", s.PreviewImage); Tier("preview_panel", s.Rarity);
             Text("nametag", s.Nametag); Text("wear", s.Wear); Text("seed", s.Seed); Text("stattrak", s.StatTrak);
-            Text("decor", s.Decor); Text("charm", s.Charm);
+            Text("decor", s.Decor);
+            var emptyCharm = string.IsNullOrWhiteSpace(s.Charm);
+            Text("charm", s.Charm);
+            if (emptyCharm) Class("charm", "empty");
             if (s.DecorItems is { Count: > 5 }) throw new InvalidDataException("Too many decoration slots");
             for (var i = 0; i < 5; i++)
             {
@@ -102,7 +128,7 @@ internal sealed class HudRenderer(HudLayoutContract contract)
                 Image("decor_art_" + i, present ? decoration!.Image : null);
                 if (present) Class("decor_" + i, "hasItem");
             }
-            Image("charm_art", s.CharmImage);
+            Image("charm_art", emptyCharm ? null : s.CharmImage);
             if (!s.CanApply) Class("apply", "disabled");
             if (s.PlusRequired) Class("plus", "show");
             var feature = s.Feature;

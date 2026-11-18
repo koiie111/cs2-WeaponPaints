@@ -21,7 +21,7 @@
     <Compile Remove="interop/**/*.cs" />
     <None Include="hud-mockup/catalog/stock.json" Link="data/hud-stock-v2.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="hud-mockup/catalog/cosmetic-metadata.json" Link="data/hud-cosmetic-v2.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="hud-mockup/catalog/hud-live-contract-v7.json" Link="data/hud-live-contract-v7.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="hud-mockup/catalog/hud-live-contract-v10.json" Link="data/hud-live-contract-v10.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="data/graffiti.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -70,6 +70,16 @@ try
     var stored=await store.LoadAsync(key2); var decoded=HudSkinCodec.Decode(stored).Draft;
     Check(decoded.Stickers.Select(s=>s.Id).SequenceEqual(new uint[]{101,102,103,104,105}),"five sticker round trip");
     Check(decoded.Keychain?.Id==37 && decoded.Keychain.SlabSticker==106,"slab round trip");
+    await Reset();
+    const string unchangedLegacyOffset="101;0;99;0;0;1;0";
+    await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_sticker_0=@legacy WHERE steamid=@steam AND weapon_team=3",new{steam,legacy=unchangedLegacyOffset});
+    var bothT=await Target(key2,d=>{ d.Paint=600; d.Wear=.01f; d.StatTrak=true; d.Stickers[2]=new(102,2,0,0,0,1,0); });
+    var bothCt=await Target(key3,d=>{ d.Paint=600; d.Wear=.01f; d.StatTrak=true; d.Stickers[2]=new(102,2,0,0,0,1,0); });
+    Check(await Apply(bothT,bothCt)==HudApplyResult.Saved,"paint and third-slot sticker must save both sides with unchanged legacy CT offset");
+    Check(await sql.ExecuteScalarAsync<string>("SELECT weapon_sticker_0 FROM wp_player_skins WHERE steamid=@steam AND weapon_team=3",new{steam})==unchangedLegacyOffset,"unchanged CT legacy sticker raw value must be preserved");
+    Check((await store.LoadAsync(key3)).Fields[7] == "102;2;0;0;0;1;0","third-slot sticker must save on CT");
+    var unsafeCt=await Target(key3,d=>d.Stickers[0]=d.Stickers[0] with { X=98 });
+    Check(await Apply(unsafeCt)==HudApplyResult.Invalid,"edited invalid legacy offset must still be rejected");
     await Reset(); await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_sticker_0='malformed legacy',weapon_composition_version=0 WHERE steamid=@steam AND weapon_team=2",new {steam});
     pending=await Target(key2,d=>d.Seed=99); Check(await Apply(pending)==HudApplyResult.Saved,"independent legacy edit");
     Check(await sql.ExecuteScalarAsync<string>("SELECT weapon_sticker_0 FROM wp_player_skins WHERE steamid=@steam AND weapon_team=2",new {steam})=="malformed legacy","legacy raw data changed");

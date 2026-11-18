@@ -66,3 +66,20 @@ subprocess.run(
 
 
 subprocess.run([sys.executable, str(p / "tools/check_native_images.py")], check=True)
+
+# V10 is generated in its own tree; the checked-in runtime contract is the
+# cross-language boundary and must not drift from the authored XML.
+live = p / "live-addon-v10"
+live_contract = p / "catalog/hud-live-contract-v10.json"
+expected_contract = live_contract.read_bytes()
+generator = [sys.executable, str(p / "tools/generate_live.py"), "--version", "10"]
+subprocess.run(generator, check=True, cwd=p)
+assert live_contract.read_bytes() == expected_contract, "V10 runtime contract is stale"
+def snapshot_live():
+    return {f.relative_to(live).as_posix(): f.read_bytes() for f in live.rglob("*") if f.is_file()}
+first = snapshot_live()
+subprocess.run(generator, check=True, cwd=p)
+assert snapshot_live() == first, "V10 generation is not reproducible"
+subprocess.run([sys.executable, str(p / "tools/validate_panorama.py"), str(live)], check=True)
+subprocess.run([sys.executable, str(p / "tools/check_live_contract.py"), str(live), "--version", "10"], check=True)
+print(f"OK: V10 contract and {len(first)} source files reproducible")

@@ -264,6 +264,30 @@ def main():
             if image.is_file():
                 extra += f'\n.art-{key}{{background-image:url("{image.resolve().as_uri()}");background-size:contain;background-position:center;background-repeat:no-repeat}}'
 
+    # Browser-only copies of the exact native SVG icons used by V10.
+    nav_icons = {"weapons": "equipment/hkp2000", "knives": "equipment/knife",
+                 "gloves": "equipment/clothing_hands", "agents": "equipment/customplayer",
+                 "music": "ui/music_kit", "pins": "ui/pin", "graffiti": "equipment/spray0",
+                 "pet": "equipment/pet"}
+    if "weaponpaints_v10" in src.stem:
+        extra += "\n.navPicture { opacity: .72; } .nav.active .navPicture { opacity: .9; } [data-id=nav_knives] .navPicture { width:26px; height:26px; transform:rotate(-30deg); }"
+        for name, path in nav_icons.items():
+            icon = mockup_root / "preview-assets" / "nav-icons" / (path + ".svg")
+            if icon.is_file():
+                extra += f'\n[data-id="nav_{name}"] .navPicture {{background-image:url("{icon.resolve().as_uri()}")}}'
+        for name in ("back", "search"):
+            icon = mockup_root / "preview-assets" / "nav-icons" / "ui" / (name + ".svg")
+            if icon.is_file():
+                extra += f'\n.{name}Icon {{background-image:url("{icon.resolve().as_uri()}")}}'
+
+    if "weaponpaints_v10" in src.stem:
+        example_art = ((104, 199, "weapon_ak47_ak47_autoexec_camo_light_png.png"),
+                       (48, 55, "weapon_glock_gsch_axia_glock_light_png.png"))
+        for bank, cell, filename in example_art:
+            art = mockup_root / "preview-assets/native/panorama/images/econ/default_generated" / filename
+            if art.is_file():
+                extra += f'\n.art.bank-{bank}.cell-{cell} {{background-image:url("{art.resolve().as_uri()}")}}'
+
     out_dir = a.out or (addon / "previews")
     out_dir.mkdir(parents=True, exist_ok=True)
 

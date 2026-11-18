@@ -37,7 +37,7 @@ namespace WeaponPaints
             _gloveOverrides.Remove(player.Slot);
             _nativeGloves.Remove(player.Slot);
             foreach (var key in _nativeWeapons.Where(x => x.Value.Steam == player.SteamID).Select(x => x.Key).ToArray()) _nativeWeapons.Remove(key);
-            _commandRefreshes.Remove(player.Slot);
+            CancelCommandRefresh(player.Slot);
             _externalPlayerApplies.Remove(player.Slot);
             ForgetGraffiti(player.Slot, player.SteamID);
 			GPlayersKnife.TryRemove(player.Slot, out _);
@@ -118,7 +118,7 @@ namespace WeaponPaints
             _gloveOverrides.Remove(player.Slot);
             _nativeGloves.Remove(player.Slot);
             foreach (var key in _nativeWeapons.Where(x => x.Value.Steam == player.SteamID).Select(x => x.Key).ToArray()) _nativeWeapons.Remove(key);
-            _commandRefreshes.Remove(player.Slot);
+            CancelCommandRefresh(player.Slot);
             _externalPlayerApplies.Remove(player.Slot);
 			_hudUnconfirmedSlots.Remove(player.SteamID);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
@@ -166,7 +166,7 @@ namespace WeaponPaints
             FinishCacheKeys.Clear();
             _gloveOverrides.Clear();
             _nativeWeapons.Clear(); _nativeGloves.Clear();
-            _commandRefreshes.Clear();
+            ClearCommandRefreshes();
             _externalPlayerApplies.Clear();
             _hudUnconfirmedSlots.Clear();
             ClearSkinPreviews();
@@ -325,12 +325,15 @@ namespace WeaponPaints
 		private void RegisterListeners()
 		{
 			RegisterListener<Listeners.OnMapStart>(OnMapStart);
+            // The disconnect event can lack a valid controller. Release receipts
+            // and the bulk permit by slot even in that case.
+            RegisterListener<Listeners.OnClientDisconnect>(CancelCommandRefresh);
             RegisterListener<Listeners.OnEntityDeleted>(entity => { _retiringWeapons.Remove(entity.EntityHandle.Raw); _nativeWeapons.Remove(entity.EntityHandle.Raw); });
             RegisterListener<Listeners.OnMapEnd>(() =>
             {
                 Interlocked.Increment(ref DataGeneration);
                 PlayerDataLoading.Clear();
-                _commandRefreshes.Clear();
+                ClearCommandRefreshes();
                 _externalPlayerApplies.Clear();
                 _hudUnconfirmedSlots.Clear();
                 FinishCacheKeys.Clear();

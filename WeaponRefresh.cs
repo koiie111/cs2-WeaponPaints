@@ -12,6 +12,7 @@ public partial class WeaponPaints
         internal HashSet<int> PreviousDefinitions = new();
         internal HashSet<int>? Definitions = defindex.HasValue ? [defindex.Value] : null;
         internal readonly List<Action<bool>> Completions = new();
+        internal readonly PendingWeaponAcquisitions Acquisitions = new();
         internal void Include(int? value) { Revision++; if (!value.HasValue) Definitions = null; else Definitions?.Add(value.Value); }
     }
     private sealed record RefreshItem(uint Handle, string Classname, int Clip1, int Clip2, int[] Reserve, bool Active, bool Last,
@@ -29,8 +30,30 @@ public partial class WeaponPaints
     }
     private void RefreshWeapons(CCSPlayerController? player, int? defindex = null) => QueueWeaponRefresh(player, defindex, null);
     private void RefreshWeaponsWithCompletion(CCSPlayerController? player, Action<bool> completed, IReadOnlySet<int>? previousDefinitions = null) => QueueWeaponRefresh(player, null, completed, previousDefinitions);
+    private void CleanupPendingAcquisitions(RefreshRequest request)
+    {
+        // Never touch a foreign or acquired weapon. Only our own unowned
+        // replacement may be cleaned up after a bounded failure/cancellation.
+        try
+        {
+            request.Acquisitions.Cleanup(request.Identity.TryResolve(out _),
+                serial => new CHandle<CBasePlayerWeapon>(serial).Value,
+                entity => entity.IsValid && !entity.OwnerEntity.IsValid,
+                entity => entity.Remove(),
+                error => Logger.LogWarning(error, "Unable to remove pending replacement"));
+        }
+        catch (Exception error)
+        {
+            // Failure to resolve identity/native state must never strand the
+            // request or prevent its completion callbacks.
+            request.Acquisitions.Clear();
+            try { Logger.LogWarning(error, "Unable to inspect pending replacement"); }
+            catch { /* Cleanup diagnostics must not block completion. */ }
+        }
+    }
     private void CompleteWeaponRefresh(RefreshRequest request, bool success)
     {
+        CleanupPendingAcquisitions(request);
         foreach (var callback in request.Completions)
             try { callback(success); } catch (Exception error) { Logger.LogError(error, "Weapon refresh completion failed"); }
         request.Completions.Clear();
@@ -63,6 +86,10 @@ public partial class WeaponPaints
                 _weaponRefreshes.Remove(identity.Slot);
                 if (request.Revision != revision && identity.TryResolve(out var owner) && owner.PawnIsAlive)
                 {
+                    // Do not launch another Give while a previously created
+                    // entity is still settling or awaiting deferred removal.
+                    if (request.Acquisitions.Count != 0) { CompleteWeaponRefresh(request, false); return; }
+                    CleanupPendingAcquisitions(request);
                     var next = new RefreshRequest(identity, null) { Definitions = request.Definitions?.ToHashSet(), PreviousDefinitions = request.PreviousDefinitions };
                     next.Completions.AddRange(request.Completions); request.Completions.Clear();
                     _weaponRefreshes[identity.Slot] = next; ScheduleWeaponRefresh(next);
@@ -71,11 +98,11 @@ public partial class WeaponPaints
                 CompleteWeaponRefresh(request, success && request.Revision == revision);
             }
             if (!identity.TryResolve(out var owner) || !owner.PawnIsAlive || PlayerDataLoading.ContainsKey(owner.Slot)) { Finish(false); return; }
-            try { ApplyWeaponRefresh(owner, request.Definitions, request.PreviousDefinitions, Finish); }
+            try { ApplyWeaponRefresh(owner, request.Definitions, request.PreviousDefinitions, request.Acquisitions, Finish); }
             catch (Exception ex) { Finish(false); Logger.LogError(ex, "Weapon refresh failed"); }
         });
     }
-    private void ApplyWeaponRefresh(CCSPlayerController player, HashSet<int>? definitions, HashSet<int> previousDefinitions, Action<bool> completed)
+    private void ApplyWeaponRefresh(CCSPlayerController player, HashSet<int>? definitions, HashSet<int> previousDefinitions, PendingWeaponAcquisitions acquisitions, Action<bool> completed)
     {
         var pawn = player.PlayerPawn.Value;
         var services = pawn?.WeaponServices;
@@ -182,10 +209,23 @@ public partial class WeaponPaints
                 CBasePlayerWeapon? replacement=null;
                 try
                 {
-                    var raw=current.GiveNamedItem(plan.Classname);
-                    if(raw==0)throw new InvalidOperationException("GiveNamedItem returned null");
-                    replacement=new CBasePlayerWeapon(raw);
-                    if(!replacement.IsValid || replacement.OwnerEntity.Raw!=currentPawn.EntityHandle.Raw)throw new InvalidOperationException("Replacement was not acquired");
+                    replacement = acquisitions.GetOrCreate(plan.Handle,
+                        handle => new CHandle<CBasePlayerWeapon>(handle).Value,
+                        () =>
+                        {
+                            var raw = current.GiveNamedItem(plan.Classname);
+                            if (raw == 0) throw new InvalidOperationException("GiveNamedItem returned null");
+                            replacement = new CBasePlayerWeapon(raw);
+                            return replacement;
+                        }, entity => entity.IsValid, entity => entity.EntityHandle.Raw);
+                    if (replacement == null) continue;
+                    if (replacement.OwnerEntity.Raw != currentPawn.EntityHandle.Raw)
+                    {
+                        if (!replacement.OwnerEntity.IsValid) continue; // Acquisition may settle next frame.
+                        // Another player owns it; never remove or give again.
+                        acquisitions.Forget(plan.Handle); plans.RemoveAt(n); failedRetirement = true;
+                        continue;
+                    }
                     if (plan.Original != null) _nativeWeapons[replacement.EntityHandle.Raw] = plan.Original;
                     GivePlayerWeaponSkin(current,replacement);
                     replacement.Clip1=plan.Clip1;replacement.Clip2=plan.Clip2;
@@ -200,17 +240,17 @@ public partial class WeaponPaints
                     if(new CHandle<CBasePlayerWeapon>(preferredActive).Value is {IsValid:true} selected && selected.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentServices.ActiveWeapon.Raw=preferredActive;
                     if(new CHandle<CBasePlayerWeapon>(preferredLast).Value is {IsValid:true} previous && previous.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)currentServices.LastWeapon.Raw=preferredLast;
                     Utilities.SetStateChanged(currentPawn,nameof(CBasePlayerPawn),"m_pWeaponServices");
+                    acquisitions.Forget(plan.Handle);
                     plans.RemoveAt(n);
                 }
                 catch(Exception ex)
                 {
-                    // A failed acquisition may leave an unowned newly-created entity.
-                    if(replacement is {IsValid:true} && (replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw || !replacement.OwnerEntity.IsValid))
+                    // Once a serial was issued, never generate a second copy on
+                    // an uncertain exception. Cleanup occurs once at completion.
+                    if (acquisitions.TryGet(plan.Handle, out _) || replacement is { IsValid: true })
                     {
-                        try {
-                            if(replacement.OwnerEntity.Raw==currentPawn.EntityHandle.Raw)RetireRefreshWeapon(currentPawn,replacement);
-                            else replacement.Remove();
-                        } catch(Exception cleanup) { Logger.LogWarning(cleanup,"Unable to remove failed replacement"); }
+                        failedRetirement = true;
+                        plans.RemoveAt(n);
                     }
                     Logger.LogWarning(ex,"Weapon replacement attempt {Attempt} failed",attempts);
                 }
