@@ -13,6 +13,8 @@ item.AttributeList.Values[1].RefundableCurrency = 23;
 item.AttributeList.Values[1].SetBonus = true;
 item.NetworkedDynamicAttributes.Add(114, .125f);
 item.NetworkedDynamicAttributes.Add(115, .75f);
+item.NetworkedDynamicAttributes.Add(316, BitConverter.UInt32BitsToSingle(300));
+item.NetworkedDynamicAttributes.Add(317, BitConverter.UInt32BitsToSingle(123456789));
 gun.FallbackPaintKit=279;gun.FallbackWear=.123f;gun.FallbackSeed=123;
 Check(plugin.Remember(player,gun),"capture inline attributes in both vectors");
 Check(CounterStrikeSharp.API.NativeAPI.ElementLookups == 2, "capture resolves the first element once in each vector");
@@ -30,8 +32,12 @@ Check(BitConverter.SingleToInt32Bits(item.NetworkedDynamicAttributes.Values[0].V
 var scoreType = item.AttributeList.Values[1];
 Check(scoreType.AttributeDefinitionIndex == 81 && scoreType.Value == 1, "second native attribute restored");
 Check(scoreType.InitialValue == .25f && scoreType.RefundableCurrency == 23 && scoreType.SetBonus, "second native attribute metadata restored");
-Check(item.NetworkedDynamicAttributes.Values.Select(a => (a.AttributeDefinitionIndex, a.Value)).Skip(1)
+Check(item.NetworkedDynamicAttributes.Values.Select(a => (a.AttributeDefinitionIndex, a.Value)).Skip(1).Take(2)
     .SequenceEqual(new (ushort, float)[] { (114, .125f), (115, .75f) }), "later dynamic attributes restored");
+var purchase = item.NetworkedDynamicAttributes.Values.Skip(3)
+    .Select(a => (a.AttributeDefinitionIndex, BitConverter.SingleToUInt32Bits(a.Value)));
+Check(purchase.SequenceEqual(new (ushort, uint)[] { (316, 300), (317, 123456789) }),
+    "purchase price and purchaser ID preserve their raw bits");
 Check(plugin.Count==0,"completed restore releases baseline");
 Check(plugin.Remember(player,gun),"recapture after restore");
 item.AttributeList.InsertAtStart = true;

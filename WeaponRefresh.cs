@@ -260,7 +260,27 @@ public partial class WeaponPaints
                 else FinishSelection();
                 return;
             }
-            if(attempts>=8){Logger.LogError("Weapon refresh exhausted retries for slot {Slot}; remaining item classes: {Items}",identity.Slot,string.Join(",",plans.Select(p=>p.Classname)));completed(false);return;}
+            if (attempts >= 8)
+            {
+                string Describe(RefreshItem plan)
+                {
+                    if (new CHandle<CBasePlayerWeapon>(plan.Handle).Value is { IsValid: true })
+                        return $"{plan.Classname}:retirement_pending";
+                    if (!acquisitions.TryGet(plan.Handle, out var serial))
+                        return $"{plan.Classname}:replacement_missing";
+                    var pending = new CHandle<CBasePlayerWeapon>(serial).Value;
+                    return pending is { IsValid: true }
+                        ? $"{plan.Classname}:ownership_pending"
+                        : $"{plan.Classname}:replacement_removed";
+                }
+                try
+                {
+                    Logger.LogError("Weapon refresh exhausted retries for slot {Slot}; remaining item classes: {Items}",
+                        identity.Slot, string.Join(",", plans.Select(Describe)));
+                }
+                finally { completed(false); }
+                return;
+            }
             Server.NextFrame(GiveRemoved);
         }
         Server.NextFrame(GiveRemoved);

@@ -71,6 +71,8 @@ public partial class WeaponPaints
         [302] = "keychain slot 0 offset z",
         [306] = "keychain slot 0 seed",
         [314] = "keychain slot 0 highlight",
+        [316] = "purchase price",
+        [317] = "purchaser account id",
         [321] = "keychain slot 0 sticker",
         [80] = "kill eater",
         [81] = "kill eater score type",
