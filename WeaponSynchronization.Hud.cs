@@ -3,6 +3,9 @@ namespace WeaponPaints;
 internal partial class WeaponSynchronization
 {
     internal HudSkinStore CreateHudSkinStore() => new(_database.GetConnectionAsync, Operations, GetPlayerSkinWriteLock, _config.PanoramaHud.CustomWeaponsServerId);
+    internal Task<HudWorkshopPage> LoadHudCollectionsAsync(string steamId, HudCollectionsTab tab, HudWorkshopFilter filter,
+        int page, CancellationToken token) =>
+        HudCollectionsStore.LoadAsync(_database.GetConnectionAsync, steamId, tab, filter, page, token);
     internal HudSkinStore CreateHudSkinStore(int serverId, HudDatabaseIdentity identity) =>
         new(_database.GetConnectionAsync, Operations, GetPlayerSkinWriteLock, serverId, identity);
     internal HudCosmeticStore CreateHudCosmeticStore() => new(_database.GetConnectionAsync, Operations, GetPlayerSkinWriteLock);

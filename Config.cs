@@ -76,6 +76,7 @@ namespace WeaponPaints
     public sealed class PanoramaHudOptions
     {
         public bool Enabled { get; set; } = false;
+        public bool CollectionsEnabled { get; set; } = false;
         public string DefaultScale { get; set; } = "normal";
         public string CustomWeaponsIntegration { get; set; } = "required";
         public bool DiagnosticsEnabled { get; set; } = false;

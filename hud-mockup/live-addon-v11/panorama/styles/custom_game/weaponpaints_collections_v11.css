@@ -1,0 +1,45 @@
+.wcPane { width: 1156px; height: 724px; flow-children: down; }
+.wcPane.show { visibility: visible; }
+.wcNavIcon { width: 20px; height: 15px; border: 2px solid #95acbb; border-bottom: 5px solid #95acbb; align: center center; }
+.nav.active .wcNavIcon { border-color: #b8def0; }
+.wcTabs, .wcBody, .wcFooter, .wcDetailHead, .wcSlot { flow-children: right; }
+.wcTabs { width: 1156px; height: 50px; border-bottom: 1px solid #324b5c; }
+.wcTools { width: 1156px; height: 46px; margin-top: 9px; flow-children: right; }
+.wcFilter { min-width: 145px; max-width: 330px; }
+.wcButton { min-width: 46px; height: 36px; padding: 0px 12px; background-color: #283e4e; border: 1px solid #395264; margin-right: 6px; }
+.wcButton:hover, .wcButton.active { background-color: #35566a; border-color: #73bfe5; }
+.wcButtonText { color: #e6f5ff; font-size: 17px; font-weight: bold; align: center center; text-overflow: ellipsis; }
+.wcTab { min-width: 166px; height: 49px; background-color: #111d2a; border: 0px; }
+.wcTab.active { background-color: #203e50; border-bottom: 2px solid #79c7ef; }
+.wcSummary { color: #a5becb; font-size: 16px; margin: 8px 0px; max-width: 1100px; text-overflow: ellipsis; }
+.wcBody { width: 1156px; }
+.wcRows { width: 420px; margin-right: 16px; flow-children: down; }
+.wcRow { width: 420px; height: 80px; border: 1px solid #304757; background-color: #1d303f; flow-children: right; margin-bottom: 8px; }
+.wcRow:hover, .wcRow.active { border-color: #78bde0; background-color: #213b4b; }
+.wcThumb { width: 92px; height: 60px; vertical-align: center; margin: 0px 12px; }
+.wcRowCopy { width: 290px; flow-children: down; vertical-align: center; }
+.wcRowTitle { color: #e6f5ff; font-size: 19px; font-weight: bold; width: 285px; text-overflow: ellipsis; }
+.wcMeta { color: #a5becb; font-size: 16px; max-width: 630px; text-overflow: ellipsis; }
+.wcFooter { height: 43px; margin-top: 6px; }
+.wcPage { color: #c7dbe6; min-width: 54px; text-align: center; margin-top: 6px; margin-right: 6px; }
+.wcDetail { width: 718px; flow-children: down; border: 1px solid #344b5c; background-color: #192c3a; padding: 0px 0px 8px; }
+.wcCover { width: 716px; height: 222px; background-color: gradient( linear, 0% 100%, 100% 0%, from( #162533 ), to( #3a5366 ) ); border-bottom: 2px solid #75bddd; }
+.wcCoverArt { width: 500px; height: 188px; horizontal-align: right; margin: 16px 22px 0px 0px; }
+.wcCaption { width: 716px; flow-children: down; vertical-align: bottom; background-color: gradient( linear, 0% 0%, 0% 100%, from( #101e2d00 ), to( #101e2dff ) ); padding: 18px 16px 10px; }
+.wcDetailTitle { color: #f1f8fb; font-size: 33px; font-weight: bold; width: 682px; text-overflow: shrink min( 19px ) ellipsis; }
+.wcDetailHead, .wcSlot { width: 684px; margin: 0px 16px; }
+.wcDetailHead { height: 46px; margin-top: 12px; }
+.wcHeading { color: #e6f5ff; font-size: 20px; font-weight: bold; width: fill-parent-flow( 1.0 ); margin-top: 6px; }
+.wcSlot { height: 42px; border-bottom: 1px solid #304655; }
+.wcSlotArt { width: 52px; height: 32px; vertical-align: center; margin: 0px 10px 0px 6px; }
+.wcSlot .wcMeta { vertical-align: center; max-width: 608px; }
+.wcDetail .wcSummary { margin-left: 16px; }
+.wcDetailNext { margin-left: 16px; }
+.wcCover.tier-ded6cc { border-bottom-color: #ded6cc; }
+.wcCover.tier-b0c3d9 { border-bottom-color: #b0c3d9; }
+.wcCover.tier-5e98d9 { border-bottom-color: #5e98d9; }
+.wcCover.tier-4b69ff { border-bottom-color: #4b69ff; }
+.wcCover.tier-8847ff { border-bottom-color: #8847ff; }
+.wcCover.tier-d32ce6 { border-bottom-color: #d32ce6; }
+.wcCover.tier-eb4b4b { border-bottom-color: #eb4b4b; }
+.wcCover.tier-e4ae39 { border-bottom-color: #e4ae39; }

@@ -11,6 +11,19 @@ accepted in the native client. The owner accepted the earlier V9 appearance and
 observed Apply scenarios on 16 November 2026. A browser approximation is not
 a native-client test.
 
+`PanoramaHud.CollectionsEnabled` enables the V11 Collections browser when the
+main HUD is enabled. It uses the V11 layout and Collections stylesheet alongside
+the V10 styles and textures. For a local build, overlay `hud-mockup/live-addon-v11`
+onto a separate copy of `hud-mockup/live-addon-v10` and compile that directory.
+The plugin package contains both contracts.
+
+This browser reads the website workshop schema from the WeaponPaints database.
+It lists saved collections, saved crafts, and published works, with composition
+by side and workshop filters. Opening or paging reads up to seven records with
+a bounded query timeout. Card and composition selections use the loaded page.
+Account creation, equipment changes, publication, and craft application remain
+follow-up work. Keep the flag disabled on production until joint acceptance.
+
 `PanoramaHud.CustomWeaponsIntegration` defaults to `required`. In that mode a
 compatible, ready CustomWeapons HUD capability and matching database identity
 are required for item editing and application. Set it to `disabled` only after

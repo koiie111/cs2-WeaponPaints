@@ -57,14 +57,68 @@ internal sealed class HudRenderer(HudLayoutContract contract)
         if (view.Size == HudSize.Small) Class("wp_root", "small");
         for (var index = 0; index < Navigation.Length; index++)
             Class(Navigation[index], "active", index == (int)view.Section);
+        if (contract.HasPanel("nav_collections"))
+            Class("nav_collections", "active", view.Section == HudSection.Collections);
         Text("breadcrumb", view.Breadcrumb); Text("title", view.Title); Text("team", view.Team);
         Hidden("team", !view.TeamVisible);
         Hidden("back", !view.BackVisible || view.Screen == HudScreen.Home);
         Hidden("header_divider", !view.BackVisible || view.Screen == HudScreen.Home);
         var home = view.Screen == HudScreen.Home;
         var settings = view.Screen == HudScreen.Settings;
-        var catalog = !home && !settings;
-        Class(home ? "home" : settings ? "settings" : "catalog", "show");
+        var collections = view.Screen == HudScreen.Collections;
+        var catalog = !home && !settings && !collections;
+        Class(collections ? "wc_pane" : home ? "home" : settings ? "settings" : "catalog", "show");
+        if (view.Collections is { } works)
+        {
+            Class("wc_mine", "active", works.Tab == HudCollectionsTab.Mine);
+            Class("wc_feed", "active", works.Tab == HudCollectionsTab.Workshop);
+            Class("wc_crafts", "active", works.Tab == HudCollectionsTab.Crafts);
+            Hidden("wc_tools", works.Tab != HudCollectionsTab.Workshop);
+            Text("wc_type", works.Filter.Crafts ? "Крафты" : "Наборы");
+            Text("wc_search", works.Filter.Search.Length == 0 ? "Название или #тег" : works.Filter.Search);
+            Text("wc_sort", works.Filter.SortLabel);
+            Text("wc_summary", works.Summary);
+            Text("wc_page", works.Loading || works.Failed || works.Rows.Count == 0 ? "" : (works.Page + 1).ToString());
+            Hidden("wc_prev", works.Loading || works.Failed || works.Page == 0);
+            Hidden("wc_next", !works.More);
+            Hidden("wc_reload", !works.Failed);
+            Hidden("wc_detail", works.Selected < 0);
+            for (var i = 0; i < 6; i++)
+            {
+                var card = i < works.Rows.Count ? works.Rows[i] : null;
+                Hidden("wc_row_" + i, card == null);
+                if (card == null) continue;
+                Class("wc_row_" + i, "active", i == works.Selected);
+                Text("wc_title_" + i, card.Name);
+                Text("wc_meta_" + i, card.Subtitle);
+                Image("wc_thumb_" + i, card.Image);
+            }
+            if (works.Selected >= 0)
+            {
+                var card = works.Rows[works.Selected];
+                Text("wc_detail_title", card.Name);
+                Text("wc_detail_meta", card.Subtitle);
+                Text("wc_detail_heading", works.Craft ? "Наклейки" : "Состав коллекции");
+                Image("wc_cover_art", card.Image);
+                Tier("wc_cover", card.Rarity);
+                Hidden("wc_ct", works.Craft);
+                Hidden("wc_t", works.Craft);
+                Class("wc_ct", "active", works.Team == 3);
+                Class("wc_t", "active", works.Team == 2);
+                for (var i = 0; i < 6; i++)
+                {
+                    var item = i < works.Composition.Count ? works.Composition[i] : null;
+                    Hidden("wc_slot_" + i, item == null);
+                    if (item == null) continue;
+                    Text("wc_slot_" + i, item.Name);
+                    Image("wc_slot_art_" + i, item.Image);
+                }
+                Text("wc_detail_footer", works.CompositionCount == 0 ? "Состав пока пуст" : "");
+                Hidden("wc_detail_next", works.CompositionCount <= 6);
+                if (works.CompositionCount > 6)
+                    Text("wc_detail_page", $"Состав  {works.DetailPage + 1} / {(works.CompositionCount + 5) / 6}  ›");
+            }
+        }
         if (home)
         {
             foreach (var category in new[] { "rifles", "pistols", "smg", "shotguns", "snipers", "heavy", "zeus" })
