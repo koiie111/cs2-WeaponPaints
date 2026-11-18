@@ -14,7 +14,8 @@ internal sealed class HudSurface(bool collectionsEnabled = false)
     internal const string ContractFile = "hud-live-contract-v" + ResourceVersion + ".json";
     internal const string CollectionsContractFile = "hud-live-contract-v11.json";
     private const string CollectionsLayout = "panorama/layout/custom_game/weaponpaints_v11.vxml_c";
-    private string ResourceLayout => collectionsEnabled ? CollectionsLayout : Layout;
+    internal string ResourceLayout => collectionsEnabled ? CollectionsLayout : Layout;
+    internal string ResourceContract => collectionsEnabled ? CollectionsContractFile : ContractFile;
     internal const string Root = "wp_root";
     private CCSCustomHudLayout? _entity;
     private int _captureScanTick = -1;

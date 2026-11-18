@@ -16,6 +16,21 @@ internal sealed class HudWorkshopApi(Uri endpoint, byte[] secret)
         PooledConnectionLifetime = TimeSpan.FromMinutes(5)
     });
 
+    internal static string? ReadKey(string path)
+    {
+        var value = Environment.GetEnvironmentVariable("WP_WORKSHOP_GAME_KEY");
+        if (!string.IsNullOrEmpty(value) || !System.IO.Path.IsPathFullyQualified(path)) return value;
+        try
+        {
+            using var file = File.OpenRead(path);
+            if (file.Length is < 64 or > 66) return null;
+            using var reader = new StreamReader(file);
+            return reader.ReadToEnd().TrimEnd('\r', '\n');
+        }
+        catch (IOException) { return null; }
+        catch (UnauthorizedAccessException) { return null; }
+    }
+
     internal static HudWorkshopApi? Create(string url, string? key)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var endpoint) || endpoint.Scheme != Uri.UriSchemeHttps

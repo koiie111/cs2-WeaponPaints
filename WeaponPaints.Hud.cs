@@ -122,7 +122,7 @@ public partial class WeaponPaints
             if (Config.PanoramaHud.CollectionsEnabled)
             {
                 _hudWorkshopApi = HudWorkshopApi.Create(Config.PanoramaHud.CollectionsApiUrl,
-                    Environment.GetEnvironmentVariable("WP_WORKSHOP_GAME_KEY"));
+                    HudWorkshopApi.ReadKey(Config.PanoramaHud.CollectionsApiKeyFile));
                 if (_hudWorkshopApi == null) Logger.LogWarning("Panorama collections mutations require a valid HTTPS endpoint and WP_WORKSHOP_GAME_KEY");
             }
             _hudCoordinator = new HudSessionCoordinator(new HudGameSurface(_hudSurface, () => DataGeneration),
@@ -169,7 +169,7 @@ public partial class WeaponPaints
             var ready = catalogCount > 0 && _hudCosmetics != null && _hudCosmeticPolicy != null
                 && _hudContract != null && _hudRenderer != null && _hudSurface != null && _hudCoordinator != null;
             command.ReplyToCommand((_hudCoordinator?.DrainSummary() ?? "HUD unavailable")
-                + $" ready={(ready ? 1 : 0)} catalog_count={catalogCount} layout={HudSurface.Layout} contract={HudSurface.ContractFile}"
+                + $" ready={(ready ? 1 : 0)} catalog_count={catalogCount} layout={_hudSurface?.ResourceLayout} contract={_hudSurface?.ResourceContract}"
                 + FormattableString.Invariant($" render_count={metrics.RenderCount} render_max_ms={metrics.RenderMaxTicks * ticksToMs:F3} apply_count={metrics.ApplyCount} apply_max_ms={metrics.ApplyMaxTicks * ticksToMs:F3}")
                 + " " + _hudMetrics.ApplyDiagnostics()
                 + " timing_details=wp_hud_timing");

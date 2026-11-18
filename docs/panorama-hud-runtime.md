@@ -23,7 +23,9 @@ by side and workshop filters. Opening or paging reads up to seven records with
 a bounded query timeout. Card and composition selections use the loaded page.
 Set `PanoramaHud.CollectionsApiUrl` to the site's HTTPS
 `/api/weaponpaints/workshop/v1` endpoint and provide the dedicated 64-character
-hex secret via `WP_WORKSHOP_GAME_KEY` in the server process environment. Opening
+hex secret via `WP_WORKSHOP_GAME_KEY` in the server process environment or a
+readable secret file at the absolute path configured by
+`PanoramaHud.CollectionsApiKeyFile`. The environment variable takes priority. Opening
 the tab loads the account and slot limits once. A mutation refreshes the
 account when it may affect the library. The API response confirms the site
 transaction and whether it queued an equipment refresh. Native application is
