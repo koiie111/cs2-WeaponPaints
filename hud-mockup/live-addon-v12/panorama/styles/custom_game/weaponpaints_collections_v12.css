@@ -1,0 +1,7 @@
+.wcUsageRow { width: 1156px; height: 43px; padding: 4px 0px; flow-children: right; }
+.wcUsageText { width: fill-parent-flow( 1.0 ); vertical-align: center; margin: 0px; }
+.wcUsageRow #wc_create { margin: 0px; }
+.wcSummary { margin: 4px 0px; }
+.wcDetail .wcSummary { margin-left: 16px; }
+.wcCover { height: 192px; }
+.wcCoverArt { height: 156px; }

@@ -254,6 +254,22 @@ Set(liveSession,"Message",null);Set(liveSession,"ConflictDialog",false);Set(live
 Set(liveSession,"ConfirmDiscard",true);Set(liveSession,"Plus",true);Set(liveSession,"CosmeticChanges",array);
 Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_0");
 Check((bool)Get(liveSession,"ApplyAfterPickerReturn")! && (bool)Get(liveSession,"ResumeEditor")! && ReferenceEquals(Get(liveSession,"CosmeticChanges"),array),"dirty picker Apply defers until browser return and preserves draft");
+var longTitle = new string('Я', 64);
+var accountResponse = System.Text.Json.JsonSerializer.SerializeToElement(new
+{
+    activeId = 4, setLimit = 2, setPlusLimit = 10, craftLimit = 10, craftPlusLimit = 50,
+    own = new[] {
+        new { id = 4, kind = "set", archived = false, revision = 1, name = "active" },
+        new { id = 5, kind = "set", archived = false, revision = 2, name = longTitle },
+        new { id = 6, kind = "set", archived = true, revision = 1, name = "archived" }
+    }
+});
+var slots = Call(null, plugin.GetType(), "ReadWorkshopAccount", accountResponse)!;
+var sets = Get(slots, "Sets")!;
+var replacements = (Array)Get(sets, "Replacements")!;
+Check((bool)Get(sets, "Full")! && replacements.Length == 1 && (string)Get(replacements.GetValue(0)!, "Name")! == longTitle,
+    "preserve the full replacement title and exclude active or archived sets");
+Check(!(bool)Get(Get(slots, "Crafts")!, "Full")!, "craft quota must be independent of collection slots");
 Console.WriteLine($"PASS: {checks} actual controller transitions (managed assembly, no CSS host)");
 
 public class ControllerSurfaceProxy : DispatchProxy

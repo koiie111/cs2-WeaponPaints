@@ -82,3 +82,14 @@ Check(homeFrame.GetValueOrDefault(new(false,"header_divider","is-hidden"))=="1" 
 var model = renderer.Render(view with { Screen=HudScreen.Models, Cards=[card], Hero=null });
 Check(model.GetValueOrDefault(new(false,"item_0","tier-d32ce6"))=="1", "installed model rarity missing");
 Check(model.GetValueOrDefault(new(false,"item_0","accent-0"))!="1", "model accent must not mask installed rarity");
+
+var workshopRenderer = new HudRenderer(HudLayoutContract.Load("hud-mockup/catalog/hud-live-contract-v12.json"));
+var collections = new HudCollectionsView(HudCollectionsTab.Workshop, "", [card], 0, 0, true,
+    Failed: false, AccountFailed: true, Loading: false, Team: 3, Composition: [card], CompositionCount: 1,
+    Craft: false, DetailPage: 0, Filter: new(), Actions: new Dictionary<string, string>(), Status: "", Usage: "");
+var workshopView = view with { Screen = HudScreen.Collections, Section = HudSection.Collections, Collections = collections };
+var readOnly = workshopRenderer.Render(workshopView);
+Check(readOnly[new(true, "wp_root", "wc_title_0")] == card.Name, "account outage must preserve SQL results");
+Check(!readOnly.ContainsKey(new(false, "wc_reload", "is-hidden")) && !readOnly.ContainsKey(new(false, "wc_next", "is-hidden")),
+    "account outage must allow retry and paging");
+Check(readOnly[new(false, "wc_primary", "is-hidden")] == "1", "read-only workshop exposed a mutation");

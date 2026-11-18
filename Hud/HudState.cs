@@ -6,31 +6,74 @@ namespace WeaponPaints.Hud;
 internal readonly record struct HudWriteKey(bool Variable, string Panel, string Name);
 internal readonly record struct HudWrite(HudWriteKey Key, string Value);
 
-/// <summary>Game-thread-only, replaceable visual target. No scheduled work while empty.</summary>
+/// <summary>Game-thread-owned applied state. Prepare compares immutable frames on a worker.</summary>
 internal sealed class HudDeltaQueue
 {
     private const int MaximumWrites = 2048;
     private readonly Func<HudWriteKey, string> _authored;
     private readonly Dictionary<HudWriteKey, string> _applied = new();
-    private Queue<HudWrite> _pending = new();
+    private readonly Queue<HudWrite> _pending = new();
+    private readonly List<HudWrite> _changes = new();
+    private IReadOnlyDictionary<HudWriteKey, string>? _target;
+
+    internal sealed record PreparedFrame(IReadOnlyDictionary<HudWriteKey, string> Target,
+        IReadOnlyDictionary<HudWriteKey, string>? Previous, List<HudWrite>? Changes);
 
     internal HudDeltaQueue(Func<HudWriteKey, string> authored) => _authored = authored;
     internal int PendingCount => _pending.Count;
+    // Only completed, immutable renderer output can serve as a worker's baseline.
+    internal IReadOnlyDictionary<HudWriteKey, string>? SettledTarget => _pending.Count == 0 ? _target : null;
+
+    internal PreparedFrame Prepare(IReadOnlyDictionary<HudWriteKey, string>? previous, IReadOnlyDictionary<HudWriteKey, string> desired)
+    {
+        if (desired.Count > MaximumWrites) throw new InvalidDataException("HUD frame exceeds write budget");
+        if (previous == null) return new(desired, null, null);
+        var changes = new List<HudWrite>();
+        CollectChanges(previous, desired, false, changes);
+        return new(desired, previous, changes);
+    }
+
+    private void CollectChanges(IReadOnlyDictionary<HudWriteKey, string> previous,
+        IReadOnlyDictionary<HudWriteKey, string> desired, bool force, List<HudWrite> changes)
+    {
+        foreach (var (key, old) in previous)
+        {
+            var next = desired.TryGetValue(key, out var value) ? value : _authored(key);
+            if (force || old != next) changes.Add(new(key, next));
+        }
+        foreach (var (key, next) in desired)
+            if (!previous.ContainsKey(key) && (force || next != _authored(key))) changes.Add(new(key, next));
+    }
 
     internal void Replace(IReadOnlyDictionary<HudWriteKey, string> desired, bool force = false)
     {
         if (desired.Count > MaximumWrites) throw new InvalidDataException("HUD frame exceeds write budget");
-        var writes = new List<HudWrite>();
-        foreach (var key in _applied.Keys.Union(desired.Keys))
-        {
-            var baseline = _authored(key);
-            var old = _applied.GetValueOrDefault(key, baseline);
-            var next = desired.GetValueOrDefault(key, baseline);
-            if (force || !StringComparer.Ordinal.Equals(old, next)) writes.Add(new(key, next));
-        }
+        _changes.Clear();
+        CollectChanges(_applied, desired, force, _changes);
+        Enqueue(_changes);
+        _changes.Clear();
+        // Regular HUD screens also hand off finished renderer output. A first visit
+        // to Collections can then compare against the screen already on display.
+        _target = desired;
+    }
+
+    internal void Replace(PreparedFrame frame, bool force)
+    {
+        if (!force && frame.Changes is { } changes && ReferenceEquals(frame.Previous, SettledTarget))
+            Enqueue(changes);
+        else
+            Replace(frame.Target, force);
+        _target = frame.Target;
+    }
+
+    private void Enqueue(List<HudWrite> changes)
+    {
+        if (changes.Count > MaximumWrites) throw new InvalidDataException("HUD delta exceeds write budget");
         // Publish text before visual changes and clear obsolete classes before adding new ones.
-        if (writes.Count > MaximumWrites) throw new InvalidDataException("HUD delta exceeds write budget");
-        _pending = new Queue<HudWrite>(writes.OrderBy(w => w.Key.Variable ? 0 : w.Value == "0" ? 1 : 2));
+        _pending.Clear();
+        foreach (var write in changes) if (write.Key.Variable) _pending.Enqueue(write);
+        foreach (var write in changes) if (!write.Key.Variable && write.Value == "0") _pending.Enqueue(write);
+        foreach (var write in changes) if (!write.Key.Variable && write.Value != "0") _pending.Enqueue(write);
     }
 
     internal bool TryPeek(out HudWrite write) => _pending.TryPeek(out write);
@@ -41,7 +84,11 @@ internal sealed class HudDeltaQueue
         if (written.Value == _authored(written.Key)) _applied.Remove(written.Key);
         else _applied[written.Key] = written.Value;
     }
-    internal void Cancel() => _pending.Clear();
+    internal void Cancel()
+    {
+        _pending.Clear();
+        _target = null;
+    }
 }
 
 internal readonly record struct HudViewerStamp(int Slot, ulong SteamId, uint Controller, uint Pawn, long MapGeneration, long SessionGeneration)

@@ -16,6 +16,7 @@ public partial class WeaponPaints
     {
         internal readonly HudSessionCoordinator.Session Native = native;
         internal readonly HudBrowser Browser = new();
+        internal HudCollectionsSession? Collections;
         internal HudInstalledArtwork InstalledArtwork = new([]);
         internal bool InstalledArtworkReady;
         internal long? InstalledArtworkGeneration;
@@ -113,9 +114,12 @@ public partial class WeaponPaints
         }
         try
         {
-            _hudContract = HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", HudSurface.ContractFile));
+            _hudContract = Config.PanoramaHud.CollectionsEnabled
+                ? HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", HudSurface.CollectionsContractFile))
+                : HudLayoutContract.Load(Path.Combine(ModuleDirectory, "data", HudSurface.ContractFile));
             _hudRenderer = new HudRenderer(_hudContract);
-            _hudSurface = new HudSurface();
+            _hudSurface = new HudSurface(Config.PanoramaHud.CollectionsEnabled);
+            var hudConfig = Config.PanoramaHud;
             _hudCoordinator = new HudSessionCoordinator(new HudGameSurface(_hudSurface, () => DataGeneration),
                 action => Server.NextFrame(action), _hudContract.Authored, diagnostics: Config.PanoramaHud.DiagnosticsEnabled);
             _hudLifetime = new CancellationTokenSource();
@@ -131,9 +135,15 @@ public partial class WeaponPaints
                     var catalog = await HudCatalog.LoadAsync(Path.Combine(ModuleDirectory, "data", "hud-stock-v2.json"), token);
                     var cosmeticCatalog = HudCosmeticCatalog.Load(Path.Combine(ModuleDirectory, "data", "hud-cosmetic-v2.json"));
                     var policy = cosmeticCatalog.CreatePolicy(agents, music, pins);
+                    var key = hudConfig.CollectionsEnabled ? HudWorkshopApi.ReadKey(hudConfig.CollectionsApiKeyFile) : null;
                     Server.NextFrame(() =>
                     {
                         if (token.IsCancellationRequested) return;
+                        if (hudConfig.CollectionsEnabled)
+                        {
+                            _hudWorkshopApi = HudWorkshopApi.Create(hudConfig.CollectionsApiUrl, key, hudConfig.CollectionsApiCertificateSha256);
+                            if (_hudWorkshopApi == null) Logger.LogWarning("Panorama collections mutations require a valid HTTPS endpoint and WP_WORKSHOP_GAME_KEY");
+                        }
                         _hudCosmeticPolicy = policy;
                         _hudCosmetics = cosmeticCatalog;
                         _hudCatalog = catalog;
@@ -160,7 +170,7 @@ public partial class WeaponPaints
             var ready = catalogCount > 0 && _hudCosmetics != null && _hudCosmeticPolicy != null
                 && _hudContract != null && _hudRenderer != null && _hudSurface != null && _hudCoordinator != null;
             command.ReplyToCommand((_hudCoordinator?.DrainSummary() ?? "HUD unavailable")
-                + $" ready={(ready ? 1 : 0)} catalog_count={catalogCount} layout={HudSurface.Layout} contract={HudSurface.ContractFile}"
+                + $" ready={(ready ? 1 : 0)} catalog_count={catalogCount} layout={_hudSurface?.ResourceLayout} contract={_hudSurface?.ResourceContract}"
                 + FormattableString.Invariant($" render_count={metrics.RenderCount} render_max_ms={metrics.RenderMaxTicks * ticksToMs:F3} apply_count={metrics.ApplyCount} apply_max_ms={metrics.ApplyMaxTicks * ticksToMs:F3}")
                 + " " + _hudMetrics.ApplyDiagnostics()
                 + " timing_details=wp_hud_timing");
@@ -244,6 +254,11 @@ public partial class WeaponPaints
         }
         else
         {
+            if (session.Collections != null)
+            {
+                LeaveHudCollections(session);
+                _hudCoordinator?.BeginQuery(session.Native);
+            }
             session.CustomTab = false; session.CustomChoice = null;
             HandleHudIntent(session, session.Browser.OpenSection(section));
         }
@@ -301,6 +316,7 @@ public partial class WeaponPaints
     {
         if (_hudSessions.Remove(slot, out var session))
         {
+            LeaveHudCollections(session);
             session.PromptTimer?.Cancel();
             session.PromptTimer?.Dispose();
         }
@@ -323,6 +339,8 @@ public partial class WeaponPaints
         ResetHud();
         _hudLifetime?.Dispose();
         _hudLifetime = null;
+        _hudWorkshopApi?.Dispose();
+        _hudWorkshopApi = null;
         _hudCatalog = null;
         _hudCosmetics = null;
         _hudCosmeticPolicy = null;
@@ -333,6 +351,11 @@ public partial class WeaponPaints
         if (session.Prompt != null)
         {
             if (button == "state_0") EndHudPrompt(session);
+            return;
+        }
+        if (session.Collections is { Modal: not null } collectionsModal)
+        {
+            CompleteHudCollectionsModal(session, collectionsModal, button);
             return;
         }
         if (session.Message != null)
@@ -395,6 +418,30 @@ public partial class WeaponPaints
             return;
         }
         if (button == "close") { RequestHudExit(session, true); return; }
+        if (button == "nav_collections")
+        {
+            if (!Config.PanoramaHud.CollectionsEnabled) return;
+            if (session.Editing || session.ResumeEditor)
+            {
+                session.PendingSection = HudSection.Collections; session.PendingTeam = null;
+                RequestHudExit(session, false);
+            }
+            else OpenHudCollections(session);
+            return;
+        }
+        if (session.Collections != null)
+        {
+            if (button == "back" || button.StartsWith("nav_", StringComparison.Ordinal)
+                && Enum.TryParse<HudSection>(button[4..], true, out _))
+            {
+                LeaveHudCollections(session);
+                _hudCoordinator?.BeginQuery(session.Native);
+                var section = button == "back" ? HudSection.Weapons : Enum.Parse<HudSection>(button[4..], true);
+                HandleHudIntent(session, session.Browser.OpenSection(section));
+            }
+            else ClickHudCollections(session, button);
+            return;
+        }
         if (session.ResumeEditor && button.StartsWith("nav_", StringComparison.Ordinal)
             && Enum.TryParse<HudSection>(button[4..], true, out var pickerSection))
         {
@@ -765,6 +812,10 @@ public partial class WeaponPaints
             "pet_seed" => "Введите паттерн питомца в чате, например 123",
             "pet_name" => "Введите имя питомца в чате, например Цыпа",
             "search" or "custom_search" => "Введите поисковый запрос в чате",
+            "wc_search" => "Введите название или #тег в чате (clear — сбросить поиск)",
+            "wc_name" => "Введите название коллекции в чате",
+            "wc_rename" => "Введите новое название в чате",
+            "wc_tags" => "Введите до шести тегов через запятую (clear — очистить)",
             _ => HudFeaturePromptHint(session, field)
         };
         var options = field is "nametag" or "pet_name" ? " (clear — очистить, cancel — отмена)" : " (cancel — отмена)";
@@ -794,6 +845,9 @@ public partial class WeaponPaints
             "wear" => "Износ", "seed" => "Паттерн", "nametag" => "Название оружия",
             "pet_seed" => "Паттерн питомца", "pet_name" => "Имя питомца",
             "search" or "custom_search" => "Поиск",
+            "wc_search" => "Поиск в мастерской",
+            "wc_name" or "wc_rename" => "Название работы",
+            "wc_tags" => "Теги",
             _ => HudFeaturePromptTitle(session, field)
         };
         var hint = field switch
@@ -804,6 +858,9 @@ public partial class WeaponPaints
             "pet_seed" => "Введите в игровой чат, например 123.",
             "pet_name" => "Введите имя в игровой чат, например Цыпа. Для очистки введите clear.",
             "search" or "custom_search" => "Введите запрос в игровой чат, например AK-47.",
+            "wc_search" => "Введите название или #тег. Для сброса поиска введите clear.",
+            "wc_name" or "wc_rename" => "Введите название, до 64 символов.",
+            "wc_tags" => "Введите до шести тегов через запятую. Для очистки введите clear.",
             _ => HudFeaturePromptHint(session, field) + "."
         };
         return new HudModalView(title, "Откройте игровой чат. " + hint + " Для отмены введите cancel.", []);
@@ -858,6 +915,24 @@ public partial class WeaponPaints
         var input = command.ArgString.Trim().Trim('"');
         if (!input.Equals("cancel", StringComparison.OrdinalIgnoreCase))
         {
+            if (prompt.Field is "wc_name" or "wc_rename" or "wc_tags" && session.Collections is { } workshop)
+            {
+                if (EndHudPrompt(session, redraw: false))
+                {
+                    SubmitHudCollectionsText(session, workshop, prompt.Field, input);
+                    if (!session.Native.Busy) RenderHud(session);
+                }
+                return HookResult.Handled;
+            }
+            if (prompt.Field == "wc_search" && session.Collections is { } collections)
+            {
+                if (!EndHudPrompt(session, redraw: false)) return HookResult.Handled;
+                collections.Filter = collections.Filter with { Search = input.Equals("clear", StringComparison.OrdinalIgnoreCase)
+                    ? "" : string.Concat(input.Trim().EnumerateRunes().Where(rune => !Rune.IsControl(rune)).Take(80)) };
+                collections.Page = 0;
+                LoadHudCollectionsPage(session, collections);
+                return HookResult.Handled;
+            }
             if (prompt.Field == "search")
             {
                 EndHudPrompt(session);
@@ -971,20 +1046,21 @@ public partial class WeaponPaints
         }
     }
 
-    private void EndHudPrompt(HudControllerSession session)
+    private bool EndHudPrompt(HudControllerSession session, bool redraw = true)
     {
-        if (_hudCoordinator?.IsLive(session.Native) != true || session.Prompt == null) return;
+        if (_hudCoordinator?.IsLive(session.Native) != true || session.Prompt == null) return false;
         session.Prompt = null;
         session.PromptTimer?.Cancel();
         session.PromptTimer?.Dispose();
         session.PromptTimer = null;
-        if (_hudSurface == null) { RenderHud(session); return; }
+        if (_hudSurface == null) { RenderHud(session); return false; }
         var player = Utilities.GetPlayerFromSlot(session.Native.Owner.Slot);
-        if (player == null) { RenderHud(session); return; }
+        if (player == null) { RenderHud(session); return false; }
         if (_hudSurface.HasForeignCapture(player) || CounterStrikeSharp.API.Modules.Menu.MenuManager.GetActiveMenu(player) != null)
-        { CloseHud(player.Slot); return; }
+        { CloseHud(player.Slot); return false; }
         _hudSurface.Capture(player, true);
-        RenderHud(session);
+        if (redraw) RenderHud(session);
+        return true;
     }
 
     private static bool HudDirty(HudControllerSession session) => (session.Editing || session.ResumeEditor) &&
@@ -1015,7 +1091,8 @@ public partial class WeaponPaints
         else if (session.PendingSection is { } section)
         {
             session.PendingSection = null; session.Editing = false; session.ResumeEditor = false; session.CustomTab = false;
-            HandleHudIntent(session, session.Browser.OpenSection(section));
+            if (section == HudSection.Collections) OpenHudCollections(session);
+            else HandleHudIntent(session, session.Browser.OpenSection(section));
         }
         else if (session.PendingTeam is int team)
         {
@@ -1927,6 +2004,7 @@ public partial class WeaponPaints
         if (_hudCoordinator == null || _hudRenderer == null || !_hudCoordinator.IsLive(session.Native)) return;
         var diagnostics = Config.PanoramaHud.DiagnosticsEnabled;
         using var renderTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.RenderTotal);
+        if (session.Collections is { } collections) { RenderHudCollections(session, collections); return; }
         var viewStarted = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var browser = session.Browser;
         var page = browser.CurrentPage;

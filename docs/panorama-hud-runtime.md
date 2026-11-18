@@ -11,6 +11,36 @@ accepted in the native client. The owner accepted the earlier V9 appearance and
 observed Apply scenarios on 16 November 2026. A browser approximation is not
 a native-client test.
 
+`PanoramaHud.CollectionsEnabled` enables the V12 Collections browser when the
+main HUD is enabled. For a local build, overlay `hud-mockup/live-addon-v11` and
+then `hud-mockup/live-addon-v12` onto a separate copy of
+`hud-mockup/live-addon-v10` and compile that directory.
+The plugin package contains both contracts.
+
+This browser reads the website workshop schema from the WeaponPaints database.
+It lists saved collections, saved crafts, and published works, with composition
+by side and workshop filters. Opening or paging reads up to seven records with
+a bounded query timeout. Leaving Collections cancels the outstanding page read.
+Card and composition selections reuse the parsed preview. A worker prepares the
+Panorama frame. The game thread compares at most one completed Collections frame
+per tick across all viewers, then applies changes within the shared HUD write budget.
+Set `PanoramaHud.CollectionsApiUrl` to the site's HTTPS
+`/api/weaponpaints/workshop/v1` endpoint and provide the dedicated 64-character
+hex secret via `WP_WORKSHOP_GAME_KEY` in the server process environment or a
+readable secret file at the absolute path configured by
+`PanoramaHud.CollectionsApiKeyFile`. The environment variable takes priority. Opening
+the tab loads the account and slot limits once. If the account API fails, SQL
+pages stay browsable and the retry button restores editing after recovery. A mutation refreshes the
+account when it may affect the library. The API response confirms the site
+transaction and whether it queued an equipment refresh. Native application is
+verified separately in CS2. Keep the flag disabled on production until joint
+acceptance.
+
+For an isolated HTTPS test service with a private certificate, the optional
+`PanoramaHud.CollectionsApiCertificateSha256` pins the certificate's SHA-256
+fingerprint. The certificate still needs to name the configured endpoint.
+Leave it empty to use the operating system's standard trust store.
+
 `PanoramaHud.CustomWeaponsIntegration` defaults to `required`. In that mode a
 compatible, ready CustomWeapons HUD capability and matching database identity
 are required for item editing and application. Set it to `disabled` only after
