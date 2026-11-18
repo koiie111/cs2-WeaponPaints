@@ -1,5 +1,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace WeaponPaints;
@@ -7,12 +8,19 @@ namespace WeaponPaints;
 public partial class WeaponPaints
 {
     // Values only: never retain pointers into engine vectors across frames.
-    private sealed record NativeAttribute(ushort Id, float Value, float Initial, int Refund, bool Bonus);
+    private readonly record struct NativeAttribute(ushort Id, float Value, float Initial, int Refund, bool Bonus);
     private sealed record NativeEcon(ushort Definition, ulong Id, uint Low, uint High, uint Account,
         int Quality, bool Initialized, string Name, NativeAttribute[] Attributes, NativeAttribute[] Dynamic);
     private sealed record NativeWeapon(ulong Steam, uint Pawn, int Team, NativeEcon Econ, int Paint, int Seed, float Wear, ulong? Mesh);
     private readonly Dictionary<uint, NativeWeapon> _nativeWeapons = new();
     private readonly Dictionary<int, (ulong Steam, uint Pawn, int Team, NativeEcon Econ)> _nativeGloves = new();
+    private static readonly Lazy<int> NativeAttributeStride = new(() =>
+    {
+        var size = Schema.GetClassSize("CEconItemAttribute");
+        if (size < 16 || size > 256)
+            throw new InvalidOperationException("Unexpected native attribute size");
+        return size;
+    });
     private static readonly Dictionary<ushort, string> NativeAttributeNames = new()
     {
         [113] = "sticker slot 0 id",
@@ -70,12 +78,30 @@ public partial class WeaponPaints
         [7] = "set item texture seed",
         [8] = "set item texture wear"
     };
+    private static (nint First, int Count, int Stride) ReadAttributeVector(CAttributeList list)
+    {
+        var vector = list.Attributes;
+        var count = vector.Count;
+        if (count == 0) return default;
+
+        if (count < 0 || count > 128)
+            throw new InvalidOperationException("Unexpected native attribute vector count");
+
+        // The indexed CSS helper uses the stride for handles. The econ vector
+        // stores structs inline, so only the address at index zero is shared.
+        var first = NativeAPI.GetNetworkVectorElementAt(vector.Handle, 0);
+        if (first == 0) throw new InvalidOperationException("Null native attribute storage");
+        return (first, count, NativeAttributeStride.Value);
+    }
+
     private static NativeAttribute[] CaptureAttributes(CAttributeList list)
     {
-        var result = new NativeAttribute[list.Attributes.Count];
+        var (first, count, stride) = ReadAttributeVector(list);
+        if (count == 0) return [];
+        var result = new NativeAttribute[count];
         for (var i = 0; i < result.Length; i++)
         {
-            var a = new CEconItemAttribute(NativeAPI.GetNetworkVectorElementAt(list.Attributes.Handle, i));
+            var a = new CEconItemAttribute(first + i * stride);
             if (!NativeAttributeNames.ContainsKey(a.AttributeDefinitionIndex))
                 throw new InvalidOperationException($"Unknown native attribute {a.AttributeDefinitionIndex}; keeping inventory item unchanged");
             result[i] = new(a.AttributeDefinitionIndex, a.Value, a.InitialValue, a.RefundableCurrency, a.SetBonus);
@@ -88,17 +114,32 @@ public partial class WeaponPaints
     private static void RestoreAttributes(CAttributeList list, NativeAttribute[] saved)
     {
         list.Attributes.RemoveAll();
+        if (saved.Length == 0) return;
         foreach (var a in saved)
-        {
             CAttributeListSetOrAddAttributeValueByName.Invoke(list.Handle, NativeAttributeNames[a.Id], a.Value);
-            // Preserve the entire attribute value, including its original raw float bits.
-            for (var i = 0; i < list.Attributes.Count; i++)
+
+        // Insertions can reallocate the vector. Resolve it once after the last write.
+        var (first, count, stride) = ReadAttributeVector(list);
+        Dictionary<ushort, NativeAttribute>? byId = null;
+        for (var i = 0; i < count; i++)
+        {
+            var restored = new CEconItemAttribute(first + i * stride);
+            var id = restored.AttributeDefinitionIndex;
+            NativeAttribute snapshot;
+            if (count == saved.Length && saved[i].Id == id)
+                snapshot = saved[i];
+            else
             {
-                var restored = new CEconItemAttribute(NativeAPI.GetNetworkVectorElementAt(list.Attributes.Handle, i));
-                if (restored.AttributeDefinitionIndex != a.Id) continue;
-                restored.InitialValue = a.Initial; restored.RefundableCurrency = a.Refund; restored.SetBonus = a.Bonus;
-                break;
+                if (byId == null)
+                {
+                    byId = new(saved.Length);
+                    foreach (var attribute in saved) byId[attribute.Id] = attribute;
+                }
+                if (!byId.TryGetValue(id, out snapshot)) continue;
             }
+            restored.InitialValue = snapshot.Initial;
+            restored.RefundableCurrency = snapshot.Refund;
+            restored.SetBonus = snapshot.Bonus;
         }
     }
     private static void RestoreEcon(CEconItemView item, NativeEcon saved)

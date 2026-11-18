@@ -7,23 +7,47 @@ var player=new CCSPlayerController { SteamID=123, Team=2, Slot=1 };
 var gun=new CBasePlayerWeapon(); var item=gun.AttributeManager.Item;
 item.ItemID=987654321012; item.ItemIDLow=1234;item.ItemIDHigh=999;item.AccountID=456;item.ItemDefinitionIndex=9;item.EntityQuality=9;item.CustomName="Native StatTrak";item.Initialized=true;
 item.AttributeList.Add(80,BitConverter.Int32BitsToSingle(12345));item.NetworkedDynamicAttributes.Add(113,BitConverter.Int32BitsToSingle(999));
+item.AttributeList.Add(81, 1);
+item.AttributeList.Values[1].InitialValue = .25f;
+item.AttributeList.Values[1].RefundableCurrency = 23;
+item.AttributeList.Values[1].SetBonus = true;
+item.NetworkedDynamicAttributes.Add(114, .125f);
+item.NetworkedDynamicAttributes.Add(115, .75f);
 gun.FallbackPaintKit=279;gun.FallbackWear=.123f;gun.FallbackSeed=123;
-Check(plugin.Remember(player,gun),"capture native weapon");
+Check(plugin.Remember(player,gun),"capture inline attributes in both vectors");
+Check(CounterStrikeSharp.API.NativeAPI.ElementLookups == 2, "capture resolves the first element once in each vector");
 item.ItemID=123;item.EntityQuality=0;item.CustomName="Override";item.AttributeList.Attributes.RemoveAll();gun.FallbackPaintKit=44;
+item.NetworkedDynamicAttributes.Attributes.RemoveAll();
 Check(plugin.Remember(player,gun),"reapply retains first baseline");
 plugin.Restore(player,gun);
+Check(CounterStrikeSharp.API.NativeAPI.ElementLookups == 4, "restore resolves the first element only after all insertions");
+Check(CounterStrikeSharp.API.Modules.Memory.Schema.SizeLookups == 1, "attribute size is cached across both vectors and restore");
 Check(item.ItemID==987654321012 && item.ItemIDLow==1234 && item.ItemIDHigh==999 && item.AccountID==456,"all identity fields restored");
 Check(item.EntityQuality==9 && item.CustomName=="Native StatTrak" && item.Initialized,"native quality and name restored");
 Check(gun.FallbackPaintKit==279 && gun.FallbackSeed==123 && gun.FallbackWear==.123f,"native finish restored");
 Check(BitConverter.SingleToInt32Bits(item.AttributeList.Values[0].Value)==12345,"StatTrak raw bits restored");
 Check(BitConverter.SingleToInt32Bits(item.NetworkedDynamicAttributes.Values[0].Value)==999,"native sticker raw bits restored");
+var scoreType = item.AttributeList.Values[1];
+Check(scoreType.AttributeDefinitionIndex == 81 && scoreType.Value == 1, "second native attribute restored");
+Check(scoreType.InitialValue == .25f && scoreType.RefundableCurrency == 23 && scoreType.SetBonus, "second native attribute metadata restored");
+Check(item.NetworkedDynamicAttributes.Values.Select(a => (a.AttributeDefinitionIndex, a.Value)).Skip(1)
+    .SequenceEqual(new (ushort, float)[] { (114, .125f), (115, .75f) }), "later dynamic attributes restored");
 Check(plugin.Count==0,"completed restore releases baseline");
 Check(plugin.Remember(player,gun),"recapture after restore");
+item.AttributeList.InsertAtStart = true;
+plugin.Restore(player,gun);
+Check(item.AttributeList.Values[0].AttributeDefinitionIndex == 81 &&
+    item.AttributeList.Values[0].RefundableCurrency == 23 && item.AttributeList.Values[0].SetBonus,
+    "restore matches metadata by ID when native insertion order changes");
+Check(plugin.Remember(player,gun),"capture reordered attributes");
 item.CustomName="Keep foreign pickup";player.SteamID=999;plugin.Restore(player,gun);
 Check(item.CustomName=="Keep foreign pickup" && !plugin.Remember(player,gun),"different account cannot adopt or restore old baseline");
 player.SteamID=123;player.PlayerPawn.Raw++;plugin.Restore(player,gun);Check(item.CustomName=="Keep foreign pickup","new pawn cannot restore stale snapshot");
-var unknown=new CBasePlayerWeapon();unknown.AttributeManager.Item.AttributeList.Add(65535,1);
+var unknown=new CBasePlayerWeapon();
+unknown.AttributeManager.Item.AttributeList.Add(80, 0);
+unknown.AttributeManager.Item.AttributeList.Add(65535, 1);
 Check(!plugin.Remember(player,unknown),"unknown native attributes fail closed before mutation");
+Check(unknown.AttributeManager.Item.AttributeList.Values[1].AttributeDefinitionIndex == 65535, "unknown attribute is preserved");
 Check(plugin.Inventory(player,9,false),"absent preference uses inventory");
 WeaponPaints.WeaponPaints.Choices[player.Slot]=new(){[2]=new(){[9]=new WeaponInfo{Paint=0,CompositionVersion=1,StatTrak=true,Nametag="legacy"}}};
 Check(plugin.Inventory(player,9,false),"legacy paint zero ignores decorations");
@@ -33,7 +57,28 @@ plugin.KnifeChanged=false;Check(plugin.Inventory(player,500,true),"knife reset u
 Console.WriteLine($"PASS: {checks} linked native inventory snapshot and policy checks (managed engine adapter)");
 namespace CounterStrikeSharp.API
 {
- public static class NativeAPI { public static nint GetNetworkVectorElementAt(nint handle,int i)=>CounterStrikeSharp.API.Core.CAttributeList.All[handle].Values[i].Handle; }
+ public static class NativeAPI
+ {
+  public static int ElementLookups { get; private set; }
+  public static nint GetNetworkVectorElementAt(nint handle, int index)
+  {
+   ElementLookups++;
+   return Core.CAttributeList.All[handle].Values[0].Handle + index * sizeof(uint);
+  }
+ }
+}
+namespace CounterStrikeSharp.API.Modules.Memory
+{
+ public static class Schema
+ {
+  internal const int AttributeStride = 64;
+  public static int SizeLookups { get; private set; }
+  public static int GetClassSize(string name)
+  {
+   SizeLookups++;
+   return name == "CEconItemAttribute" ? AttributeStride : 0;
+  }
+ }
 }
 namespace CounterStrikeSharp.API.Core
 {
@@ -41,17 +86,48 @@ namespace CounterStrikeSharp.API.Core
  public class CCSPlayerController { public ulong SteamID; public int Slot,Team; public RawHandle PlayerPawn=new(); }
  public class CEconItemAttribute
  {
-  public static Dictionary<nint,CEconItemAttribute> All=new(); static int next;
-  public nint Handle; public ushort AttributeDefinitionIndex; public float Value,InitialValue;public int RefundableCurrency;public bool SetBonus;
-  public CEconItemAttribute(ushort id,float value) {Handle=++next;AttributeDefinitionIndex=id;Value=value;All[Handle]=this;}
-  public CEconItemAttribute(nint handle) {var a=All[handle];Handle=handle;AttributeDefinitionIndex=a.AttributeDefinitionIndex;Value=a.Value;InitialValue=a.InitialValue;RefundableCurrency=a.RefundableCurrency;SetBonus=a.SetBonus;}
+  internal static readonly Dictionary<nint, CEconItemAttribute> All = new();
+  private readonly CEconItemAttribute storage;
+  private ushort id;
+  private float value, initial;
+  private int refund;
+  private bool bonus;
+  public nint Handle;
+  public ref ushort AttributeDefinitionIndex => ref storage.id;
+  public ref float Value => ref storage.value;
+  public ref float InitialValue => ref storage.initial;
+  public ref int RefundableCurrency => ref storage.refund;
+  public ref bool SetBonus => ref storage.bonus;
+  public CEconItemAttribute(ushort id, float value) { storage = this; this.id = id; this.value = value; }
+  public CEconItemAttribute(nint handle) { Handle = handle; storage = All[handle]; }
  }
  public class CAttributeList
  {
   public static Dictionary<nint,CAttributeList> All=new();static int next;
   public nint Handle;public CAttributeList Attributes=>this;public List<CEconItemAttribute> Values=new();public int Count=>Values.Count;
   public CAttributeList(){Handle=++next;All[Handle]=this;}
-  public void RemoveAll()=>Values.Clear();public void Add(ushort id,float value)=>Values.Add(new CEconItemAttribute(id,value));
+  private static int nextBuffer;
+  public bool InsertAtStart;
+  public void RemoveAll()
+  {
+   foreach (var attribute in Values) CEconItemAttribute.All.Remove(attribute.Handle);
+   Values.Clear();
+  }
+  public void Add(ushort id, float value)
+  {
+   // Reallocate on each write. As in CS2, these are inline structs, not handles.
+   foreach (var attribute in Values) CEconItemAttribute.All.Remove(attribute.Handle);
+   var added = new CEconItemAttribute(id, value);
+   if (InsertAtStart) Values.Insert(0, added);
+   else Values.Add(added);
+   var first = ++nextBuffer * 65536;
+   for (var i = 0; i < Values.Count; i++)
+   {
+    var attribute = Values[i];
+    attribute.Handle = first + i * Modules.Memory.Schema.AttributeStride;
+    CEconItemAttribute.All.Add(attribute.Handle, attribute);
+   }
+  }
  }
  public class CEconItemView
  {
