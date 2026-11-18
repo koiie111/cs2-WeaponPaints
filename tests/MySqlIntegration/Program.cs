@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.Json;
 using Dapper;
@@ -56,7 +57,7 @@ try{
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_paint_id FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==100,"batch insert");
  skins[ct][7].Paint=101;await sync.SyncWeaponPaintsToDatabase(player);
  Check(await sql.ExecuteScalarAsync<string>("SELECT weapon_nametag FROM wp_player_skins WHERE steamid=@id AND weapon_team=3 AND weapon_defindex=7",new{id})=="CT","batch update preserves cosmetics");
- await sync.SyncStatTrakToDatabase(player,skins);
+ await WP.WeaponSync!.SyncStatTrakToDatabase(player,skins);
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==200,"disconnect StatTrak snapshot");
  // Run the actual death handler while a real SQL snapshot is waiting to publish.
  skins[ct][7].StatTrakCount=300;
@@ -76,9 +77,9 @@ try{
  Server.BeforeDispatch=null;
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_paint_id=777,weapon_stattrak=0 WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
  Check(await Load()&&WP.GPlayerWeaponsInfo[1][t][7].Paint==777&&!WP.GPlayerWeaponsInfo[1][t][7].StatTrak&&WP.GPlayerWeaponsInfo[1][t][7].StatTrakCount==207,"new paint and disabled StatTrak retain unsaved kill count");
- await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
+ await WP.WeaponSync!.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
  skins[t][7].StatTrakCount=200;
- await sync.SyncStatTrakToDatabase(player,skins);
+ await WP.WeaponSync!.SyncStatTrakToDatabase(player,skins);
  Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==207,"late lower counter snapshot cannot reset saved kills");
  Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id}),"late true counter snapshot cannot re-enable website-disabled StatTrak");
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak_count=400,weapon_stattrak=1 WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id});
@@ -87,10 +88,10 @@ try{
  await sync.SyncStatTrakChoiceToDatabase(player,t,7,false);
  Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id}),"explicit command disable persists immediately");
  skins[t][7].StatTrak=true;skins[t][7].StatTrakCount=900;
- await sync.SyncStatTrakToDatabase(player,skins);
+ await WP.WeaponSync!.SyncStatTrakToDatabase(player,skins);
  Check(!await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})&&await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak_count FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id})==900,"stale disconnect can increase count without undoing explicit disable");
  await sync.SyncStatTrakChoiceToDatabase(player,t,7,true);
- skins[t][7].StatTrak=false;await sync.SyncStatTrakToDatabase(player,skins);
+ skins[t][7].StatTrak=false;await WP.WeaponSync!.SyncStatTrakToDatabase(player,skins);
  Check(await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=7",new{id}),"stale false counter snapshot cannot undo explicit enable");
  using(var hold=await operations.EnterAsync(id)){
   var off=sync.SyncStatTrakChoiceToDatabase(player,t,7,false);var on=sync.SyncStatTrakChoiceToDatabase(player,t,7,true);var reload=Load();
@@ -103,12 +104,12 @@ try{
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak=1 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
  Check(await Load(),"load active legacy fallback before remote disable");
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak=0 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
- await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
+ await WP.WeaponSync!.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
  var counterClone=await sql.QuerySingleAsync<dynamic>("SELECT * FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id});
  Check(!(bool)counterClone.weapon_stattrak&&(string)counterClone.weapon_nametag=="fallback name"&&(string)counterClone.weapon_sticker_0=="4550;0;0;0;0;1;0"&&(uint)counterClone.weapon_keychain_sticker==4551,"background creation retains authoritative fallback preference and complete appearance");
  await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_team IN (2,3) AND weapon_defindex=4",new{id});
  await sql.ExecuteAsync("UPDATE wp_player_skins SET weapon_stattrak=1 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
- await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
+ await WP.WeaponSync!.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);
  Check(await sql.ExecuteScalarAsync<bool>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@id AND weapon_team=2 AND weapon_defindex=4",new{id}),"new background row retains an enabled authoritative fallback");
  await sql.ExecuteAsync("DELETE FROM wp_player_skins WHERE steamid=@id AND weapon_team IN (2,3) AND weapon_defindex=4; UPDATE wp_player_skins SET weapon_stattrak=0 WHERE steamid=@id AND weapon_team=0 AND weapon_defindex=4",new{id});
  Check(await Load(),"reload fallback after isolated counter case");
@@ -137,7 +138,7 @@ try{
  Check(!await Load()&&ReferenceEquals(old,WP.GPlayerWeaponsInfo[1])&&!WP.PlayerDataLoading.ContainsKey(1),"SQL failure preserves snapshot and clears marker");
  await sql.ExecuteAsync("RENAME TABLE hidden_pins TO wp_player_pins");Check(await Load(),"SQL recovery");
  var lockName="wp_player_skins:"+id;await sql.ExecuteScalarAsync<int>("SELECT GET_LOCK(@lockName,0)",new{lockName});var watch=System.Diagnostics.Stopwatch.StartNew();var retry=sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);await Task.Delay(2300);await sql.ExecuteScalarAsync<int>("SELECT RELEASE_LOCK(@lockName)",new{lockName});await retry;Check(watch.ElapsedMilliseconds>=2000,"real lock timeout and retry recovery");
- await sql.ExecuteScalarAsync<int>("SELECT GET_LOCK(@lockName,0)",new{lockName});watch.Restart();await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);Check(watch.Elapsed.TotalSeconds>=8&&watch.Elapsed.TotalSeconds<15,"four-attempt retry bound");await sql.ExecuteScalarAsync<int>("SELECT RELEASE_LOCK(@lockName)",new{lockName});await sync.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);Check(operations.PendingKeys==0,"locks and queue released after failure");
+ await sql.ExecuteScalarAsync<int>("SELECT GET_LOCK(@lockName,0)",new{lockName});watch.Restart();await WP.WeaponSync!.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);Check(watch.Elapsed.TotalSeconds>=8&&watch.Elapsed.TotalSeconds<15,"four-attempt retry bound");await sql.ExecuteScalarAsync<int>("SELECT RELEASE_LOCK(@lockName)",new{lockName});await WP.WeaponSync!.SyncStatTrakToDatabase(player,WP.GPlayerWeaponsInfo[1]);Check(operations.PendingKeys==0,"locks and queue released after failure");
  await sql.ExecuteAsync("SET GLOBAL innodb_lock_wait_timeout=1"); MySqlConnection.ClearAllPools();
  await using(var blocker=new MySqlConnection(builder.ConnectionString)) {
   await blocker.OpenAsync();await using var transaction=await blocker.BeginTransactionAsync();
@@ -237,5 +238,22 @@ try{
  config.Additional.GraffitiEnabled=false;
  await sql.ExecuteAsync("DROP TABLE wp_player_graffiti;DROP TABLE plus_active");
  Check(await Load()&&WP.GPlayersPin[player.Slot][ct]==9,"disabled graffiti supports the old schema without its table");
+ const string resetId="76561198999999999";
+ await sql.ExecuteAsync("INSERT INTO wp_player_skins (steamid,weapon_team,weapon_defindex,weapon_paint_id,weapon_nametag,weapon_stattrak) VALUES (@resetId,0,9,279,'shared',1),(@resetId,2,9,44,'override',1)",new{resetId});
+ await using(var tx=await sql.BeginTransactionAsync()) {
+   await NativeInventoryStore.ResetAsync(sql,tx,resetId,2,9,"weapon");
+   await NativeInventoryStore.ResetAsync(sql,tx,resetId,2,42,"knife");
+   await NativeInventoryStore.ResetAsync(sql,tx,resetId,2,5030,"glove");
+   await tx.CommitAsync();
+ }
+ Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_paint_id FROM wp_player_skins WHERE steamid=@resetId AND weapon_team=2 AND weapon_defindex=9",new{resetId})==0,"native reset masks team zero");
+ Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_stattrak FROM wp_player_skins WHERE steamid=@resetId AND weapon_team=2 AND weapon_defindex=9",new{resetId})==0,"native reset clears virtual counter choice");
+ Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_paint_id FROM wp_player_skins WHERE steamid=@resetId AND weapon_team=0 AND weapon_defindex=9",new{resetId})==279,"native reset preserves other team fallback");
+ Check(await sql.ExecuteScalarAsync<string>("SELECT knife FROM wp_player_knife WHERE steamid=@resetId AND weapon_team=2",new{resetId})=="weapon_knife","native knife model tombstone");
+ Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_defindex FROM wp_player_gloves WHERE steamid=@resetId AND weapon_team=2",new{resetId})==0,"native glove tombstone");
+ var staleNative=new ConcurrentDictionary<CsTeam,ConcurrentDictionary<int,WeaponInfo>>();
+ staleNative[CsTeam.Terrorist]=new();staleNative[CsTeam.Terrorist][9]=new WeaponInfo{Paint=44,StatTrak=true,StatTrakCount=55};
+ await WP.WeaponSync!.SyncStatTrakToDatabase(new PlayerInfo{SteamId=resetId,Slot=1},staleNative);
+ Check(await sql.ExecuteScalarAsync<int>("SELECT weapon_paint_id FROM wp_player_skins WHERE steamid=@resetId AND weapon_team=2 AND weapon_defindex=9",new{resetId})==0,"late counter snapshot cannot resurrect reset paint");
  Console.WriteLine($"PASS: {passed} MySQL assertions; engine dispatch adapter; linked production SQL source");
 }finally{Server.BeforeDispatch=null;MySqlConnection.ClearAllPools();await admin.ExecuteAsync($"DROP DATABASE `{schema}`");Console.WriteLine("CLEANUP: isolated schema removed");}

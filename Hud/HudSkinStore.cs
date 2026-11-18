@@ -168,6 +168,18 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
                     for (var i = 0; i < targets.Count; i++)
                     {
                         var target = targets[i]; var actual = current.Single(x => x.Key.Team == target.Expected.Key.Team);
+                        var native = target.Draft.CustomModel == null && (target.Expected.Key.EquipmentKind == HudEquipmentKind.Knife
+                            ? target.Expected.Key.Weapon == "weapon_knife"
+                            : target.Expected.Key.EquipmentKind == HudEquipmentKind.Glove
+                                ? target.Expected.Key.Definition is 5028 or 5029 : target.Draft.Paint == 0);
+                        if (native)
+                        {
+                            await NativeInventoryStore.ResetAsync(connection, transaction, actual.Key.SteamId, actual.Key.Team, actual.Key.Definition,
+                                actual.Key.EquipmentKind == HudEquipmentKind.Knife ? "knife" : actual.Key.EquipmentKind == HudEquipmentKind.Glove ? "glove" : "weapon");
+                            if (first.CustomSupported && !await WriteCustomSelectionAsync(connection, transaction, actual, "", cancellationToken).ConfigureAwait(false))
+                                return await Rollback(transaction, HudApplyResult.Conflict).ConfigureAwait(false);
+                            continue;
+                        }
                         if (plans[i] is { Columns.Count: > 0 } patch)
                             await WriteSkinAsync(connection, transaction, actual, patch, cancellationToken).ConfigureAwait(false);
                         if (target.Draft.CustomModel == null && target.Equipment != null && target.Equipment != actual.Equipment)

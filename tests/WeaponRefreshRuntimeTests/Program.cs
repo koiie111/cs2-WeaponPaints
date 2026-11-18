@@ -9,15 +9,18 @@ static (WeaponPaints.WeaponPaints, CCSPlayerController, List<bool>) Setup()
  var pawn=new CCSPlayerPawn(10);var player=new CCSPlayerController(20){Slot=1};DeferredPlayer.Current=player;
  var old=new CBasePlayerWeapon((uint)30);old.OwnerEntity.Raw=10;pawn.WeaponServices!.MyWeapons.Add(new CHandle<CBasePlayerWeapon>(30));
  var plugin=new WeaponPaints.WeaponPaints();plugin.GPlayerWeaponsInfo[1]=new(){{2,new(){{4,new object()}}}};
+ plugin.SeedNativeWeapon(30,42);
  var completed=new List<bool>();plugin.Start(player,completed.Add);
  Server.One(); // Production ScheduleWeaponRefresh: retires old, schedules GiveRemoved.
  Server.One(); // Production GiveRemoved: gives exactly one unowned item.
  Check(player.Gives==1 && player.Created!=null,"initial Give was not issued");return (plugin,player,completed);
 }
 {
- var (_,player,done)=Setup();var created=player.Created!;
+ var (plugin,player,done)=Setup();var created=player.Created!;
+ Check(plugin.NativeItem(created.EntityHandle.Raw)==null,"pending replacement received a snapshot before ownership settled");
  for(int i=0;i<3;i++){Server.One();Check(player.Gives==1,"issued duplicate while owner pending");}
  created.OwnerEntity.Raw=10;Server.All();Check(done.SequenceEqual([true]) && player.Gives==1 && !created.Removed,"delayed owner did not complete safely");
+ Check(plugin.NativeItem(created.EntityHandle.Raw)==42,"delayed acquisition lost the original inventory snapshot");
 }
 {
  var (_,player,done)=Setup();var created=player.Created!;

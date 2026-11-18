@@ -46,7 +46,7 @@ internal static class EquipmentTests
         await Reset();await sql.ExecuteAsync("INSERT INTO wp_player_gloves VALUES (@steam,2,4725),(@steam,3,4725)",new{steam});
         var gt=await Target(Glove(2,5028),"5028",31);var gct=await Target(Glove(3,5029),"5029",32);
         Check(await store.ApplyAsync(new[]{gt,gct},models)==HudApplyResult.Saved,"default gloves 5028/5029 pair save");
-        Check(await sql.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM wp_player_gloves WHERE steamid=@steam AND ((weapon_team=2 AND weapon_defindex=5028) OR (weapon_team=3 AND weapon_defindex=5029))",new{steam})==2,"default gloves equipment correct sides");
+        Check(await sql.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM wp_player_gloves WHERE steamid=@steam AND weapon_team IN (2,3) AND weapon_defindex=0",new{steam})==2,"default gloves use native inventory on both sides");
         Check(await sql.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM wp_player_skins WHERE steamid=@steam AND ((weapon_team=2 AND weapon_defindex=5028) OR (weapon_team=3 AND weapon_defindex=5029))",new{steam})==2,"default gloves stock rows correct sides");
         await Reset();await sql.ExecuteAsync("INSERT INTO wp_player_gloves VALUES (@steam,2,4725),(@steam,3,4725)",new{steam});
         gt=await Target(Glove(2,5028),"5028",31);gct=await Target(Glove(3,5029),"5029",32);

@@ -56,6 +56,7 @@ namespace CounterStrikeSharp.API.Core
   public int Slot,Team=2;public ulong SteamID=7;public bool PawnIsAlive=true;
   public CHandle<CCSPlayerPawn> PlayerPawn=new(10);
   public int Gives;public CBasePlayerWeapon? Created;
+  public void PrintToChat(string message){}
   public nint GiveNamedItem(string name){Gives++;Created=new CBasePlayerWeapon((uint)(100+Gives));return (nint)Created.EntityHandle.Raw;}
  }
 }
@@ -82,6 +83,12 @@ namespace WeaponPaints
  public partial class WeaponPaints
  {
   public bool _gBCommandsAllowed=true;public List<string> Logger=new();
+  private sealed record NativeWeapon(int ItemId);
+  private readonly Dictionary<uint,NativeWeapon> _nativeWeapons=[];
+  public void SeedNativeWeapon(uint handle,int itemId)=>_nativeWeapons[handle]=new(itemId);
+  public int? NativeItem(uint handle)=>_nativeWeapons.GetValueOrDefault(handle)?.ItemId;
+  private bool UsesInventory(CCSPlayerController player,int index,bool knife)=>false;
+  private void RestoreNativeWeapon(CCSPlayerController player,CBasePlayerWeapon weapon){}
   private Dictionary<DeferredPlayer,uint> _holsteredWeapons=[];
   public Dictionary<int,long> PlayerDataLoading=[];
   public Dictionary<int,Dictionary<int,Dictionary<int,object>>> GPlayerWeaponsInfo=[];

@@ -16,7 +16,7 @@ public partial class WeaponPaints
         internal void Include(int? value) { Revision++; if (!value.HasValue) Definitions = null; else Definitions?.Add(value.Value); }
     }
     private sealed record RefreshItem(uint Handle, string Classname, int Clip1, int Clip2, int[] Reserve, bool Active, bool Last,
-        bool Burst, bool Silencer, int PrimaryTick, float PrimaryRatio, int SecondaryTick, float SecondaryRatio);
+        bool Burst, bool Silencer, int PrimaryTick, float PrimaryRatio, int SecondaryTick, float SecondaryRatio, NativeWeapon? Original);
     private readonly Dictionary<int, RefreshRequest> _weaponRefreshes = new();
     private readonly HashSet<uint> _retiringWeapons = new();
     private void ClearWeaponRefreshes()
@@ -125,6 +125,16 @@ public partial class WeaponPaints
             if (knife && !Config.Additional.KnifeEnabled) continue;
             var index = (int)old.AttributeManager.Item.ItemDefinitionIndex;
             if (definitions != null && !definitions.Contains(index) && !(knife && definitions.Any(d => d is 42 or 59 || WeaponDefindex.TryGetValue(d,out var name) && (name.Contains("knife") || name.Contains("bayonet"))))) continue;
+            if (UsesInventory(player, index, knife))
+            {
+                if (!_nativeWeapons.ContainsKey(handle) && previousDefinitions.Contains(index))
+                {
+                    failedRetirement = true;
+                    player.PrintToChat("Свой предмет из Steam восстановится при следующей покупке или штатной выдаче.");
+                }
+                else RestoreNativeWeapon(player, old);
+                continue;
+            }
             var hasKnifeChoice = false;
             if (knife && GPlayersKnife.TryGetValue(player.Slot, out var knives) && knives.TryGetValue(player.Team, out var knifeChoice))
             {
@@ -139,7 +149,7 @@ public partial class WeaponPaints
             if (!knife && !WeaponDefindex.TryGetValue(index,out classname)) continue;
             var settings=old.As<CCSWeaponBase>();
             var plan = new RefreshItem(handle,classname,old.Clip1,old.Clip2,old.ReserveAmmo.ToArray(),preferredActive==handle,preferredLast==handle,
-                settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio);
+                settings.BurstMode,settings.SilencerOn,old.NextPrimaryAttackTick,old.NextPrimaryAttackTickRatio,old.NextSecondaryAttackTick,old.NextSecondaryAttackTickRatio, _nativeWeapons.GetValueOrDefault(handle));
             _retiringWeapons.Add(handle);
             // Entity destruction and RemovePlayerItem alone leave this serial in
             // MyWeapons on CS2 build 10955. The normal item-services drop path
@@ -216,6 +226,7 @@ public partial class WeaponPaints
                         acquisitions.Forget(plan.Handle); plans.RemoveAt(n); failedRetirement = true;
                         continue;
                     }
+                    if (plan.Original != null) _nativeWeapons[replacement.EntityHandle.Raw] = plan.Original;
                     GivePlayerWeaponSkin(current,replacement);
                     replacement.Clip1=plan.Clip1;replacement.Clip2=plan.Clip2;
                     var settings=replacement.As<CCSWeaponBase>();settings.BurstMode=plan.Burst;settings.SilencerOn=plan.Silencer;

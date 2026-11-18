@@ -35,6 +35,8 @@ namespace WeaponPaints
 			// apply the previous occupant's native item state while MySQL is still loading.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out _);
             _gloveOverrides.Remove(player.Slot);
+            _nativeGloves.Remove(player.Slot);
+            foreach (var key in _nativeWeapons.Where(x => x.Value.Steam == player.SteamID).Select(x => x.Key).ToArray()) _nativeWeapons.Remove(key);
             CancelCommandRefresh(player.Slot);
             _externalPlayerApplies.Remove(player.Slot);
             ForgetGraffiti(player.Slot, player.SteamID);
@@ -114,6 +116,8 @@ namespace WeaponPaints
 			// reconnecting client inherit stale WeaponInfo and can crash native item hooks.
 			GPlayerWeaponsInfo.TryRemove(player.Slot, out var detachedWeapons);
             _gloveOverrides.Remove(player.Slot);
+            _nativeGloves.Remove(player.Slot);
+            foreach (var key in _nativeWeapons.Where(x => x.Value.Steam == player.SteamID).Select(x => x.Key).ToArray()) _nativeWeapons.Remove(key);
             CancelCommandRefresh(player.Slot);
             _externalPlayerApplies.Remove(player.Slot);
 			_hudUnconfirmedSlots.Remove(player.SteamID);
@@ -161,6 +165,7 @@ namespace WeaponPaints
 		{
             FinishCacheKeys.Clear();
             _gloveOverrides.Clear();
+            _nativeWeapons.Clear(); _nativeGloves.Clear();
             ClearCommandRefreshes();
             _externalPlayerApplies.Clear();
             _hudUnconfirmedSlots.Clear();
@@ -323,7 +328,7 @@ namespace WeaponPaints
             // The disconnect event can lack a valid controller. Release receipts
             // and the bulk permit by slot even in that case.
             RegisterListener<Listeners.OnClientDisconnect>(CancelCommandRefresh);
-            RegisterListener<Listeners.OnEntityDeleted>(entity => _retiringWeapons.Remove(entity.EntityHandle.Raw));
+            RegisterListener<Listeners.OnEntityDeleted>(entity => { _retiringWeapons.Remove(entity.EntityHandle.Raw); _nativeWeapons.Remove(entity.EntityHandle.Raw); });
             RegisterListener<Listeners.OnMapEnd>(() =>
             {
                 Interlocked.Increment(ref DataGeneration);
@@ -333,6 +338,7 @@ namespace WeaponPaints
                 _hudUnconfirmedSlots.Clear();
                 FinishCacheKeys.Clear();
                 _gloveOverrides.Clear();
+            _nativeWeapons.Clear(); _nativeGloves.Clear();
                 ClearSkinPreviews();
                 ClearGraffiti(false);
                 InvalidateKnifePaint();
