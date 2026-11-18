@@ -11,10 +11,10 @@ accepted in the native client. The owner accepted the earlier V9 appearance and
 observed Apply scenarios on 16 November 2026. A browser approximation is not
 a native-client test.
 
-`PanoramaHud.CollectionsEnabled` enables the V11 Collections browser when the
-main HUD is enabled. It uses the V11 layout and Collections stylesheet alongside
-the V10 styles and textures. For a local build, overlay `hud-mockup/live-addon-v11`
-onto a separate copy of `hud-mockup/live-addon-v10` and compile that directory.
+`PanoramaHud.CollectionsEnabled` enables the V12 Collections browser when the
+main HUD is enabled. For a local build, overlay `hud-mockup/live-addon-v11` and
+then `hud-mockup/live-addon-v12` onto a separate copy of
+`hud-mockup/live-addon-v10` and compile that directory.
 The plugin package contains both contracts.
 
 This browser reads the website workshop schema from the WeaponPaints database.

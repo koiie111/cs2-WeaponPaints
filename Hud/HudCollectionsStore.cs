@@ -19,7 +19,7 @@ internal static class HudCollectionsStore
     {
         if (page is < 0 or > MaxPage) throw new ArgumentOutOfRangeException(nameof(page));
         await using var connection = await connect().ConfigureAwait(false);
-        var workshop = tab == HudCollectionsTab.Workshop;
+        var workshop = filter.IsPublic(tab);
         var order = filter.Sort switch
         {
             HudWorkshopSort.Week => "(SELECT COUNT(*) FROM skin_workshop_likes l WHERE l.work_id = w.id AND l.liked_at >= NOW() - INTERVAL 7 DAY) DESC, w.likes DESC",
@@ -42,7 +42,7 @@ internal static class HudCollectionsStore
                     + " ORDER BY " + order + ", w.id DESC"
                 : " AND w.owner = @steamId ORDER BY Active DESC, Archived ASC, w.id DESC")
             + " LIMIT 7 OFFSET @offset";
-        var kind = tab == HudCollectionsTab.Crafts || workshop && filter.Crafts ? "craft" : "set";
+        var kind = tab == HudCollectionsTab.Crafts ? "craft" : "set";
         var rows = await connection.QueryAsync<HudWorkshopWorkRow>(new CommandDefinition(sql,
             new { steamId, kind, offset = page * PageSize, emptySearch = filter.Search.Length == 0, pattern },
             commandTimeout: 5, cancellationToken: token)).ConfigureAwait(false);

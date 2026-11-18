@@ -1,7 +1,7 @@
 """Conservatively count the live entity's combined ID/class/dialog-variable contract."""
 import argparse, pathlib, re, xml.etree.ElementTree as ET
-p=argparse.ArgumentParser();p.add_argument('addon',type=pathlib.Path);p.add_argument('--limit',type=int,default=1024);p.add_argument('--version',choices=('2','3','4','6','7','8','9','10','11'));a=p.parse_args()
-base=a.addon/'panorama'; version=a.version or next((v for v in ('11','10','9','8','7','6','4','3','2') if (base/'layout/custom_game'/f'weaponpaints_v{v}.xml').exists()),None)
+p=argparse.ArgumentParser();p.add_argument('addon',type=pathlib.Path);p.add_argument('--limit',type=int,default=1024);p.add_argument('--version',choices=('2','3','4','6','7','8','9','10','11','12'));a=p.parse_args()
+base=a.addon/'panorama'; version=a.version or next((v for v in ('12','11','10','9','8','7','6','4','3','2') if (base/'layout/custom_game'/f'weaponpaints_v{v}.xml').exists()),None)
 if version is None: raise ValueError('No versioned live layout found')
 layout=base/'layout/custom_game'/f'weaponpaints_v{version}.xml'; tree=ET.parse(layout)
 ids=set();classes=set();variables=set();styles=[]
@@ -13,8 +13,10 @@ for node in tree.iter():
   name=node.get('src','').rsplit('/',1)[-1]
   if not name.endswith('.vcss_c'): raise ValueError('Unexpected stylesheet reference')
   style = base/'styles/custom_game'/(name[:-7]+'.css')
-  if version == '11' and name in ('weaponpaints_v10.vcss_c', 'weaponpaints_stock_v10.vcss_c') and not style.is_file():
+  if version in ('11','12') and name in ('weaponpaints_v10.vcss_c', 'weaponpaints_stock_v10.vcss_c') and not style.is_file():
    style = a.addon.parent/'live-addon-v10/panorama/styles/custom_game'/style.name
+  if version == '12' and name == 'weaponpaints_collections_v11.vcss_c' and not style.is_file():
+   style = a.addon.parent/'live-addon-v11/panorama/styles/custom_game'/style.name
   styles.append(style)
 if not styles: raise ValueError('No stylesheets')
 for path in styles:

@@ -18,7 +18,12 @@ public partial class WeaponPaints
         if (_hudWorkshopApi == null || work.Owned && work.Archived) return actions;
         if (state.Craft)
         {
-            if (entry.Definition > 0) actions["primary"] = "Примерить";
+            if (entry.Definition > 0)
+            {
+                actions["primary"] = $"Нанести {CraftTeamLabel(state.Team)}";
+                var definition = state.CraftWeapon == 0 ? entry.Definition : state.CraftWeapon;
+                actions["weapon"] = _hudCatalog?.FindBase("weapons", definition)?.Name ?? "Выбрать оружие";
+            }
             if (!work.Owned) actions["secondary"] = "В библиотеку";
         }
         else if (!work.Owned) actions["primary"] = "Скопировать и экипировать";
@@ -54,6 +59,9 @@ public partial class WeaponPaints
                 Utilities.GetPlayerFromSlot(session.Native.Owner.Slot)?.PrintToChat($" [Скины] https://4ill.ru/skins/workshop/{work.Id}");
                 break;
             case "primary" when state.Craft:
+                HudPreviewCraft(session, state, entry, state.CraftWeapon == 0 ? entry.Definition : state.CraftWeapon);
+                break;
+            case "weapon":
                 ChooseHudCraftTarget(session, state, entry);
                 break;
             case "primary" when work.Owned:
@@ -138,23 +146,21 @@ public partial class WeaponPaints
         var held = player?.PlayerPawn.Value?.WeaponServices?.ActiveWeapon.Value;
         var heldDefinition = held is { IsValid: true } ? held.AttributeManager.Item.ItemDefinitionIndex : 0;
         var heldItem = _hudCatalog?.FindBase("weapons", heldDefinition);
-        if (heldDefinition == entry.Definition || heldItem == null || heldDefinition is < 1 or > 499)
-        {
-            HudPreviewCraft(session, state, entry, entry.Definition);
-            return;
-        }
         var source = _hudCatalog?.FindBase("weapons", entry.Definition)?.Name ?? "Оружие крафта";
+        var hasAlternative = heldItem != null && heldDefinition != entry.Definition && heldDefinition is >= 1 and <= 499;
         ShowHudCollectionsModal(session, state, new("Оружие для примерки",
-            $"Сторона  {(state.Team == 3 ? "КТ" : "Т")}", [source, heldItem.Name, "Отмена"]), choice =>
+            $"Нанесение {CraftTeamLabel(state.Team)}", [source, hasAlternative ? heldItem!.Name : "", "Отмена"]), choice =>
         {
-            if (choice < 2) HudPreviewCraft(session, state, entry, choice == 0 ? entry.Definition : heldDefinition);
+            if (choice < 2) state.CraftWeapon = choice == 0 ? entry.Definition : heldDefinition;
         });
     }
+
+    private static string CraftTeamLabel(int team) => team switch { 3 => "за КТ", 2 => "за Т", _ => "за обе стороны" };
 
     private void HudPreviewCraft(HudControllerSession session, HudCollectionsSession state, HudCollectionsEntry entry, int definition)
     {
         var team = state.Team;
-        var teamName = team == 3 ? "КТ" : "Т";
+        var teamLabel = CraftTeamLabel(team);
         var weapon = _hudCatalog?.FindBase("weapons", definition)?.Name ?? "оружие из карточки";
         var operation = WorkshopOperation("craft_target", entry.Work, ("defindex", definition), ("team", team));
         CallHudWorkshop(session, state, operation, result =>
@@ -166,8 +172,8 @@ public partial class WeaponPaints
             }
             var revision = result.GetProperty("revision").GetString()!;
             ConfirmHudCollection(session, state, "Нанести крафт?",
-                $"«{entry.Work.Title}» заменит наклейки на {weapon} за {teamName}.",
-                $"Нанести за {teamName}", WorkshopOperation("craft_apply", entry.Work,
+                $"«{entry.Work.Title}» заменит наклейки на {weapon} {teamLabel}.",
+                $"Нанести {teamLabel}", WorkshopOperation("craft_apply", entry.Work,
                     ("defindex", definition), ("team", team), ("targetRevision", revision)));
         });
     }
@@ -243,6 +249,7 @@ public partial class WeaponPaints
             if (action == "install")
             {
                 state.Tab = state.Craft ? HudCollectionsTab.Crafts : HudCollectionsTab.Mine;
+                if (state.Craft) state.Filter = state.Filter with { OwnCrafts = true };
                 state.Page = 0;
             }
             if (action == "delete" && state.Rows.Length == 1) state.Page = Math.Max(0, state.Page - 1);

@@ -16,6 +16,7 @@ public partial class WeaponPaints
         internal int Page;
         internal int Selected;
         internal int Team = 3;
+        internal int CraftWeapon;
         internal int DetailPage;
         internal bool More;
         internal bool Loading;
@@ -29,7 +30,7 @@ public partial class WeaponPaints
         internal bool Full;
         internal System.Text.Json.JsonElement Account;
         internal HudWorkshopFilter Filter = new();
-        internal bool Craft => Tab == HudCollectionsTab.Crafts || Tab == HudCollectionsTab.Workshop && Filter.Crafts;
+        internal bool Craft => Tab == HudCollectionsTab.Crafts;
         internal HudCollectionsEntry[] Rows = [];
     }
 
@@ -56,17 +57,26 @@ public partial class WeaponPaints
         if (tab != state.Tab)
         {
             state.Tab = tab;
+            state.Team = state.Craft ? 0 : 3;
+            state.Filter = state.Filter with { Search = "" };
             state.Page = 0;
             LoadHudCollectionsPage(session, state);
         }
         else if (button == "wc_reload" && state.Failed)
             LoadHudCollectionsPage(session, state);
-        else if (button == "wc_search" && state.Tab == HudCollectionsTab.Workshop)
+        else if (button == "wc_search" && state.Filter.IsPublic(state.Tab))
             BeginHudPrompt(session, "wc_search");
-        else if (button is "wc_type" or "wc_sort" && state.Tab == HudCollectionsTab.Workshop)
+        else if (button is "wc_craft_public" or "wc_craft_mine" && state.Craft)
         {
-            state.Filter = button == "wc_type" ? state.Filter with { Crafts = !state.Filter.Crafts }
-                : state.Filter with { Sort = (HudWorkshopSort)(((int)state.Filter.Sort + 1) % 4) };
+            var own = button == "wc_craft_mine";
+            if (state.Filter.OwnCrafts == own) return;
+            state.Filter = state.Filter with { OwnCrafts = own, Search = "" };
+            state.Page = 0;
+            LoadHudCollectionsPage(session, state);
+        }
+        else if (button == "wc_sort" && state.Filter.IsPublic(state.Tab))
+        {
+            state.Filter = state.Filter with { Sort = (HudWorkshopSort)(((int)state.Filter.Sort + 1) % 4) };
             state.Page = 0;
             LoadHudCollectionsPage(session, state);
         }
@@ -75,9 +85,9 @@ public partial class WeaponPaints
             state.Page += button == "wc_next" ? 1 : -1;
             LoadHudCollectionsPage(session, state);
         }
-        else if (button is "wc_ct" or "wc_t")
+        else if (button is "wc_ct" or "wc_t" || button == "wc_both" && state.Craft)
         {
-            state.Team = button == "wc_ct" ? 3 : 2;
+            state.Team = button switch { "wc_ct" => 3, "wc_t" => 2, _ => 0 };
             state.DetailPage = 0;
             RenderHud(session);
         }
@@ -85,6 +95,7 @@ public partial class WeaponPaints
             && int.TryParse(button.AsSpan(7), out var index) && index >= 0 && index < state.Rows.Length)
         {
             state.Selected = index;
+            state.CraftWeapon = 0;
             state.DetailPage = 0;
             state.Manage = false;
             RenderHud(session);
@@ -113,6 +124,7 @@ public partial class WeaponPaints
         var account = state.Account;
         state.Rows = [];
         state.Selected = state.DetailPage = 0;
+        state.CraftWeapon = 0;
         state.Failed = state.More = false;
         state.Loading = true;
         state.Manage = false;
@@ -135,7 +147,8 @@ public partial class WeaponPaints
                     var workList = own.EnumerateArray().Where(work => work.GetProperty("kind").GetString() == kind
                         && !work.GetProperty("archived").GetBoolean()).ToArray();
                     var limit = account.GetProperty(craft ? "craftLimit" : "setLimit").GetInt32();
-                    usage = $"Слоты  {workList.Length} / {limit}";
+                    var plusLimit = account.GetProperty(craft ? "craftPlusLimit" : "setPlusLimit").GetInt32();
+                    usage = $"{(craft ? "Слоты крафтов" : "Слоты коллекций скинов")}  {workList.Length} / {limit}  ·  с 4ill+ до {plusLimit}";
                     full = workList.Length >= limit;
                     var active = account.GetProperty("activeId").GetUInt64();
                     replacements = workList.Where(work => work.GetProperty("id").GetUInt64() != active)
@@ -143,7 +156,7 @@ public partial class WeaponPaints
                             HudInput.CleanText(work.GetProperty("name").GetString(), 64))).ToArray();
                 }
                 var loaded = await sync.LoadHudCollectionsAsync(steam, tab, filter, page, token).ConfigureAwait(false);
-                rows = loaded.Works.Select(work => ProjectCollection(work, tab, craft, catalog)).ToArray();
+                rows = loaded.Works.Select(work => ProjectCollection(work, filter.IsPublic(tab), craft, catalog)).ToArray();
                 result = loaded;
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { return; }
@@ -164,7 +177,7 @@ public partial class WeaponPaints
         }, token);
     }
 
-    private static HudCollectionsEntry ProjectCollection(HudWorkshopWork work, HudCollectionsTab tab, bool craft, HudCatalog? catalog)
+    private static HudCollectionsEntry ProjectCollection(HudWorkshopWork work, bool workshop, bool craft, HudCatalog? catalog)
     {
         HudCard Item(string? key)
         {
@@ -181,7 +194,7 @@ public partial class WeaponPaints
 
         var (hero, ct, t, stickers) = HudCollectionsStore.ReadPreview(work);
         var cover = Item(hero);
-        var status = tab == HudCollectionsTab.Workshop ? $"♥ {work.Likes}   ·   {work.Installs} уст."
+        var status = workshop ? $"♥ {work.Likes}   ·   {work.Installs} уст."
             : work.Active ? "✓ Активна" : work.Archived ? "Архив 4ill+" : work.Published ? "Опубликовано" : "Личная работа";
         var ctItems = !craft ? ct.Select(Item).ToArray() : stickers.Select(id =>
         {
@@ -198,11 +211,11 @@ public partial class WeaponPaints
         var craft = state.Craft;
         var items = (state.Team == 3 || craft ? selected?.CT : selected?.T) ?? [];
         var summary = state.Loading ? "Загрузка…" : state.Failed ? "Не удалось загрузить работы"
-            : state.Rows.Length == 0 ? "Здесь пока нет работ" : state.Usage;
+            : state.Rows.Length == 0 ? "Здесь пока нет работ" : "";
         var content = new HudCollectionsView(state.Tab, summary, state.Rows.Select(row => row.Card).ToArray(),
             selected != null ? state.Selected : -1, state.Page, state.More, state.Failed, state.Loading, state.Team,
             items.Skip(state.DetailPage * 6).Take(6).ToArray(), items.Length, craft, state.DetailPage, state.Filter,
-            HudCollectionsActions(state, selected), state.Status);
+            HudCollectionsActions(state, selected), state.Status, state.Usage);
         var view = new HudViewModel(HudScreen.Collections, HudSection.Collections, "Скинченджер", "Коллекции", "",
             [], 0, 1, 0, Modal: session.Prompt is { } prompt ? HudPromptModal(session, prompt.Field) : state.Modal,
             TeamVisible: false, Size: session.Size, Collections: content);

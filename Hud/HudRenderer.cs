@@ -73,19 +73,28 @@ internal sealed class HudRenderer(HudLayoutContract contract)
             Class("wc_mine", "active", works.Tab == HudCollectionsTab.Mine);
             Class("wc_feed", "active", works.Tab == HudCollectionsTab.Workshop);
             Class("wc_crafts", "active", works.Tab == HudCollectionsTab.Crafts);
-            Hidden("wc_tools", works.Tab != HudCollectionsTab.Workshop);
-            Text("wc_type", works.Filter.Crafts ? "Крафты" : "Наборы");
+            var publicFeed = works.Filter.IsPublic(works.Tab);
+            Hidden("wc_tools", !publicFeed && !works.Craft);
+            Hidden("wc_search", !publicFeed);
+            Hidden("wc_sort", !publicFeed);
+            Hidden("wc_craft_public", !works.Craft);
+            Hidden("wc_craft_mine", !works.Craft);
+            Class("wc_craft_public", "active", works.Craft && !works.Filter.OwnCrafts);
+            Class("wc_craft_mine", "active", works.Craft && works.Filter.OwnCrafts);
             Text("wc_search", works.Filter.Search.Length == 0 ? "Название или #тег" : works.Filter.Search);
             Text("wc_sort", works.Filter.SortLabel);
             Text("wc_summary", works.Summary);
+            Text("wc_usage", works.Usage);
+            Hidden("wc_usage_row", works.Usage.Length == 0 && !works.Actions.ContainsKey("create"));
             Text("wc_status", works.Status);
-            foreach (var action in new[] { "create", "primary", "secondary", "manage", "rename", "tags", "publish", "delete", "set_cover", "link" })
+            foreach (var action in new[] { "create", "primary", "secondary", "manage", "rename", "tags", "publish", "delete", "set_cover", "link", "weapon" })
             {
                 var available = works.Actions.TryGetValue(action, out var label);
                 Hidden("wc_" + action, !available);
                 if (available) Text("wc_action_" + action, label);
             }
             Text("wc_page", works.Loading || works.Failed || works.Rows.Count == 0 ? "" : (works.Page + 1).ToString());
+            Hidden("wc_list_pager", works.Page == 0 && !works.More || works.Loading || works.Failed);
             Hidden("wc_prev", works.Loading || works.Failed || works.Page == 0);
             Hidden("wc_next", !works.More);
             Hidden("wc_reload", !works.Failed);
@@ -108,6 +117,8 @@ internal sealed class HudRenderer(HudLayoutContract contract)
                 Text("wc_detail_heading", works.Craft ? "Наклейки" : "Состав коллекции");
                 Image("wc_cover_art", card.Image);
                 Tier("wc_cover", card.Rarity);
+                Hidden("wc_both", !works.Craft);
+                Class("wc_both", "active", works.Craft && works.Team == 0);
                 Class("wc_ct", "active", works.Team == 3);
                 Class("wc_t", "active", works.Team == 2);
                 for (var i = 0; i < 6; i++)
