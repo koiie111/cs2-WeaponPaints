@@ -262,6 +262,7 @@ public partial class WeaponPaints
         Register(Config.Additional.CommandAgent, HudSection.Agents);
         Register(Config.Additional.CommandMusic, HudSection.Music);
         Register(Config.Additional.CommandPin, HudSection.Pins);
+        if (Config.Additional.PetsEnabled) Register(["pet", "pets"], HudSection.Pet);
     }
 
     private void OpenHud(CCSPlayerController? player, HudSection? destination = null)
