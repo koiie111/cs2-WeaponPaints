@@ -122,7 +122,7 @@ public partial class WeaponPaints
             if (Config.PanoramaHud.CollectionsEnabled)
             {
                 _hudWorkshopApi = HudWorkshopApi.Create(Config.PanoramaHud.CollectionsApiUrl,
-                    HudWorkshopApi.ReadKey(Config.PanoramaHud.CollectionsApiKeyFile));
+                    HudWorkshopApi.ReadKey(Config.PanoramaHud.CollectionsApiKeyFile), Config.PanoramaHud.CollectionsApiCertificateSha256);
                 if (_hudWorkshopApi == null) Logger.LogWarning("Panorama collections mutations require a valid HTTPS endpoint and WP_WORKSHOP_GAME_KEY");
             }
             _hudCoordinator = new HudSessionCoordinator(new HudGameSurface(_hudSurface, () => DataGeneration),
@@ -337,6 +337,8 @@ public partial class WeaponPaints
         ResetHud();
         _hudLifetime?.Dispose();
         _hudLifetime = null;
+        _hudWorkshopApi?.Dispose();
+        _hudWorkshopApi = null;
         _hudCatalog = null;
         _hudCosmetics = null;
         _hudCosmeticPolicy = null;

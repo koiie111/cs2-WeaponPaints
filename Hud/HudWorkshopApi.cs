@@ -1,20 +1,28 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
 namespace WeaponPaints.Hud;
 
-internal sealed class HudWorkshopApi(Uri endpoint, byte[] secret)
+internal sealed class HudWorkshopApi(Uri endpoint, byte[] secret, HttpClient client) : IDisposable
 {
     private const string Path = "/api/weaponpaints/workshop/v1";
-    private static readonly HttpClient Client = new(new SocketsHttpHandler
+    private static readonly HttpClient DefaultClient = new(CreateHandler());
+
+    private static SocketsHttpHandler CreateHandler() => new()
     {
         AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(4),
         PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-    });
+    };
+
+    public void Dispose()
+    {
+        if (!ReferenceEquals(client, DefaultClient)) client.Dispose();
+    }
 
     internal static string? ReadKey(string path)
     {
@@ -31,14 +39,21 @@ internal sealed class HudWorkshopApi(Uri endpoint, byte[] secret)
         catch (UnauthorizedAccessException) { return null; }
     }
 
-    internal static HudWorkshopApi? Create(string url, string? key)
+    internal static HudWorkshopApi? Create(string url, string? key, string fingerprint)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var endpoint) || endpoint.Scheme != Uri.UriSchemeHttps
             || endpoint.AbsolutePath != Path || endpoint.UserInfo.Length != 0 || endpoint.Query.Length != 0
             || endpoint.Fragment.Length != 0 || key is not { Length: 64 }
             || !key.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f'))
             return null;
-        return new(endpoint, Convert.FromHexString(key));
+        if (fingerprint.Length == 0) return new(endpoint, Convert.FromHexString(key), DefaultClient);
+        if (fingerprint.Length != 64 || !fingerprint.All(Uri.IsHexDigit)) return null;
+        var expected = Convert.FromHexString(fingerprint);
+        var handler = CreateHandler();
+        handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, _, errors) =>
+            certificate != null && (errors & SslPolicyErrors.RemoteCertificateNameMismatch) == 0
+            && CryptographicOperations.FixedTimeEquals(expected, certificate.GetCertHash(HashAlgorithmName.SHA256));
+        return new(endpoint, Convert.FromHexString(key), new HttpClient(handler));
     }
 
     internal async Task<JsonElement> CallAsync(ulong steamId, Dictionary<string, object> operation, CancellationToken token)
@@ -62,7 +77,7 @@ internal sealed class HudWorkshopApi(Uri endpoint, byte[] secret)
                 request.Headers.Add("X-WP-Signature", Convert.ToHexStringLower(signature));
                 request.Content = new StringContent(body, Encoding.UTF8, "application/json");
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                using var response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
+                using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
                 if ((int)response.StatusCode >= 500 || response.StatusCode == HttpStatusCode.RequestTimeout)
                     throw new HttpRequestException("Workshop service unavailable");
                 if (response.Content.Headers.ContentType?.MediaType != "application/json")

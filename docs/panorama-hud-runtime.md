@@ -32,6 +32,11 @@ transaction and whether it queued an equipment refresh. Native application is
 verified separately in CS2. Keep the flag disabled on production until joint
 acceptance.
 
+For an isolated HTTPS test service with a private certificate, the optional
+`PanoramaHud.CollectionsApiCertificateSha256` pins the certificate's SHA-256
+fingerprint. The certificate still needs to name the configured endpoint.
+Leave it empty to use the operating system's standard trust store.
+
 `PanoramaHud.CustomWeaponsIntegration` defaults to `required`. In that mode a
 compatible, ready CustomWeapons HUD capability and matching database identity
 are required for item editing and application. Set it to `disabled` only after
