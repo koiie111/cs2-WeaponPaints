@@ -1,0 +1,262 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using WeaponPaints;
+
+const BindingFlags flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.Static;
+var asm=typeof(WeaponPaints.WeaponPaints).Assembly;
+Type T(string name)=>asm.GetType("WeaponPaints.Hud."+name,true)!;
+object New(Type type,params object?[] args)=>Activator.CreateInstance(type,flags,null,args,null)!;
+object EnumValue(string type,string name)=>Enum.Parse(T(type),name);
+object? Get(object obj,string name)=>obj.GetType().GetProperty(name,flags)?.GetValue(obj) ?? obj.GetType().GetField(name,flags)?.GetValue(obj);
+void Set(object obj,string name,object? value) { var p=obj.GetType().GetProperty(name,flags);if(p!=null){p.SetValue(obj,value);return;} obj.GetType().GetField(name,flags)!.SetValue(obj,value); }
+object? Call(object? obj,Type type,string name,params object?[] args)=>type.GetMethod(name,flags)!.Invoke(obj,args);
+int checks=0;void Check(bool v,string m){if(!v)throw new Exception(m);checks++;}
+var certainty=New(T("HudLoadoutCertainty"));
+void Mark(ulong owner,bool cosmetic)=>Call(certainty,certainty.GetType(),"Mark",owner,cosmetic);
+void Complete(ulong owner,bool cosmetic)=>Call(certainty,certainty.GetType(),"Complete",owner,cosmetic);
+bool Uncertain(ulong owner)=>(bool)Call(certainty,certainty.GetType(),"IsUncertain",owner)!;
+Mark(1,false);Mark(1,true);Complete(1,true);
+Check(Uncertain(1),"cosmetic completion cannot clear deferred weapon refresh");
+Complete(1,false);Check(!Uncertain(1),"successful weapon refresh clears its uncertainty");
+Mark(1,false);Call(certainty,certainty.GetType(),"Remove",1UL);
+Check(!Uncertain(1),"disconnect removes deferred owner before reconnect");
+Mark(1,false);Mark(2,true);Call(certainty,certainty.GetType(),"Clear");
+Check((int)Get(certainty,"Count")! == 0,"map teardown removes all deferred owners");
+Check(((int[])Call(null,typeof(WeaponPaints.WeaponPaints),"HudTeams",0)!).SequenceEqual(new[]{2,3}),"both filter checks both sides");
+Check(((int[])Call(null,typeof(WeaponPaints.WeaponPaints),"HudTeams",2)!).SequenceEqual(new[]{2}),"single team filter checks only that side");
+var plugin=RuntimeHelpers.GetUninitializedObject(typeof(WeaponPaints.WeaponPaints));
+using(var customManifest=System.Text.Json.JsonDocument.Parse(File.ReadAllText("hud-mockup/catalog/custom-art-v9.json")))
+{
+    var entries=customManifest.RootElement.GetProperty("entries");
+    Check(entries.GetArrayLength()==19,"all configured custom-model images are present");
+    foreach(var entry in entries.EnumerateArray())
+    {
+        var weapon=entry.GetProperty("weapon").GetString()!;var customModel=entry.GetProperty("model").GetString()!;var index=entry.GetProperty("index").GetInt32();
+        var art=Call(null,plugin.GetType(),"HudCustomImage",weapon,customModel);
+        Check(art!=null && (int)Get(art,"CustomIndex")! == index,"custom artwork must match the exact weapon and model ID");
+        Check(Call(null,plugin.GetType(),"HudCustomImage","weapon_unknown",customModel)==null,"custom artwork must reject wrong weapon identity");
+    }
+    Check(Call(null,plugin.GetType(),"HudCustomImage","weapon_ak47","unknown")==null,"unknown custom model uses fallback");
+}
+var nativeType=T("HudSessionCoordinator").GetNestedType("Session",flags)!;
+var native=RuntimeHelpers.GetUninitializedObject(nativeType);
+var sessionType=typeof(WeaponPaints.WeaponPaints).GetNestedType("HudControllerSession",flags)!;
+var session=New(sessionType,native,EnumValue("HudSize","Normal"));
+void Click(string button)=>Call(plugin,plugin.GetType(),"HudClick",session,button);
+bool Dirty()=>(bool)Call(null,plugin.GetType(),"HudDirty",session)!;
+var kind=EnumValue("HudCosmeticKind","Music");
+var key=New(T("HudCosmeticKey"),"76561198000000001",kind,2,0);
+var baseline=New(T("HudNumberValue"),1);var changed=New(T("HudNumberValue"),2);
+var snapshot=New(T("HudCosmeticSnapshot"),key,true,2,baseline);
+var change=New(T("HudCosmeticChange"),snapshot,changed);var array=Array.CreateInstance(T("HudCosmeticChange"),1);array.SetValue(change,0);
+Set(session,"Editing",true);Set(session,"CosmeticChanges",array);
+Check(Dirty(),"changed cosmetic must mark controller dirty");
+Click("nav_music");Check((bool)Get(session,"ConfirmDiscard")! && Get(session,"PendingSection")!.ToString()=="Music","dirty navigation prompts and remembers target");
+Click("state_2");Check(!(bool)Get(session,"ConfirmDiscard")! && Get(session,"PendingSection")==null && (bool)Get(session,"Editing")!,"cancel preserves edit and cancels navigation");
+Click("nav_music");Click("state_1");Check(!(bool)Get(session,"Editing")! && Get(Get(session,"Browser")!,"Section")!.ToString()=="Music","discard navigates to requested section");
+Set(session,"Editing",true);Click("team");Check((bool)Get(session,"ConfirmDiscard")! && (int)Get(session,"PendingTeam")! == 2,"dirty team change prompts");
+Click("state_2");Check(Get(session,"PendingTeam")==null,"cancel team change clears intent");
+Click("back");Check((bool)Get(session,"ConfirmDiscard")!,"dirty back prompts");
+Set(session,"Plus",false);
+Check((bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"music remains available without Plus");
+foreach(var freeKind in new[]{"Agent","Patch","Music","Pin"})
+{
+    var freeKey=New(T("HudCosmeticKey"),"76561198000000001",EnumValue("HudCosmeticKind",freeKind),2,0);
+    var freeSnapshot=New(T("HudCosmeticSnapshot"),freeKey,false,null,null);
+    var freeChanges=Array.CreateInstance(T("HudCosmeticChange"),1);
+    freeChanges.SetValue(New(T("HudCosmeticChange"),freeSnapshot,baseline),0);Set(session,"CosmeticChanges",freeChanges);
+    Check((bool)Call(null,plugin.GetType(),"HudCanApply",session)!,freeKind+" remains available without Plus");
+}
+var graffitiKey=New(T("HudCosmeticKey"),"76561198000000001",EnumValue("HudCosmeticKind","Graffiti"),0,0);
+var graffitiValue=New(T("HudGraffitiValue"),1671,3);
+var graffitiSnapshot=New(T("HudCosmeticSnapshot"),graffitiKey,false,null,null);
+var graffitiChange=New(T("HudCosmeticChange"),graffitiSnapshot,graffitiValue);
+var gatedChanges=Array.CreateInstance(T("HudCosmeticChange"),2);gatedChanges.SetValue(change,0);gatedChanges.SetValue(graffitiChange,1);
+Set(session,"CosmeticChanges",gatedChanges);
+Check(!(bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"mixed graffiti change requires Plus");
+var petKey=New(T("HudCosmeticKey"),"76561198000000001",EnumValue("HudCosmeticKind","Pet"),0,0);
+var petSnapshot=New(T("HudCosmeticSnapshot"),petKey,false,null,null);
+var petValue=New(T("HudPetValue"),true,true,3,1,0,0U,"","");
+var petChanges=Array.CreateInstance(T("HudCosmeticChange"),1);petChanges.SetValue(New(T("HudCosmeticChange"),petSnapshot,petValue),0);
+Set(session,"CosmeticChanges",petChanges);Check(!(bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"pet requires Plus");
+Set(session,"CosmeticChanges",null);Check((bool)Call(null,plugin.GetType(),"HudCanApply",session)!,"weapon draft is available without Plus");
+Set(session,"CosmeticChanges",gatedChanges);
+Click("state_0");Check(!(bool)Get(session,"ConfirmDiscard")! && (bool)Get(session,"Editing")!,"gated save prompt cannot proceed without Plus");
+Set(session,"CosmeticChanges",array);
+Click("back");Set(session,"Plus",true);Set(session,"SaveUncertain",true);Click("state_0");Check(!(bool)Get(session,"ConfirmDiscard")! && (bool)Get(session,"Editing")!,"uncertain prior save cannot retry");
+Set(session,"Feature",EnumValue("HudFeatureKind","Pet"));Set(session,"PetTouched",false);Check(!Dirty(),"untouched pet is clean");Set(session,"PetTouched",true);Check(Dirty(),"edited pet is dirty");
+Set(session,"Feature",EnumValue("HudFeatureKind","None"));Set(session,"Editing",false);Check(!Dirty(),"closed editor is clean");
+Set(session,"ResumeEditor",true);Check(Dirty(),"dirty picker remains dirty while editor is suspended");
+Click("nav_pins");Check((bool)Get(session,"ConfirmDiscard")! && Get(session,"PendingSection")!.ToString()=="Pins","dirty picker navigation requires confirmation");
+Click("state_2");Check(!(bool)Get(session,"ConfirmDiscard")! && (bool)Get(session,"ResumeEditor")!,"picker cancel preserves draft");
+Click("nav_pins");Click("state_1");Check(!(bool)Get(session,"ResumeEditor")! && Get(Get(session,"Browser")!,"Section")!.ToString()=="Pins","picker discard releases editor and navigates");
+Set(session,"Editing",true);Set(session,"CosmeticChanges",null);Set(session,"SaveUncertain",false);Set(session,"Feature",EnumValue("HudFeatureKind","None"));
+var draft=New(T("HudSkinDraft"));Set(draft,"Seed",999);Set(draft,"Wear",.4f);Set(draft,"StatTrak",false);
+var draftArray=Array.CreateInstance(T("HudSkinDraft"),1);draftArray.SetValue(draft,0);Set(session,"Drafts",draftArray);
+var axis=New(T("HudAxis"),.1f,.8f);var xy=New(T("HudAxis"),-1f,1f);
+Set(session,"Limits",New(T("HudCompositionLimits"),axis,(uint)5,xy,xy,xy,xy,xy));
+Click("seed_plus");Click("seed_plus");Check((int)Get(draft,"Seed")! == 1000,"seed step clamps at max");
+var cap=New(T("HudCatalogCapabilities"));Set(cap,"Wear",true);var selected=New(T("HudCatalogItem"));Set(selected,"Capabilities",cap);Set(session,"Selected",selected);
+Click("wear_fn");Check(Math.Abs((float)Get(draft,"Wear")!-.1f)<.00001,"wear preset respects real limits");
+Click("stattrak");Check((bool)Get(draft,"StatTrak")!,"stattrak action toggles draft");
+Click("apply");Check(Get(session,"Message")==null,"apply without live coordinator must not start a write");
+var stamp=New(T("HudViewerStamp"),1,76561198000000001UL,(uint)10,(uint)20,(long)3,(long)4);
+var changedOwner=New(T("HudViewerStamp"),1,76561198000000002UL,(uint)10,(uint)20,(long)3,(long)4);
+var lease=New(T("HudPromptLease"),stamp,"seed",DateTimeOffset.UtcNow.AddMinutes(1));
+Check((bool)Call(lease,lease.GetType(),"Accepts",stamp,DateTimeOffset.UtcNow)!,"prompt accepts matching owner");
+Check(!(bool)Call(lease,lease.GetType(),"Accepts",changedOwner,DateTimeOffset.UtcNow)!,"prompt rejects reused slot with different owner");
+Check(!(bool)Call(lease,lease.GetType(),"Accepts",stamp,DateTimeOffset.UtcNow.AddMinutes(2))!,"prompt expires");
+var laterLease=New(T("HudPromptLease"),stamp,"nametag",DateTimeOffset.UtcNow.AddMinutes(2));Set(session,"Prompt",laterLease);
+Call(plugin,plugin.GetType(),"EndHudPromptIfCurrent",session,lease);
+Check(ReferenceEquals(Get(session,"Prompt"),laterLease),"old timeout must not terminate newer prompt");Set(session,"Prompt",null);
+Check((bool)Call(stamp,stamp.GetType(),"OwnsController",76561198000000001UL,(uint)10)!,"owner predicate accepts correct Steam and controller");
+Check(!(bool)Call(stamp,stamp.GetType(),"OwnsController",76561198000000002UL,(uint)10)!,"owner predicate rejects reused Steam slot");
+Check(!(bool)Call(stamp,stamp.GetType(),"OwnsController",76561198000000001UL,(uint)11)!,"owner predicate rejects replaced controller");
+var emptyStamp=New(T("HudViewerStamp"),1,0UL,(uint)0,(uint)20,(long)3,(long)4);
+Check(!(bool)Call(emptyStamp,emptyStamp.GetType(),"OwnsController",0UL,(uint)0)!,"owner predicate rejects empty identity");
+Set(session,"CosmeticChanges",array);Set(session,"Drafts",null);Set(session,"Editing",false);Set(session,"ResumeEditor",true);Set(session,"Prompt",null);Set(session,"ConfirmDiscard",false);Set(session,"PendingSection",null);
+var agentsSection=EnumValue("HudSection","Agents");
+Call(plugin,plugin.GetType(),"RouteHudAliasSession",session,agentsSection,false);
+Check(!(bool)Get(session,"ConfirmDiscard")! && Get(session,"PendingSection")==null,"busy alias preserves dirty picker");
+Set(session,"Prompt",lease);Call(plugin,plugin.GetType(),"RouteHudAliasSession",session,agentsSection,true);
+Check(!(bool)Get(session,"ConfirmDiscard")! && Get(session,"PendingSection")==null,"prompt blocks alias navigation");
+Set(session,"Prompt",null);Call(plugin,plugin.GetType(),"RouteHudAliasSession",session,agentsSection,true);
+Check((bool)Get(session,"ConfirmDiscard")! && Get(session,"PendingSection")!.ToString()=="Agents","dirty picker alias requires discard confirmation");
+Click("state_2");Check((bool)Get(session,"ResumeEditor")! && !(bool)Get(session,"ConfirmDiscard")!,"alias confirmation cancel retains picker");
+Set(session,"CosmeticChanges",null);Set(session,"Editing",true);Set(session,"ResumeEditor",false);Set(session,"Feature",EnumValue("HudFeatureKind","None"));
+var skinKey=New(T("HudSkinKey"),"76561198000000001",2,7,"weapon_ak47",true,EnumValue("HudEquipmentKind","None"));
+var raw=new string?[]{"44","0","0.1","","0","0;0;0;0;0;0;0","0;0;0;0;0;0;0","0;0;0;0;0;0;0","0;0;0;0;0;0;0","0;0;0;0;0;0;0","0;0;0;0;0","0","1"};
+var customRevision=New(T("HudCustomRevision"),"rare",(long)1,0);
+var stored=New(T("HudStoredSkin"),skinKey,2,raw,0,null,customRevision);
+var decoded=Call(null,T("HudSkinCodec"),"Decode",stored)!;var fallbackDraft=Get(decoded,"Draft")!;
+var snapshotsArray=Array.CreateInstance(T("HudStoredSkin"),1);snapshotsArray.SetValue(stored,0);Set(session,"Snapshots",snapshotsArray);
+var fallbackDrafts=Array.CreateInstance(T("HudSkinDraft"),1);fallbackDrafts.SetValue(fallbackDraft,0);Set(session,"Drafts",fallbackDrafts);
+Check(Dirty(),"explicit custom choice inherited from team0 must be dirty until materialized");
+var noCustomStored=New(T("HudStoredSkin"),skinKey,2,raw,0,null,null);
+var noCustomDecoded=Call(null,T("HudSkinCodec"),"Decode",noCustomStored)!;
+var noCustomSnapshots=Array.CreateInstance(T("HudStoredSkin"),1);noCustomSnapshots.SetValue(noCustomStored,0);
+var noCustomDrafts=Array.CreateInstance(T("HudSkinDraft"),1);noCustomDrafts.SetValue(Get(noCustomDecoded,"Draft"),0);
+Set(session,"Snapshots",noCustomSnapshots);Set(session,"Drafts",noCustomDrafts);
+Check(!Dirty(),"opening unchanged stock settings without a custom selection must stay clean");
+Set(Get(noCustomDecoded,"Draft")!,"Paint",45);
+Check(Dirty(),"a changed stock paint remains dirty when there is no custom selection");
+var emptyFallback=New(T("HudCustomRevision"),"",(long)1,0);
+var emptyFallbackStored=New(T("HudStoredSkin"),skinKey,2,raw,0,null,emptyFallback);
+var emptyFallbackDecoded=Call(null,T("HudSkinCodec"),"Decode",emptyFallbackStored)!;
+noCustomSnapshots.SetValue(emptyFallbackStored,0);noCustomDrafts.SetValue(Get(emptyFallbackDecoded,"Draft"),0);
+Check(Dirty(),"an inherited explicit stock marker must remain dirty until materialized");
+Set(session,"Snapshots",snapshotsArray);Set(session,"Drafts",fallbackDrafts);
+
+// Presentation derives from the decoded snapshot/draft, including existing decorations.
+object CatalogItem(int id,string category,int kit,string name) { var x=New(T("HudCatalogItem")); Set(x,"Id",id);Set(x,"Bank",id/256);Set(x,"Cell",id%256);Set(x,"Category",category);Set(x,"Kit",kit);Set(x,"Name",name);Set(x,"Resource","s2r://panorama/images/test.vtex");Set(x,"ArtBank",id/256);Set(x,"ArtCell",id%256);return x; }
+var catalogItems=Array.CreateInstance(T("HudCatalogItem"),2);catalogItems.SetValue(CatalogItem(501,"stickers",123,"Наклейка | Стрелок"),0);catalogItems.SetValue(CatalogItem(502,"charms",45,"Брелок | Звезда"),1);
+var catalog=New(T("HudCatalog"),(object)catalogItems);
+var decorationRaw=(string?[])raw.Clone();decorationRaw[5]="123;0;0;0;0;1;0";decorationRaw[10]="45;0;0;0;0";
+var decorationSnapshot=New(T("HudStoredSkin"),skinKey,2,decorationRaw,0,null,null);var decorationDraft=Get(Call(null,T("HudSkinCodec"),"Decode",decorationSnapshot)!,"Draft")!;
+var decorSlots=(Array)Call(null,plugin.GetType(),"HudDecorItems",decorationDraft,catalog)!;
+Check((string)Get(decorSlots.GetValue(0)!,"Name")! == "Стрелок" && Get(decorSlots.GetValue(0)!,"Image")!=null,"saved sticker name and artwork follow decoded draft");
+Check((string)Get(decorSlots.GetValue(1)!,"Name")! == "","empty sticker slot stays empty");
+var charmView=Call(null,plugin.GetType(),"HudCharmItem",decorationDraft,catalog)!;
+Check((string)Get(charmView,"Item1")! == "Звезда" && Get(charmView,"Item2")!=null,"saved charm name and artwork follow decoded draft");
+var draftStickers=(Array)Get(decorationDraft,"Stickers")!;draftStickers.SetValue(New(T("HudSticker"),(uint)0,(uint)0,0f,0f,0f,1f,0f),0);
+decorSlots=(Array)Call(null,plugin.GetType(),"HudDecorItems",decorationDraft,catalog)!;Check((string)Get(decorSlots.GetValue(0)!,"Name")! == "","cleared sticker updates presentation immediately");
+draftStickers.SetValue(New(T("HudSticker"),(uint)123,(uint)0,0f,0f,0f,1f,0f),1);
+decorSlots=(Array)Call(null,plugin.GetType(),"HudDecorItems",decorationDraft,catalog)!;Check((string)Get(decorSlots.GetValue(1)!,"Name")! == "Стрелок" && Get(decorSlots.GetValue(1)!,"Image")!=null,"newly selected sticker updates name and image immediately");
+Set(decorationDraft,"Keychain",null);charmView=Call(null,plugin.GetType(),"HudCharmItem",decorationDraft,catalog)!;Check((string)Get(charmView,"Item1")! == "" && Get(charmView,"Item2")==null,"cleared charm updates presentation immediately");
+var badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(team=>team==2))!;
+Check((bool)Get(badge,"Item1")! && (string)Get(badge,"Item2")! == "Установлен · T","Both badge identifies only confirmed T");
+badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(team=>team==3))!;Check((string)Get(badge,"Item2")! == "Установлен · CT","Both badge identifies only confirmed CT");
+badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(_=>true))!;Check((string)Get(badge,"Item2")! == "Установлен","Both badge requires both confirmed sides");
+badge=Call(null,plugin.GetType(),"HudEquippedBadge",0,(Func<int,bool>)(_=>false))!;Check(!(bool)Get(badge,"Item1")!,"unconfirmed preview never gets equipped marker");
+Check((string)Call(null,plugin.GetType(),"HudBackLabel",false,EnumValue("HudSection","Weapons"),"ВИНТОВКИ","AK-47","ОРУЖИЕ")! == "ВИНТОВКИ","finishes breadcrumb names parent group");
+Check((string)Call(null,plugin.GetType(),"HudBackLabel",true,EnumValue("HudSection","Weapons"),"ВИНТОВКИ","AK-47","ОРУЖИЕ")! == "AK-47","settings breadcrumb names parent weapon");
+var promptModal=Call(null,plugin.GetType(),"HudPromptModal",session,"wear")!;
+Check((string)Get(promptModal,"Title")! == "Износ" && ((string)Get(promptModal,"Text")!).Contains("Откройте игровой чат") && ((string)Get(promptModal,"Text")!).Contains("0.15") && ((string)Get(promptModal,"Text")!).Contains("cancel") && ((IReadOnlyList<string>)Get(promptModal,"Actions")!).Count==0,"wear prompt explains chat, example and cancellation without inaccessible buttons");
+Set(session,"Feature",EnumValue("HudFeatureKind","Sticker"));promptModal=Call(null,plugin.GetType(),"HudPromptModal",session,"feature:3")!;Check(((string)Get(promptModal,"Title")!).Contains("Y") && ((string)Get(promptModal,"Text")!).Contains("0.1"),"sticker prompt identifies edited field and example");Set(session,"Feature",EnumValue("HudFeatureKind","None"));
+
+var configType=asm.GetType("WeaponPaints.WeaponPaintsConfig",true)!;var config=New(configType);Set(plugin,"Config",config);var hud=Get(config,"PanoramaHud")!;
+var musicSection=EnumValue("HudSection","Music");
+Set(hud,"Enabled",false);Check(!(bool)Call(plugin,plugin.GetType(),"RouteHudAlias",null,musicSection)!,"disabled HUD permits legacy alias");
+Set(hud,"Enabled",true);Check((bool)Call(plugin,plugin.GetType(),"RouteHudAlias",null,musicSection)!,"enabled HUD owns alias even without player");
+// Exercise conflict reload through the real coordinator with a managed surface
+// stub. No CSS/native player or database connection is created.
+var surface=DispatchProxy.Create(T("IHudSessionSurface"),typeof(ControllerSurfaceProxy));
+var writeKey=T("HudWriteKey");var parameter=System.Linq.Expressions.Expression.Parameter(writeKey,"key");
+var authoredType=typeof(Func<,>).MakeGenericType(writeKey,typeof(string));
+var authored=System.Linq.Expressions.Expression.Lambda(authoredType,System.Linq.Expressions.Expression.Constant("0"),parameter).Compile();
+var coordinator=New(T("HudSessionCoordinator"),surface,(Action<Action>)(_=>{}),authored,128,16,false);
+// Reflection.SetValue initializes the plugin's native static fields outside CSS;
+// direct instance-field assignment avoids that unrelated native initialization.
+var coordinatorField=plugin.GetType().GetField("_hudCoordinator",flags)!;
+var setter=new System.Reflection.Emit.DynamicMethod("SetCoordinator",typeof(void),new[]{typeof(object),typeof(object)},typeof(WeaponPaints.WeaponPaints).Module,true);
+var il=setter.GetILGenerator();il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);il.Emit(System.Reflection.Emit.OpCodes.Castclass,plugin.GetType());il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);il.Emit(System.Reflection.Emit.OpCodes.Castclass,T("HudSessionCoordinator"));il.Emit(System.Reflection.Emit.OpCodes.Stfld,coordinatorField);il.Emit(System.Reflection.Emit.OpCodes.Ret);
+((Action<object,object>)setter.CreateDelegate(typeof(Action<object,object>)))(plugin,coordinator);
+var liveNative=Call(coordinator,coordinator.GetType(),"Open",3,76561198000000003UL,(uint)303,(uint)404,(long)9)!;
+var liveSession=New(sessionType,liveNative,EnumValue("HudSize","Normal"));
+var customTargets=new[]{(Team:2,Model:"t-model"),(Team:3,Model:"ct-model")};
+var activeTarget=Call(null,plugin.GetType(),"HudActiveCustomTarget",customTargets,3)!;
+Check((int)Get(activeTarget,"Item1")! == 3 && (string)Get(activeTarget,"Item2")! == "ct-model","custom reconciliation targets the current team, not both teams");
+Check(Call(null,plugin.GetType(),"HudActiveCustomTarget",customTargets,1)==null,"spectator cannot claim active-team reconciliation");
+Check(Call(null,plugin.GetType(),"HudActiveCustomTarget",new[]{(Team:2,Model:"a"),(Team:2,Model:"b")},2)==null,"ambiguous active-team targets fail closed");
+var outcomeType=plugin.GetType().GetNestedType("HudRefreshOutcome",flags)!;
+var retries=0;Set(liveSession,"RetryRefresh",(Action)(()=>{retries++;Set(liveNative,"Busy",true);}));
+Call(plugin,plugin.GetType(),"ShowHudSavedOutcome",liveSession,Enum.Parse(outcomeType,"Deferred"));
+var refreshMessage=Get(liveSession,"Message")!;
+Check(((string)Get(refreshMessage,"Text")!).Contains("сохранены, но предмет не обновился") && (bool)Get(liveSession,"RefreshFailed")!,"committed refresh failure is shown without claiming a failed save");
+Call(plugin,plugin.GetType(),"RouteHudAliasSession",liveSession,agentsSection,true);
+Check((bool)Get(liveSession,"RefreshFailed")! && ReferenceEquals(Get(liveSession,"Message"),refreshMessage),"alias cannot bypass the saved refresh retry prompt");
+Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_0");
+Check(retries==1 && (bool)Get(liveNative,"Busy")! && Get(liveSession,"Message")==null,"retry dispatches only the saved refresh and marks session busy");
+Set(liveNative,"Busy",false);Call(plugin,plugin.GetType(),"ShowHudSavedOutcome",liveSession,Enum.Parse(outcomeType,"Applied"));
+Check(!(bool)Get(liveSession,"RefreshFailed")! && Get(liveSession,"RetryRefresh")==null && (bool)Get(liveSession,"FinishAfterMessage")!,"confirmed native completion clears retry and permits finishing");
+Set(liveSession,"Message",null);Set(liveSession,"FinishAfterMessage",false);
+Check((bool)Call(null,plugin.GetType(),"HudPromptAllowsClick",lease,"state_0")!,"prompt permits cancel button");
+Check(!(bool)Call(null,plugin.GetType(),"HudPromptAllowsClick",lease,"item_0")!,"prompt blocks unrelated click");
+Set(liveSession,"Prompt",lease);Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_1");Check(ReferenceEquals(Get(liveSession,"Prompt"),lease),"non-cancel prompt click is ignored");
+Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_0");Check(Get(liveSession,"Prompt")==null,"cancel button ends the active prompt");
+// Drive actual controller/browser paging with a selected finish held off-page.
+var pagesSession=New(sessionType,liveNative,EnumValue("HudSize","Normal"));var pagesBrowser=Get(pagesSession,"Browser")!;
+var groupIntent=Call(pagesBrowser,pagesBrowser.GetType(),"OpenWeaponGroup",new HashSet<int>{7})!;
+var model=New(T("HudCatalogItem"));Set(model,"Id",1);Set(model,"Category","weapons");Set(model,"Definition",7);Set(model,"Name","AK-47");Set(model,"Base",true);
+var modelItems=Array.CreateInstance(T("HudCatalogItem"),1);modelItems.SetValue(model,0);var modelSelection=New(T("HudCatalogSelection"),(object)modelItems);
+Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(groupIntent,"Revision"),modelSelection)!,"model selection accepted");
+var finishIntent=Call(pagesBrowser,pagesBrowser.GetType(),"Select",0,Get(pagesBrowser,"Revision"))!;var finishItems=Array.CreateInstance(T("HudCatalogItem"),12);
+for(int i=0;i<12;i++){var x=New(T("HudCatalogItem"));Set(x,"Id",i+20);Set(x,"Category","weapons");Set(x,"Definition",7);Set(x,"Name","AK-47 | Finish "+i);Set(x,"Kit",i+1);finishItems.SetValue(x,i);}
+var finishSelection=New(T("HudCatalogSelection"),(object)finishItems);Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(finishIntent,"Revision"),finishSelection)!,"finish selection accepted");
+var chosen=finishItems.GetValue(0)!;Set(pagesSession,"Selected",chosen);var nextPage=Call(pagesBrowser,pagesBrowser.GetType(),"MovePage",1)!;
+Call(plugin,plugin.GetType(),"HandleHudIntent",pagesSession,nextPage);Check(ReferenceEquals(Get(pagesSession,"Selected"),chosen),"page change preserves selected preview");
+var newChoice=Call(pagesBrowser,pagesBrowser.GetType(),"Select",0,Get(pagesBrowser,"Revision"))!;Call(plugin,plugin.GetType(),"HandleHudIntent",pagesSession,newChoice);
+Check(ReferenceEquals(Get(pagesSession,"Selected"),finishItems.GetValue(10)),"clicking another card changes selected preview");
+var sortIntent=Call(pagesBrowser,pagesBrowser.GetType(),"NextSort")!;Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(sortIntent,"Revision"),finishSelection)!,"sorted selection accepted");
+Call(plugin,plugin.GetType(),"ReconcileHudPreview",pagesSession);Check(ReferenceEquals(Get(pagesSession,"Selected"),finishItems.GetValue(10)),"sort query preserves selected preview even off page");
+var searchIntent=Call(pagesBrowser,pagesBrowser.GetType(),"SetSearch","Finish 0")!;var searchItems=Array.CreateInstance(T("HudCatalogItem"),1);searchItems.SetValue(finishItems.GetValue(0),0);
+Check((bool)Call(pagesBrowser,pagesBrowser.GetType(),"AcceptQuery",Get(searchIntent,"Revision"),New(T("HudCatalogSelection"),(object)searchItems))!,"filtered selection accepted");Call(plugin,plugin.GetType(),"ReconcileHudPreview",pagesSession);Check(ReferenceEquals(Get(pagesSession,"Selected"),finishItems.GetValue(10)),"search preserves preview absent from results");
+
+Set(liveSession,"Editing",true);Set(liveSession,"Drafts",fallbackDrafts);Set(liveSession,"Selected",New(T("HudCatalogItem")));
+object ConflictMessage()=>New(T("HudModalView"),"Conflict","Changed",new[]{"Reload","Stay"},false,"","","",false);
+Set(liveSession,"Message",ConflictMessage());Set(liveSession,"ConflictDialog",true);
+Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_1");
+Check(!(bool)Get(liveSession,"ConflictDialog")! && Get(liveSession,"Message")==null && ReferenceEquals(Get(liveSession,"Drafts"),fallbackDrafts),"conflict Stay preserves actual draft");
+Set(liveSession,"Message",ConflictMessage());Set(liveSession,"ConflictDialog",true);
+Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_0");
+Check((bool)Get(liveSession,"ConflictDialog")! && !(bool)Get(liveSession,"ReloadingConflict")! && Get(liveSession,"Message")!=null && ReferenceEquals(Get(liveSession,"Drafts"),fallbackDrafts),"reload dispatch failure preserves draft and offers retry");
+var oldGeneration=(long)Call(coordinator,coordinator.GetType(),"BeginQuery",liveNative)!;
+var currentGeneration=(long)Call(coordinator,coordinator.GetType(),"BeginQuery",liveNative)!;
+Set(liveSession,"ReloadingConflict",true);var originalMessage=Get(liveSession,"Message");
+Call(plugin,plugin.GetType(),"HandleHudLoadFailure",liveSession,oldGeneration);
+Check((bool)Get(liveSession,"ReloadingConflict")! && ReferenceEquals(Get(liveSession,"Message"),originalMessage),"stale reload callback cannot modify current draft or state");
+Call(plugin,plugin.GetType(),"HandleHudLoadFailure",liveSession,currentGeneration);
+Check(!(bool)Get(liveSession,"ReloadingConflict")! && (bool)Get(liveSession,"ConflictDialog")! && ReferenceEquals(Get(liveSession,"Drafts"),fallbackDrafts),"current reload failure preserves draft");
+var liveBrowser=Get(liveSession,"Browser")!;
+Call(liveBrowser,liveBrowser.GetType(),"OpenSection",EnumValue("HudSection","Agents"));
+Call(liveBrowser,liveBrowser.GetType(),"OpenPicker",EnumValue("HudPickerKind","Patch"));
+Set(liveSession,"Message",null);Set(liveSession,"ConflictDialog",false);Set(liveSession,"Editing",false);Set(liveSession,"ResumeEditor",true);
+Set(liveSession,"ConfirmDiscard",true);Set(liveSession,"Plus",true);Set(liveSession,"CosmeticChanges",array);
+Call(plugin,plugin.GetType(),"HudClick",liveSession,"state_0");
+Check((bool)Get(liveSession,"ApplyAfterPickerReturn")! && (bool)Get(liveSession,"ResumeEditor")! && ReferenceEquals(Get(liveSession,"CosmeticChanges"),array),"dirty picker Apply defers until browser return and preserves draft");
+Console.WriteLine($"PASS: {checks} actual controller transitions (managed assembly, no CSS host)");
+
+public class ControllerSurfaceProxy : DispatchProxy
+{
+    protected override object? Invoke(MethodInfo? method,object?[]? args) => method?.ReturnType==typeof(bool)?true:null;
+}

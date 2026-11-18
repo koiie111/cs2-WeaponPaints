@@ -1,0 +1,552 @@
+{
+  "source": "installed CS2 game/csgo/pak01_dir.vpk index",
+  "indexSHA256": "c1f3cd797bb8d7d2de4bc9c1bd8fa7ddd02fc0934e6aaa1c2a37815a4a4c1204",
+  "entries": [
+    {
+      "key": "catalog-0",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_ak47_crane_flight_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-1",
+      "resource": "panorama/images/econ/default_generated/weapon_m4a1_am_circuitboard_silver_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-2",
+      "resource": "panorama/images/econ/default_generated/weapon_awp_aa_awp_fade_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-3",
+      "resource": "panorama/images/econ/default_generated/weapon_deagle_aa_flames_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-4",
+      "resource": "panorama/images/econ/default_generated/weapon_glock_aa_fade_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-5",
+      "resource": "panorama/images/econ/default_generated/weapon_usp_silencer_am_ddpat_purple_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-6",
+      "resource": "panorama/images/econ/default_generated/weapon_mp9_aa_hide-mp9_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-7",
+      "resource": "panorama/images/econ/default_generated/weapon_nova_am_army_shine_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-8",
+      "resource": "panorama/images/econ/default_generated/weapon_m249_aq_m249_aztec_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "catalog-9",
+      "resource": "panorama/images/econ/default_generated/weapon_taser_cu_overpass_dragon_zeus_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-0",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_ak47_crane_flight_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-1",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_ak47_explosive_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-2",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_ak47_puffer_custom_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-3",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_ak47_t_bus_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-4",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_ak_porcelain_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-5",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_am_bamboo_jungle_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-6",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_aq_ak47_cartel_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-7",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_aq_oiled_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-8",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_cu_ak-47_phantom_disruptor_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "finishes-9",
+      "resource": "panorama/images/econ/default_generated/weapon_ak47_cu_ak47_anarchy_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-0",
+      "resource": "panorama/images/econ/weapons/base_weapons/ct_gloves_png.vtex_c",
+      "method": "default glove placeholder"
+    },
+    {
+      "key": "gloves-1",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_camo_grey_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-2",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_fabric_houndstooth_orange_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-3",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_fabric_orange_camo_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-4",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_caution_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-5",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_ducttape_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-6",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_blue_skulls_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-7",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_geometric_blue_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-8",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_giraffe_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "gloves-9",
+      "resource": "panorama/images/econ/default_generated/leather_handwraps_handwrap_leathery_fabric_green_camo_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-0",
+      "resource": "panorama/images/econ/characters/customplayer_tm_leet_varianta_png.vtex_c",
+      "method": "default faction representative"
+    },
+    {
+      "key": "agents-1",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_sas_png.vtex_c",
+      "method": "default faction representative"
+    },
+    {
+      "key": "agents-2",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_st6_variantj_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-3",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_st6_variantl_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-4",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_swat_variante_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-5",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_swat_variantf_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-6",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_swat_variantg_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-7",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_swat_varianth_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-8",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_swat_varianti_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "agents-9",
+      "resource": "panorama/images/econ/characters/customplayer_ctm_swat_variantj_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-0",
+      "resource": "panorama/images/econ/music_kits/valve_cs2_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-2",
+      "resource": "panorama/images/econ/music_kits/danielsadowski_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-3",
+      "resource": "panorama/images/econ/music_kits/noisia_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-4",
+      "resource": "panorama/images/econ/music_kits/robertallaire_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-5",
+      "resource": "panorama/images/econ/music_kits/seanmurray_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-6",
+      "resource": "panorama/images/econ/music_kits/feedme_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-7",
+      "resource": "panorama/images/econ/music_kits/dren_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-8",
+      "resource": "panorama/images/econ/music_kits/austinwintory_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-9",
+      "resource": "panorama/images/econ/music_kits/sasha_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-0",
+      "resource": "panorama/images/econ/status_icons/dreamhack_2013_champion_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-1",
+      "resource": "panorama/images/econ/status_icons/dreamhack_2013_finalist_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-2",
+      "resource": "panorama/images/econ/status_icons/dreamhack_2013_semifinalist_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-3",
+      "resource": "panorama/images/econ/status_icons/dreamhack_2013_quarterfinalist_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-4",
+      "resource": "panorama/images/econ/status_icons/katowice_2014_champion_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-5",
+      "resource": "panorama/images/econ/status_icons/katowice_2014_finalist_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-6",
+      "resource": "panorama/images/econ/status_icons/katowice_2014_semifinalist_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-7",
+      "resource": "panorama/images/econ/status_icons/katowice_2014_quarterfinalist_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-8",
+      "resource": "panorama/images/econ/status_icons/cologne_trophy_champion_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pins-9",
+      "resource": "panorama/images/econ/status_icons/cologne_trophy_finalist_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-0",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_ava_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-1",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_banana_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-2",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_cat_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-3",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_catbeach_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-4",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_chicken_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-5",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_guerilla_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-6",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_howl_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-7",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_kev_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-8",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_monster_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "charm-9",
+      "resource": "panorama/images/econ/keychains/missinglink/kc_missinglink_sam_catchup_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-0",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_gologo1_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-1",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_gologo1_holo_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-2",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_gologo2_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-3",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_gologo2_holo_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-4",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_snowflake2_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-5",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_snowflake3_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-6",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_bears_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-7",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_bears_holo_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-8",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_mountain_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "stickers-9",
+      "resource": "panorama/images/econ/stickers/dreamhack/dh_mountain_holo_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-0",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_bayonet_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-1",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_aa_fade_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-2",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_blackpearl_marbleized_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-3",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase1_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-4",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase2_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-5",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase3_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-6",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_doppler_phase4_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-7",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_emerald_marbleized_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-8",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_gamma_doppler_phase1_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "knives-9",
+      "resource": "panorama/images/econ/default_generated/weapon_bayonet_am_gamma_doppler_phase2_light_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "rifles-0",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_ak47_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "rifles-1",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_aug_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "rifles-2",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_famas_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "rifles-3",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_galilar_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "rifles-4",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_m4a1_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "rifles-5",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_m4a1_silencer_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "rifles-6",
+      "resource": "panorama/images/econ/weapons/base_weapons/weapon_sg556_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "graffiti-0",
+      "resource": "panorama/images/econ/stickers/valve_sprays/ace_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "graffiti-2",
+      "resource": "panorama/images/econ/stickers/valve_sprays/cerberus_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "graffiti-3",
+      "resource": "panorama/images/econ/stickers/valve_sprays/clutch_01_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "graffiti-5",
+      "resource": "panorama/images/econ/stickers/valve_sprays/ct_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "graffiti-6",
+      "resource": "panorama/images/econ/stickers/valve_sprays/ez_02_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "graffiti-7",
+      "resource": "panorama/images/econ/stickers/valve_sprays/fireserpent_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "graffiti-9",
+      "resource": "panorama/images/econ/stickers/valve_sprays/kisses_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "pet-0",
+      "resource": "panorama/images/icons/ui/pet_chick.vsvg_c",
+      "method": "native pet UI icon"
+    },
+    {
+      "key": "patches-0",
+      "resource": "panorama/images/econ/patches/case01/patch_banana_png.vtex_c",
+      "method": "catalogue identity"
+    },
+    {
+      "key": "music-1",
+      "resource": "panorama/images/econ/music_kits/valve_02_png.vtex_c",
+      "method": "items_game musickit2 inventory_image"
+    },
+    {
+      "key": "graffiti-1",
+      "resource": "panorama/images/econ/stickers/valve_sprays/banana_png.vtex_c",
+      "method": "graffiti Valve sprays namespace disambiguation"
+    },
+    {
+      "key": "graffiti-4",
+      "resource": "panorama/images/econ/stickers/valve_sprays/crown_png.vtex_c",
+      "method": "graffiti Valve sprays namespace disambiguation"
+    },
+    {
+      "key": "graffiti-8",
+      "resource": "panorama/images/econ/stickers/valve_sprays/howling_dawn_png.vtex_c",
+      "method": "graffiti Valve sprays namespace disambiguation"
+    }
+  ],
+  "unresolved": []
+}

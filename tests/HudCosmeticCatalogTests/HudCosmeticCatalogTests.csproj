@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="../../Hud/HudCosmeticCatalog.cs" Link="HudCosmeticCatalog.cs" />
+  <Compile Include="../../Hud/HudCosmeticStore.cs" Link="HudCosmeticStore.cs" />
+  <Compile Include="../../OrderedOperations.cs" Link="OrderedOperations.cs" />
+  <PackageReference Include="Dapper" Version="2.1.72" />
+  <PackageReference Include="MySqlConnector" Version="2.6.1" />
+  <None Include="../../hud-mockup/catalog/cosmetic-metadata.json" Link="cosmetic-metadata.json" CopyToOutputDirectory="PreserveNewest" />
+ </ItemGroup>
+</Project>

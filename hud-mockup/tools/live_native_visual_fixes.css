@@ -1,0 +1,55 @@
+/* Native-only v3: the shell must obscure the game world, as in the approved UI. */
+.shell { background-color: #111d2a; }
+
+/* Keep the entire contained hero art inside its 225px clipping parent. */
+.heroImage { width: 560px; height: 216px; margin-top: 0px; vertical-align: center; }
+/* A 90% default is a single safe preset, not aspect-ratio detection. */
+.app { ui-scale: 90%; }
+/* Opt-in for users who have room for the original 100% layout. */
+.app.normal { ui-scale: 100%; }
+
+/* Keep pager buttons symmetric; the label consumes remaining flow space. */
+.catalogFooter .muted { width: fill-parent-flow( 1.0 ); }
+.catalogFooter .page { width: 40px; height: 26px; }
+.catalogFooter .pageNumber { width: 70px; height: fit-children; vertical-align: center; text-align: center; }
+
+/* Native buttons can apply alignment independent of flow; pin icon/text left. */
+.search { padding-left: 12px; }
+.searchIcon { margin-left: 0px; horizontal-align: left; }
+.searchText { margin-left: 6px; horizontal-align: left; }
+
+/* Preserve a 12px inset at both ends and center numeric values. */
+.featureRow { padding: 0px 12px; }
+.featureLabel { width: fill-parent-flow( 1.0 ); margin: 0px; }
+.settingRow { padding-right: 12px; }
+.settingLabel { width: fill-parent-flow( 1.0 ); }
+.featureInput .buttonText, .valueInput .buttonText {
+    width: fit-children;
+    height: fit-children;
+    horizontal-align: center;
+    vertical-align: center;
+    text-align: center;
+}
+
+/* Stock client vector resources; Panel backgrounds avoid font-baseline drift. */
+.backIcon {
+    width: 16px;
+    height: 16px;
+    margin-right: 12px;
+    vertical-align: center;
+    background-image: url("s2r://panorama/images/icons/ui/back.vsvg");
+    background-size: contains;
+    background-position: center;
+    background-repeat: no-repeat;
+    wash-color: #80c9ef;
+}
+.searchIcon {
+    width: 16px;
+    height: 16px;
+    vertical-align: center;
+    background-image: url("s2r://panorama/images/icons/ui/search.vsvg");
+    background-size: contains;
+    background-position: center;
+    background-repeat: no-repeat;
+    wash-color: #aac1ce;
+}

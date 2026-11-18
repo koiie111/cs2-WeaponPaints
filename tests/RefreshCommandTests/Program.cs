@@ -113,6 +113,34 @@ wp.Command(player); WP.GPlayerWeaponsInfo[1][2].Clear();
 wp.Sync.Complete(true); await wp.Active!; Server.Flush();
 Check(wp.PreviousDefinitions?.Contains(7) == true, "removed weapon row is retained for equipment reset");
 wp.FinishEquipment(true); WP.GPlayerWeaponsInfo.Clear();
+WP.CommandsCooldown.Clear(); WP.PlayerDataLoading.Clear(); wp.Sync.Reset(); wp.HudOutcomes.Clear();
+wp._gBCommandsAllowed=false; wp.HudCommand(player);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Deferred"}) && wp.Sync.Calls==0, "HUD reports deferred when refresh is not allowed");
+wp._gBCommandsAllowed=true; wp.HudOutcomes.Clear(); wp.Config.Additional.SkinEnabled=false; wp.HudCommand(player);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Deferred"}) && wp.Sync.Calls==0, "HUD reports deferred when skin pipeline is disabled");
+wp.Config.Additional.SkinEnabled=true; wp.Config.Additional.CommandWpEnabled=false; wp.HudOutcomes.Clear(); player.Messages.Clear(); wp.Sync.Reset(); wp.HudCommand(player);
+Check(wp.Sync.Calls==1, "HUD refresh must not depend on the optional chat command");
+wp.Sync.Complete(true); await wp.Active!; Server.Flush();
+Check(wp.HudOutcomes.Count==0, "HUD cannot report success before native completion");
+wp.FinishEquipment(true); Check(wp.HudOutcomes.SequenceEqual(new[]{"Applied"}) && !player.Messages.Contains("done"), "HUD completion must report applied once without legacy chat");
+wp.Sync.Reset(); wp.HudOutcomes.Clear(); wp.HudCommand(player); wp.Sync.Complete(false); await wp.Active!; Server.Flush();
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Failed"}), "HUD must report refresh failure separately");
+wp.Sync.Reset(); wp.HudOutcomes.Clear(); wp.HudFailureReports.Clear(); wp.HudCommand(player);
+wp.Sync.Complete(true); await wp.Active!; Server.Flush(); wp.FinishEquipment(false);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Failed"}) && wp.HudFailureReports.Count==1
+    && wp.HudFailureReports[0]!.Contains("оружие и перчатки"), "HUD failure diagnostics must receive the actual failed subsystem");
+wp.Config.Additional.SkinEnabled=false; wp.Config.Additional.AgentEnabled=false; wp.HudOutcomes.Clear(); wp.Events.Clear(); wp.Sync.Reset();
+wp.HudCosmetic(player); Check(wp.Sync.Calls==1, "cosmetic-only HUD refresh must work with skins disabled");
+wp.Sync.Complete(true); await wp.Active!; Server.Flush();
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Applied"}) && !wp.Events.Contains("equipment") && !wp.Events.Contains("agent"),
+    "cosmetic-only refresh must skip equipment and disabled agents");
+wp.Config.Additional.SkinEnabled=true; wp.Config.Additional.AgentEnabled=true;
+wp.HudOutcomes.Clear(); wp.Sync.Reset(); wp.HudCommand(player); wp.HudCommand(player);
+wp.Sync.Complete(true); await wp.Active!; Server.Flush(); wp.Sync.Reset(); wp.FinishEquipment(true);
+Check(wp.HudOutcomes.Count==0 && wp.Sync.Calls==1, "coalesced HUD refresh must await the newest snapshot");
+wp.Sync.Complete(true); await wp.Active!; Server.Flush(); wp.FinishEquipment(true);
+Check(wp.HudOutcomes.SequenceEqual(new[]{"Applied","Applied"}), "coalesced HUD callbacks must complete exactly once each");
+wp.Config.Additional.CommandWpEnabled=true;
 // Exercise the production RCON handler with the production refresh coordinator.
 WP.PlayerDataLoading.Clear(); WP.CommandsCooldown.Clear(); Utilities.Players.Clear();
 player=new CCSPlayerController{Slot=1,SteamID=76561198000000001,UserId=1};Utilities.Players[1]=player;
@@ -345,7 +373,7 @@ namespace CounterStrikeSharp.API.Modules.Commands { public class CommandInfo {
  public void ReplyToCommand(string reply)=>Replies.Add(reply);
  } }
 namespace WeaponPaints {
- public class Additional { public bool CommandWpEnabled=true,SkinEnabled=true,PetsEnabled=true,MusicEnabled=true,PinsEnabled=true; }
+ public class Additional { public bool CommandWpEnabled=true,SkinEnabled=true,PetsEnabled=true,MusicEnabled=true,PinsEnabled=true,AgentEnabled=true; }
  public class ConfigData { public Additional Additional=new();public int CmdRefreshCooldownSeconds=3; }
  public class FakeSync {
   private TaskCompletionSource<bool> source=new(TaskCreationOptions.RunContinuationsAsynchronously);public int Calls;
@@ -363,6 +391,8 @@ namespace WeaponPaints {
   internal bool TryResolve(out CCSPlayerController current){current=player;return player.IsValid && player.SteamID==steam;}
  }
  public partial class WeaponPaints {
+  public readonly List<IReadOnlyList<string>?> HudFailureReports=[];
+  private void RecordHudRefreshFailures(int slot,ulong steam,uint controller,IReadOnlyList<string>? failures) => HudFailureReports.Add(failures);
   public ConfigData Config=new();public bool _gBCommandsAllowed=true;public static System.Collections.Concurrent.ConcurrentDictionary<int,long> PlayerDataLoading=new();
   public static Dictionary<int,Dictionary<int,int>> GPlayersMusic=new(),GPlayersPin=new();
   public static Dictionary<int, Dictionary<int, Dictionary<int, object>>> GPlayerWeaponsInfo = new();
@@ -393,6 +423,9 @@ namespace WeaponPaints {
   public void Disconnect(int slot)=>CancelCommandRefresh(slot);
   public bool WithObserver(CCSPlayerController player,Action<string> completed)=>RequestPlayerRefresh(player,false,completed);
   public void Command(CCSPlayerController p)=>OnCommandRefresh(p,new());
+  public readonly List<string> HudOutcomes=[];
+  public void HudCommand(CCSPlayerController p)=>RequestPlayerRefresh(p,false,fromHud:true,hudCompleted:result=>HudOutcomes.Add(result.ToString()));
+  public void HudCosmetic(CCSPlayerController p)=>RequestPlayerRefresh(p,false,fromHud:true,hudCompleted:result=>HudOutcomes.Add(result.ToString()),cosmeticOnly:true);
   public CounterStrikeSharp.API.Modules.Commands.CommandInfo Rcon(CCSPlayerController? caller, params string[] args){var info=new CounterStrikeSharp.API.Modules.Commands.CommandInfo{Args=args};OnCommandSkinRefresh(caller,info);return info;}
   public CounterStrikeSharp.API.Modules.Commands.CommandInfo RconTracked(CCSPlayerController? caller, params string[] args){var info=new CounterStrikeSharp.API.Modules.Commands.CommandInfo{Args=args};OnCommandTrackedRefresh(caller,info,args[0]=="wp_refresh_status");return info;}
   public void ExternalSettled(int slot,long loadId=777)=>OnExternalPlayerLoadSettled(slot,loadId);

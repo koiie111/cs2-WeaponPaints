@@ -1,0 +1,504 @@
+<root>
+  <styles>
+    <include src="s2r://panorama/styles/custom_game/weaponpaints.vcss_c" />
+  </styles>
+  <Panel hittest="false" class="outer">
+    <Panel class="app" id="wp_root">
+      <Panel class="shell">
+        <Panel class="side">
+          <Label hittest="false" class="brand" text="4ill.ru" />
+          <Button class="nav" id="nav_weapons">
+            <Label hittest="false" class="navIcon" text="⌁" />
+            <Label hittest="false" class="navText" text="ОРУЖИЕ" />
+          </Button>
+          <Button class="nav" id="nav_knives">
+            <Label hittest="false" class="navIcon" text="◇" />
+            <Label hittest="false" class="navText" text="НОЖИ" />
+          </Button>
+          <Button class="nav" id="nav_gloves">
+            <Label hittest="false" class="navIcon" text="▧" />
+            <Label hittest="false" class="navText" text="ПЕРЧАТКИ" />
+          </Button>
+          <Button class="nav" id="nav_agents">
+            <Label hittest="false" class="navIcon" text="◉" />
+            <Label hittest="false" class="navText" text="АГЕНТЫ" />
+          </Button>
+          <Button class="nav" id="nav_music">
+            <Label hittest="false" class="navIcon" text="♫" />
+            <Label hittest="false" class="navText" text="МУЗЫКА" />
+          </Button>
+          <Button class="nav" id="nav_pins">
+            <Label hittest="false" class="navIcon" text="✦" />
+            <Label hittest="false" class="navText" text="ЗНАЧКИ" />
+          </Button>
+          <Button class="nav" id="nav_graffiti">
+            <Label hittest="false" class="navIcon" text="▤" />
+            <Label hittest="false" class="navText" text="ГРАФФИТИ" />
+          </Button>
+          <Button class="nav" id="nav_pet">
+            <Label hittest="false" class="navIcon" text="◈" />
+            <Label hittest="false" class="navText" text="ПИТОМЕЦ" />
+          </Button>
+        </Panel>
+        <Panel class="main">
+          <Panel class="top">
+            <Button class="back" id="back">
+              <Label hittest="false" class="backIcon" text="‹" />
+              <Label hittest="false" class="crumbText" text="{s:breadcrumb}" />
+            </Button>
+            <Panel class="headerDivider" />
+            <Label hittest="false" class="title" text="{s:title}" />
+            <Button class="team" id="team">
+              <Label hittest="false" class="buttonText" text="{s:team}" />
+            </Button>
+            <Button class="close" id="close">
+              <Label hittest="false" class="buttonText" text="✕" />
+            </Button>
+          </Panel>
+          <Panel class="home pane" id="home">
+            <Panel class="mosaicTop">
+              <Button class="mosaic large tier-d32ce6" id="category_rifles">
+                <Panel hittest="false" class="categoryStripe" />
+                <Panel hittest="false" class="tileImage art art-catalog-0" />
+                <Label hittest="false" class="tileTitle" text="ВИНТОВКИ" />
+              </Button>
+              <Panel class="mosaicStack">
+                <Button class="mosaic wide tier-8847ff" id="category_pistols">
+                  <Panel hittest="false" class="categoryStripe" />
+                  <Panel hittest="false" class="tileImage art art-catalog-3" />
+                  <Label hittest="false" class="tileTitle" text="ПИСТОЛЕТЫ" />
+                </Button>
+                <Button class="mosaic wide tier-4b69ff" id="category_smg">
+                  <Panel hittest="false" class="categoryStripe" />
+                  <Panel hittest="false" class="tileImage art art-catalog-6" />
+                  <Label hittest="false" class="tileTitle" text="ПИСТОЛЕТЫ-ПУЛЕМЁТЫ" />
+                </Button>
+              </Panel>
+            </Panel>
+            <Panel class="mosaicBottom">
+              <Button class="mosaic small tier-b0c3d9" id="category_shotguns">
+                <Panel hittest="false" class="categoryStripe" />
+                <Panel hittest="false" class="tileImage art art-catalog-7" />
+                <Label hittest="false" class="tileTitle" text="ДРОБОВИКИ" />
+              </Button>
+              <Button class="mosaic small tier-eb4b4b" id="category_snipers">
+                <Panel hittest="false" class="categoryStripe" />
+                <Panel hittest="false" class="tileImage art art-catalog-2" />
+                <Label hittest="false" class="tileTitle" text="СНАЙПЕРСКИЕ" />
+              </Button>
+              <Button class="mosaic small tier-8847ff" id="category_heavy">
+                <Panel hittest="false" class="categoryStripe" />
+                <Panel hittest="false" class="tileImage art art-catalog-8" />
+                <Label hittest="false" class="tileTitle" text="ПУЛЕМЁТЫ" />
+              </Button>
+              <Button class="mosaic small tier-d32ce6" id="category_zeus">
+                <Panel hittest="false" class="categoryStripe" />
+                <Panel hittest="false" class="tileImage art art-catalog-9" />
+                <Label hittest="false" class="tileTitle" text="ZEUS" />
+              </Button>
+            </Panel>
+          </Panel>
+          <Panel class="catalog pane" id="catalog">
+            <Panel class="toolbar">
+              <Button class="tab active" id="tab_standard">
+                <Label hittest="false" class="buttonText" text="Обычные скины" />
+              </Button>
+              <Button class="tab" id="tab_custom">
+                <Label hittest="false" class="buttonText" text="Кастомные скины" />
+              </Button>
+              <Button class="search" id="search">
+                <Label hittest="false" class="searchIcon" text="⌕" />
+                <Label hittest="false" class="searchText" text="Поиск" />
+              </Button>
+              <Button class="sort" id="sort">
+                <Label hittest="false" class="buttonText" text="По названию  ▾" />
+              </Button>
+            </Panel>
+            <Panel class="hero" id="hero">
+              <Panel class="heroArt" id="hero_art_panel">
+                <Panel hittest="false" class="heroImage art art-finishes-0" id="hero_art" />
+              </Panel>
+              <Panel class="heroCopy">
+                <Label hittest="false" class="heroTitle" text="{s:hero_title}" />
+                <Label hittest="false" class="heroSub" text="{s:hero_subtitle}" />
+                <Label hittest="false" class="heroValue" text="{s:hero_wear}" />
+                <Label hittest="false" class="heroValue" text="{s:hero_seed}" />
+                <Label hittest="false" class="heroValue" text="{s:hero_stattrak}" />
+                <Button class="configure" id="configure">
+                  <Label hittest="false" class="buttonText" text="НАСТРОИТЬ" />
+                </Button>
+              </Panel>
+            </Panel>
+            <Panel class="grid" id="grid">
+              <Panel class="cardRow" id="grid_row_0">
+                <Button class="item" id="item_0">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-0" id="image_0" />
+                  <Label hittest="false" class="itemName" text="{s:item_0}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_0}" />
+                </Button>
+                <Button class="item" id="item_1">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-1" id="image_1" />
+                  <Label hittest="false" class="itemName" text="{s:item_1}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_1}" />
+                </Button>
+                <Button class="item" id="item_2">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-2" id="image_2" />
+                  <Label hittest="false" class="itemName" text="{s:item_2}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_2}" />
+                </Button>
+                <Button class="item" id="item_3">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-3" id="image_3" />
+                  <Label hittest="false" class="itemName" text="{s:item_3}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_3}" />
+                </Button>
+                <Button class="item" id="item_4">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-4" id="image_4" />
+                  <Label hittest="false" class="itemName" text="{s:item_4}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_4}" />
+                </Button>
+              </Panel>
+              <Panel class="cardRow" id="grid_row_1">
+                <Button class="item" id="item_5">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-5" id="image_5" />
+                  <Label hittest="false" class="itemName" text="{s:item_5}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_5}" />
+                </Button>
+                <Button class="item" id="item_6">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-6" id="image_6" />
+                  <Label hittest="false" class="itemName" text="{s:item_6}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_6}" />
+                </Button>
+                <Button class="item" id="item_7">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-7" id="image_7" />
+                  <Label hittest="false" class="itemName" text="{s:item_7}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_7}" />
+                </Button>
+                <Button class="item" id="item_8">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-8" id="image_8" />
+                  <Label hittest="false" class="itemName" text="{s:item_8}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_8}" />
+                </Button>
+                <Button class="item" id="item_9">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-9" id="image_9" />
+                  <Label hittest="false" class="itemName" text="{s:item_9}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_9}" />
+                </Button>
+              </Panel>
+              <Panel class="cardRow thirdRow" id="grid_row_2">
+                <Button class="item" id="item_10">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-0" id="image_10" />
+                  <Label hittest="false" class="itemName" text="{s:item_10}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_10}" />
+                </Button>
+                <Button class="item" id="item_11">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-1" id="image_11" />
+                  <Label hittest="false" class="itemName" text="{s:item_11}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_11}" />
+                </Button>
+                <Button class="item" id="item_12">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-2" id="image_12" />
+                  <Label hittest="false" class="itemName" text="{s:item_12}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_12}" />
+                </Button>
+                <Button class="item" id="item_13">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-3" id="image_13" />
+                  <Label hittest="false" class="itemName" text="{s:item_13}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_13}" />
+                </Button>
+                <Button class="item" id="item_14">
+                  <Panel hittest="false" class="rarity" />
+                  <Label hittest="false" class="selectedMark" text="✓" />
+                  <Panel hittest="false" class="itemImage art art-finishes-4" id="image_14" />
+                  <Label hittest="false" class="itemName" text="{s:item_14}" />
+                  <Label hittest="false" class="itemSub" text="{s:sub_14}" />
+                </Button>
+              </Panel>
+            </Panel>
+            <Panel class="catalogFooter" id="catalog_footer">
+              <Label hittest="false" class="muted" text="{s:count}" />
+              <Button class="page" id="prev">
+                <Label hittest="false" class="buttonText" text="‹" />
+              </Button>
+              <Label hittest="false" class="pageNumber" text="{s:page}" />
+              <Button class="page" id="next">
+                <Label hittest="false" class="buttonText" text="›" />
+              </Button>
+            </Panel>
+          </Panel>
+          <Panel class="settings pane" id="settings">
+            <Panel class="previewColumn" id="preview_panel">
+              <Panel hittest="false" class="previewImage art art-catalog-0" id="preview_art" />
+              <Label hittest="false" class="previewName" text="{s:preview_name}" />
+            </Panel>
+            <Panel class="settingsRight">
+              <Panel class="settingRow" id="row_nametag">
+                <Label hittest="false" class="settingLabel" text="ИМЕННОЙ ЯРЛЫК" />
+                <Button class="settingValue" id="nametag">
+                  <Label hittest="false" class="buttonText" text="{s:nametag}" />
+                </Button>
+              </Panel>
+              <Panel class="settingRow" id="row_wear">
+                <Label hittest="false" class="settingLabel" text="ИЗНОС" />
+                <Panel class="valueControls">
+                  <Button class="step" id="wear_minus">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="valueInput" id="wear">
+                    <Label hittest="false" class="buttonText" text="{s:wear}" />
+                  </Button>
+                  <Button class="step" id="wear_plus">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+              </Panel>
+              <Panel class="presetRow" id="presets">
+                <Button class="preset" id="wear_fn">
+                  <Label hittest="false" class="buttonText" text="FN" />
+                </Button>
+                <Button class="preset" id="wear_mw">
+                  <Label hittest="false" class="buttonText" text="MW" />
+                </Button>
+                <Button class="preset" id="wear_ft">
+                  <Label hittest="false" class="buttonText" text="FT" />
+                </Button>
+                <Button class="preset" id="wear_ww">
+                  <Label hittest="false" class="buttonText" text="WW" />
+                </Button>
+                <Button class="preset" id="wear_bs">
+                  <Label hittest="false" class="buttonText" text="BS" />
+                </Button>
+              </Panel>
+              <Panel class="settingRow" id="row_seed">
+                <Label hittest="false" class="settingLabel" text="ПАТТЕРН" />
+                <Panel class="valueControls">
+                  <Button class="step" id="seed_minus">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="valueInput" id="seed">
+                    <Label hittest="false" class="buttonText" text="{s:seed}" />
+                  </Button>
+                  <Button class="step" id="seed_plus">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+              </Panel>
+              <Panel class="settingRow" id="row_stattrak">
+                <Label hittest="false" class="settingLabel" text="STATTRAK™" />
+                <Button class="settingValue" id="stattrak">
+                  <Label hittest="false" class="buttonText" text="{s:stattrak}" />
+                </Button>
+              </Panel>
+              <Panel class="settingRow" id="row_decor">
+                <Label hittest="false" class="settingLabel" text="НАКЛЕЙКИ" />
+                <Button class="settingValue" id="decor">
+                  <Label hittest="false" class="buttonText" text="{s:decor}" />
+                </Button>
+              </Panel>
+              <Panel class="decorRow" id="decor_slots">
+                <Button class="decorSlot" id="decor_0">
+                  <Label hittest="false" class="buttonText" text="+" />
+                </Button>
+                <Button class="decorSlot" id="decor_1">
+                  <Label hittest="false" class="buttonText" text="+" />
+                </Button>
+                <Button class="decorSlot" id="decor_2">
+                  <Label hittest="false" class="buttonText" text="+" />
+                </Button>
+                <Button class="decorSlot" id="decor_3">
+                  <Label hittest="false" class="buttonText" text="+" />
+                </Button>
+                <Button class="decorSlot" id="decor_4">
+                  <Label hittest="false" class="buttonText" text="+" />
+                </Button>
+              </Panel>
+              <Panel class="settingRow" id="row_charm">
+                <Label hittest="false" class="settingLabel" text="БРЕЛОК" />
+                <Button class="settingValue" id="charm">
+                  <Label hittest="false" class="buttonText" text="{s:charm}" />
+                </Button>
+              </Panel>
+              <Panel class="feature" id="feature">
+                <Panel class="featureContext" id="feature_context">
+                  <Panel hittest="false" class="featureIcon art art-stickers-0" id="feature_art" />
+                  <Panel class="featureCopy">
+                    <Label hittest="false" class="featureType" text="{s:feature_context}" />
+                    <Label hittest="false" class="featureName" text="{s:feature_name}" />
+                  </Panel>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_0">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_0}" />
+                  <Button class="step" id="feature_minus_0">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_0">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_0}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_0">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_1">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_1}" />
+                  <Button class="step" id="feature_minus_1">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_1">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_1}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_1">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_2">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_2}" />
+                  <Button class="step" id="feature_minus_2">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_2">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_2}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_2">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_3">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_3}" />
+                  <Button class="step" id="feature_minus_3">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_3">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_3}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_3">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_4">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_4}" />
+                  <Button class="step" id="feature_minus_4">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_4">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_4}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_4">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_5">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_5}" />
+                  <Button class="step" id="feature_minus_5">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_5">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_5}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_5">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_6">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_6}" />
+                  <Button class="step" id="feature_minus_6">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_6">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_6}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_6">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="featureRow" id="feature_row_7">
+                  <Label hittest="false" class="featureLabel" text="{s:feature_label_7}" />
+                  <Button class="step" id="feature_minus_7">
+                    <Label hittest="false" class="buttonText" text="−" />
+                  </Button>
+                  <Button class="featureInput" id="feature_value_7">
+                    <Label hittest="false" class="buttonText" text="{s:feature_value_7}" />
+                  </Button>
+                  <Button class="step" id="feature_plus_7">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+                <Panel class="decorRow" id="feature_slots">
+                  <Button class="decorSlot" id="feature_slot_0">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                  <Button class="decorSlot" id="feature_slot_1">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                  <Button class="decorSlot" id="feature_slot_2">
+                    <Label hittest="false" class="buttonText" text="+" />
+                  </Button>
+                </Panel>
+              </Panel>
+              <Panel class="applyRow">
+                <Button class="apply" id="apply">
+                  <Label hittest="false" class="buttonText" text="ПРИМЕНИТЬ" />
+                </Button>
+                <Panel class="plus" id="plus">
+                  <Label hittest="false" class="plusTitle" text="Доступно с 4ill+" />
+                  <Button class="plusLink" id="plus_link">
+                    <Label hittest="false" class="buttonText" text="4ill.ru/plus  ↗" />
+                  </Button>
+                </Panel>
+              </Panel>
+            </Panel>
+          </Panel>
+        </Panel>
+      </Panel>
+      <Panel class="modalLayer" id="modal_layer">
+        <Button class="modalBackdrop" id="modal_shield" />
+        <Panel class="overlay" id="overlay">
+          <Label hittest="false" class="sectionTitle" text="{s:state_title}" />
+          <Label hittest="false" class="stateText" text="{s:state_text}" />
+          <Panel class="offer" id="offer">
+            <Label hittest="false" class="offerItem" text="{s:offer_item}" />
+            <Label hittest="false" class="offerPrice" text="{s:offer_action}" />
+            <Label hittest="false" class="offerUrl" text="{s:offer_url}" />
+          </Panel>
+          <Panel class="overlayActions">
+            <Button class="stateButton" id="state_0">
+              <Label hittest="false" class="buttonText" text="{s:state_0}" />
+            </Button>
+            <Button class="stateButton" id="state_1">
+              <Label hittest="false" class="buttonText" text="{s:state_1}" />
+            </Button>
+            <Button class="stateButton" id="state_2">
+              <Label hittest="false" class="buttonText" text="{s:state_2}" />
+            </Button>
+          </Panel>
+        </Panel>
+      </Panel>
+    </Panel>
+  </Panel>
+</root>
