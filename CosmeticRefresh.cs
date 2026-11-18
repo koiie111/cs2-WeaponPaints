@@ -5,7 +5,8 @@ namespace WeaponPaints;
 
 public partial class WeaponPaints
 {
-    private void RefreshAllCosmetics(CCSPlayerController player, Action<IReadOnlyList<string>> completed, IReadOnlySet<int>? previousDefinitions = null)
+    private void RefreshAllCosmetics(CCSPlayerController player, Action<IReadOnlyList<string>> completed, IReadOnlySet<int>? previousDefinitions = null,
+        bool skipEquipment = false)
     {
         var identity = DeferredPlayer.Capture(player);
         var barrier = new CosmeticRefreshBarrier(["музыка", "питомец", "агент и нашивки", "оружие и перчатки", "значок"], completed);
@@ -22,9 +23,17 @@ public partial class WeaponPaints
 
         try
         {
+            if (!Config.Additional.AgentEnabled)
+            {
+                barrier.Report("агент и нашивки", true);
+                if (skipEquipment) barrier.Report("оружие и перчатки", true);
+                else RefreshPlayerEquipmentWithCompletion(player, ok => barrier.Report("оружие и перчатки", ok), previousDefinitions);
+            }
+            else
             GivePlayerAgentWithCompletion(player, agentOk =>
             {
                 barrier.Report("агент и нашивки", agentOk);
+                if (skipEquipment) { barrier.Report("оружие и перчатки", true); return; }
                 if (!identity.TryResolve(out var current) || !Utility.IsPlayerValid(current)) { barrier.Report("оружие и перчатки", false); return; }
                 try { RefreshPlayerEquipmentWithCompletion(current, ok => barrier.Report("оружие и перчатки", ok), previousDefinitions); }
                 catch (Exception error) { Logger.LogWarning(error, "Equipment refresh scheduling failed"); barrier.Report("оружие и перчатки", false); }

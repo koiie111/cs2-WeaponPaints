@@ -116,6 +116,7 @@ namespace WeaponPaints
             _gloveOverrides.Remove(player.Slot);
             _commandRefreshes.Remove(player.Slot);
             _externalPlayerApplies.Remove(player.Slot);
+			_hudUnconfirmedSlots.Remove(player.SteamID);
 			PlayerDataLoading.TryRemove(player.Slot, out _);
             ForgetGraffiti(player.Slot, player.SteamID);
 			ForgetAgentPatches(player.Slot);
@@ -162,6 +163,7 @@ namespace WeaponPaints
             _gloveOverrides.Clear();
             _commandRefreshes.Clear();
             _externalPlayerApplies.Clear();
+            _hudUnconfirmedSlots.Clear();
             ClearSkinPreviews();
             ClearGraffiti(false);
             Interlocked.Increment(ref DataGeneration);
@@ -325,6 +327,7 @@ namespace WeaponPaints
                 PlayerDataLoading.Clear();
                 _commandRefreshes.Clear();
                 _externalPlayerApplies.Clear();
+                _hudUnconfirmedSlots.Clear();
                 FinishCacheKeys.Clear();
                 _gloveOverrides.Clear();
                 ClearSkinPreviews();

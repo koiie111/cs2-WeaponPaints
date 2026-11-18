@@ -38,6 +38,8 @@ jobs:
         run: dotnet restore WeaponPaints.csproj
       - name: Build
         run: dotnet build WeaponPaints.csproj --no-restore -c Release -o build/WeaponPaints
+      - name: Runtime HUD layout and packaged contract
+        run: python3 tests/check_hud_runtime_contract.py --output build/WeaponPaints
       - name: Pet lifecycle regression checks
         run: dotnet run --project tests/PetStateTests/PetStateTests.csproj -c Release
       - name: Pet refresh and entitlement checks
@@ -54,6 +56,10 @@ jobs:
         run: dotnet run --project tests/PreviewRuntimeTests/PreviewRuntimeTests.csproj -c Release
       - name: Equipment refresh ordering checks
         run: dotnet run --project tests/EquipmentRefreshTests/EquipmentRefreshTests.csproj -c Release
+      - name: Pending weapon acquisition checks
+        run: dotnet run --project tests/WeaponAcquisitionTests/WeaponAcquisitionTests.csproj -c Release
+      - name: Weapon refresh acquisition integration checks
+        run: dotnet run --project tests/WeaponRefreshRuntimeTests/WeaponRefreshRuntimeTests.csproj -c Release
       - name: Held weapon redeploy checks
         run: dotnet run --project tests/WeaponRedeployTests/WeaponRedeployTests.csproj -c Release
       - name: Exact refresh item retirement checks
@@ -62,6 +68,14 @@ jobs:
         run: dotnet run --project tests/FinishCacheTests/FinishCacheTests.csproj -c Release
       - name: Command refresh coordination checks
         run: dotnet run --project tests/RefreshCommandTests/RefreshCommandTests.csproj -c Release
+      - name: HUD bounded retry checks
+        run: dotnet run --project tests/HudRetryPolicyTests/HudRetryPolicyTests.csproj -c Release
+      - name: HUD apply diagnostics checks
+        run: dotnet run --project tests/HudMetricsTests/HudMetricsTests.csproj -c Release
+      - name: HUD CustomWeapons bridge checks
+        run: dotnet run --project tests/HudCustomBridgeTests/HudCustomBridgeTests.csproj -c Release
+      - name: HUD controller checks
+        run: dotnet run --project tests/HudControllerTests/HudControllerTests.csproj -c Release
       - name: StatTrak event checks
         run: dotnet run --project tests/StatTrakEventTests/StatTrakEventTests.csproj -c Release
       - name: Music and pin controller checks

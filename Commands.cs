@@ -6,6 +6,7 @@ using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using Newtonsoft.Json.Linq;
+using WeaponPaints.Hud;
 
 namespace WeaponPaints;
 
@@ -63,6 +64,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Stattrak toggle", (player, info) =>
 			{
+				if (RouteHudAlias(player, HudSection.Weapons)) return;
 				if (!Utility.IsPlayerValid(player)) return;
 
 				OnCommandStattrak(player, info);
@@ -73,6 +75,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Skins info", (player, info) =>
 			{
+				if (RouteHudAlias(player, HudSection.Weapons)) return;
 				if (!Utility.IsPlayerValid(player)) return;
 				OnCommandWS(player, info);
 			});
@@ -252,6 +255,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Knife Menu", (player, _) =>
 			{
+				if (RouteHudAlias(player, HudSection.Knives)) return;
 				if (giveItemMenu == null) return;
 				if (!Utility.IsPlayerValid(player) || !_gBCommandsAllowed) return;
 
@@ -397,6 +401,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Skins selection menu", (player, _) =>
 			{
+				if (RouteHudAlias(player, HudSection.Weapons)) return;
 				if (!Utility.IsPlayerValid(player)) return;
 
 				if (player == null || player.UserId == null) return;
@@ -537,6 +542,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Gloves selection menu", (player, info) =>
 			{
+				if (RouteHudAlias(player, HudSection.Gloves)) return;
 				if (!Utility.IsPlayerValid(player) || !_gBCommandsAllowed) return;
 
 				if (player == null || player.UserId == null) return;
@@ -624,6 +630,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Agents selection menu", (player, info) =>
 			{
+				if (RouteHudAlias(player, HudSection.Agents)) return;
 				if (!Utility.IsPlayerValid(player) || !_gBCommandsAllowed) return;
 
 				if (player == null || player.UserId == null) return;
@@ -784,6 +791,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Music selection menu", (player, info) =>
 			{
+				if (RouteHudAlias(player, HudSection.Music)) return;
 				if (!Utility.IsPlayerValid(player) || !_gBCommandsAllowed) return;
 
 				if (player == null || player.UserId == null) return;
@@ -918,6 +926,7 @@ public partial class WeaponPaints
 		{
 			AddCommand($"css_{c}", "Pin selection menu", (player, info) =>
 			{
+				if (RouteHudAlias(player, HudSection.Pins)) return;
 				if (!Utility.IsPlayerValid(player) || !_gBCommandsAllowed) return;
 
 				if (player == null || player.UserId == null) return;

@@ -1,0 +1,6 @@
+/* Keep the action row reachable when an offer or a long message is visible. */
+.overlay { height: fit-children; min-height: 200px; max-height: 780px; }
+.stateText { width: 100%; white-space: normal; text-overflow: shrink min( 10px ) ellipsis; }
+.offer { width: 100%; height: fit-children; }
+.offerItem, .offerPrice, .offerUrl { width: 100%; white-space: normal; text-overflow: shrink min( 10px ) ellipsis; }
+.overlayActions { width: 100%; height: fit-children; }

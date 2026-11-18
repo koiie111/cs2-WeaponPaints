@@ -1,0 +1,263 @@
+{
+  "schema": 1,
+  "source_kind": "website_editor_gpu_render",
+  "catalog_sha256": "e4da930ec5c0ed856beff77fbb949eea88527ac8ae7e58784f4e477d61749b36",
+  "render_report_sha256": "ab72d4ecf0c69b844034d5ed26c85a77d3bd0161b568ead99aef12ed17ef6f5c",
+  "image_size": [
+    512,
+    308
+  ],
+  "fit_size": [
+    460,
+    268
+  ],
+  "entries": [
+    {
+      "index": 0,
+      "weapon": "weapon_ak47",
+      "model": "daedalos",
+      "source": "desktop-daedalos.png",
+      "source_sha256": "86d55f0ab68c92e0157db917484a4060ba31dff599d26379ca8124dccf33899e",
+      "png_sha256": "3f84491ddbbfa6e39b8e3a296d195e343fc112d496c06f246b10f6a16dee829a",
+      "png_bytes": 55371,
+      "content_size": [
+        460,
+        135
+      ]
+    },
+    {
+      "index": 1,
+      "weapon": "weapon_ak47",
+      "model": "ak_12",
+      "source": "desktop-ak_12.png",
+      "source_sha256": "c3dc3642bee3af3fd624859f59ad2f92def0cdc9a5feb1f734161cde98ceebc2",
+      "png_sha256": "53f331b1e789d6836fab25e3f59379052985684db6ab4032072e77583537a4df",
+      "png_bytes": 57649,
+      "content_size": [
+        460,
+        144
+      ]
+    },
+    {
+      "index": 2,
+      "weapon": "weapon_ak47",
+      "model": "ak_future_ag2",
+      "source": "desktop-ak_future_ag2.png",
+      "source_sha256": "9135dec46e5ad2140a10c7785013008e98c9517eb51ba4469f35151483731a63",
+      "png_sha256": "38afeabd1ebe78f7680859a05004338605a0c18e4ede60afef54e999415c979c",
+      "png_bytes": 51776,
+      "content_size": [
+        460,
+        121
+      ]
+    },
+    {
+      "index": 3,
+      "weapon": "weapon_ak47",
+      "model": "ak_insane",
+      "source": "desktop-ak_insane.png",
+      "source_sha256": "e5dccacb56cf4089f267b3830b57efdd564c91a38d2cee695370efa389648c09",
+      "png_sha256": "ae6ad02c8294123fecd19e51c91ef789596f5a03d7c7c1f83bdf37436e461f65",
+      "png_bytes": 51951,
+      "content_size": [
+        460,
+        146
+      ]
+    },
+    {
+      "index": 4,
+      "weapon": "weapon_ak47",
+      "model": "ak_oni_ag2",
+      "source": "desktop-ak_oni_ag2.png",
+      "source_sha256": "1335a219e468a7023e85fa62bb941044e303f306a62046448b7da1e661398920",
+      "png_sha256": "014ab6f2fb2e2fd1959a4ca58ef9757b680228dac7c3b3d70a72014cc3b9b727",
+      "png_bytes": 65096,
+      "content_size": [
+        460,
+        142
+      ]
+    },
+    {
+      "index": 5,
+      "weapon": "weapon_awp",
+      "model": "awp_afterglow_ag2",
+      "source": "desktop-awp_afterglow_ag2.png",
+      "source_sha256": "585127ebf8df1f4145b4074f53cc8afb5219b9e57dbb872162dde7110267cbd8",
+      "png_sha256": "e6d92fccf1b699c349a4f85a008fc893892c851f91daddc72304b478ecd728d7",
+      "png_bytes": 46517,
+      "content_size": [
+        460,
+        103
+      ]
+    },
+    {
+      "index": 6,
+      "weapon": "weapon_awp",
+      "model": "awp_animes",
+      "source": "desktop-awp_animes.png",
+      "source_sha256": "fac8ee42813aa0bdcf9409e2a53a749714adbe794b63c41153eb56a30a7bf20f",
+      "png_sha256": "ff44ee9b9e1f42fc3a0d2992767f077813512b84897998c878dc970361d0c3d0",
+      "png_bytes": 45651,
+      "content_size": [
+        460,
+        81
+      ]
+    },
+    {
+      "index": 7,
+      "weapon": "weapon_awp",
+      "model": "awp_insane",
+      "source": "desktop-awp_insane.png",
+      "source_sha256": "86be49ccf8d5215acf82db89b7c9fe59ecdad0c226706c285df6494887a125cf",
+      "png_sha256": "b6371114fdfa6bdde2a4afc933e8b3f7f0f9fa8dec83a3504852e22ab02cd820",
+      "png_bytes": 43265,
+      "content_size": [
+        460,
+        92
+      ]
+    },
+    {
+      "index": 8,
+      "weapon": "weapon_ak47",
+      "model": "kuronami",
+      "source": "desktop-kuronami.png",
+      "source_sha256": "8dd7ce28bfd6fe6c4c3634ac025ed909db0b1a8dcf3cf656cd42b140ff4a3083",
+      "png_sha256": "aed7f127196585b8f9d1c3b3a5f74e60e344caecf7be42e1ecab166fb8971e2f",
+      "png_bytes": 55749,
+      "content_size": [
+        460,
+        139
+      ]
+    },
+    {
+      "index": 9,
+      "weapon": "weapon_m4a1",
+      "model": "m4_fool",
+      "source": "desktop-m4_fool.png",
+      "source_sha256": "652033413352b8a725623771a77ff4ca2af8132ccf61e508db50756332d2a671",
+      "png_sha256": "621a73aa5373168b459c731e1c2f0561aa1e2c0792c7ce45ba8a1d4642e14fce",
+      "png_bytes": 70150,
+      "content_size": [
+        460,
+        165
+      ]
+    },
+    {
+      "index": 10,
+      "weapon": "weapon_m4a1",
+      "model": "m4_masyna_ag2",
+      "source": "desktop-m4_masyna_ag2.png",
+      "source_sha256": "f8fe5195d1832eae022b5246412ddc795912e39f88bd5e9f9df95376443e2635",
+      "png_sha256": "ff23759d63df8ad4f314c18c94aa007e4c19d95834296835e8e438eb2eb41588",
+      "png_bytes": 71972,
+      "content_size": [
+        460,
+        214
+      ]
+    },
+    {
+      "index": 11,
+      "weapon": "weapon_m4a1",
+      "model": "m4_oni_ag2",
+      "source": "desktop-m4_oni_ag2.png",
+      "source_sha256": "7ae9c9133193ce423bfe399ab55d57b8361794e2b049acd1f5853a7de1c126c2",
+      "png_sha256": "f29b565db36573e33b065762ea0eb2c4f3eb249bf5fdadf3cb0b66e298f905b4",
+      "png_bytes": 63478,
+      "content_size": [
+        460,
+        146
+      ]
+    },
+    {
+      "index": 12,
+      "weapon": "weapon_m4a1_silencer",
+      "model": "m4a1s_daeldalus",
+      "source": "desktop-m4a1s_daeldalus.png",
+      "source_sha256": "0b8b156a0050434e0bdada86001ca6c56ad79166277f01bf2402b954e6f04381",
+      "png_sha256": "0f5c0b8b306f938cc8033bce578ad1bac596e5c234a1a78ce72dd5b0271bbf1f",
+      "png_bytes": 51929,
+      "content_size": [
+        460,
+        134
+      ]
+    },
+    {
+      "index": 13,
+      "weapon": "weapon_ak47",
+      "model": "prime_ak",
+      "source": "desktop-prime_ak.png",
+      "source_sha256": "b74857fdf492dd420d8354ed89eec62ddb097a33a864fbe6e82163194ab9a8ca",
+      "png_sha256": "1cf0c95b82ce675036f35d36fdc4fd1b9c2744a008a058312e1344983e902d02",
+      "png_bytes": 49925,
+      "content_size": [
+        460,
+        138
+      ]
+    },
+    {
+      "index": 14,
+      "weapon": "weapon_ssg08",
+      "model": "scout_anim",
+      "source": "desktop-scout_anim.png",
+      "source_sha256": "3cc35380acbad9d77ed2cc886ca19d3564abac6e5da6f9af38e1f6135072b166",
+      "png_sha256": "40ebdc950e8838477bbc6727b6decc94a852d80e5e2569e98e1bbfd4a0d10934",
+      "png_bytes": 43971,
+      "content_size": [
+        460,
+        86
+      ]
+    },
+    {
+      "index": 15,
+      "weapon": "weapon_deagle",
+      "model": "weapon_pist_deagle",
+      "source": "desktop-weapon_pist_deagle.png",
+      "source_sha256": "2a7ed26b81b1ccc9ced98059fa313e190aff7368af1f97d5ab5c169070004970",
+      "png_sha256": "9ca60d685e818fdb1fdb8ebc6cc6c939463d7c401a01079c6927f82f0bf24a21",
+      "png_bytes": 128919,
+      "content_size": [
+        460,
+        243
+      ]
+    },
+    {
+      "index": 16,
+      "weapon": "weapon_glock",
+      "model": "weapon_pist_glock18",
+      "source": "desktop-weapon_pist_glock18.png",
+      "source_sha256": "8ecc52f09f684ac19ddfd4e10c96f39c383f2872b478dd3d6a0b98b288006b07",
+      "png_sha256": "4b4fba73b70eab9bad32b02169413dac219be45dd561189e0c5ad54de8532a73",
+      "png_bytes": 135869,
+      "content_size": [
+        369,
+        268
+      ]
+    },
+    {
+      "index": 17,
+      "weapon": "weapon_ak47",
+      "model": "weapon_rif_ak47",
+      "source": "desktop-weapon_rif_ak47.png",
+      "source_sha256": "2e9bea7d7540753a3d04a31c0c3c9436af7b0e3f4c7afb2a72d11b4f9e566b3b",
+      "png_sha256": "318b3be14b7ed2b4d3d054ca93d275d3f0a4b1c55d2ad9a500d6649602e60ddf",
+      "png_bytes": 55484,
+      "content_size": [
+        460,
+        139
+      ]
+    },
+    {
+      "index": 18,
+      "weapon": "weapon_m4a1_silencer",
+      "model": "weapon_rif_m4a1_silencer",
+      "source": "desktop-weapon_rif_m4a1_silencer.png",
+      "source_sha256": "b5e43b1e53bf7f7f9d68d27679dea3e5a69a4c3ebc01813ed89537d35f04c3c2",
+      "png_sha256": "e37db8db2fb07c062a8f329c49d9621aa46dcabc325d1e70d9558a0afd6317de",
+      "png_bytes": 43536,
+      "content_size": [
+        460,
+        98
+      ]
+    }
+  ]
+}
