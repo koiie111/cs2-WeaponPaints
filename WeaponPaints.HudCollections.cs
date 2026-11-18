@@ -274,13 +274,15 @@ public partial class WeaponPaints
             TeamVisible: false, Size: session.Size, Collections: content);
         var renderer = _hudRenderer!;
         var coordinator = _hudCoordinator!;
+        var delta = session.Native.Delta;
+        var previous = delta.SettledTarget;
         var diagnostics = Config.PanoramaHud.DiagnosticsEnabled;
         var preparation = Task.Run(() =>
         {
             try
             {
                 var started = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
-                var frame = renderer.Render(view);
+                var frame = delta.Prepare(previous, renderer.Render(view));
                 if (diagnostics) _hudMetrics.RenderCompleted(started);
                 return frame;
             }
@@ -290,7 +292,7 @@ public partial class WeaponPaints
                 return null;
             }
         }, session.Native.Lifetime.Token);
-        coordinator.QueuePreparedFrame(session.Native, preparation, () =>
+        coordinator.QueuePreparedFrame(session.Native, preparation, immediateWrites =>
         {
             using var timing = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.RenderSubmit);
             if (!preparation.IsCompletedSuccessfully || preparation.Result is not { } frame)
@@ -298,7 +300,7 @@ public partial class WeaponPaints
                 CloseHud(session.Native.Owner.Slot);
                 return;
             }
-            try { coordinator.Submit(session.Native, frame); }
+            try { coordinator.SubmitPrepared(session.Native, frame, immediateWrites); }
             catch (Exception error)
             {
                 Logger.LogError(error, "Unable to publish the workshop HUD frame");

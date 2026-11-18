@@ -150,11 +150,12 @@ var players = Enumerable.Range(0, 32).Select(slot =>
 var rendered = 0;
 foreach (var viewer in players)
 {
-    workshopCoordinator.QueuePreparedFrame(viewer, Task.CompletedTask, () => throw new Exception("obsolete frame published"));
-    workshopCoordinator.QueuePreparedFrame(viewer, Task.CompletedTask, () =>
+    workshopCoordinator.QueuePreparedFrame(viewer, Task.CompletedTask, _ => throw new Exception("obsolete frame published"));
+    workshopCoordinator.QueuePreparedFrame(viewer, Task.CompletedTask, immediateWrites =>
     {
         rendered++;
-        workshopCoordinator.Submit(viewer, new Dictionary<HudWriteKey, string> { [variable] = "ready" });
+        var frame = viewer.Delta.Prepare(null, new Dictionary<HudWriteKey, string> { [variable] = "ready" });
+        workshopCoordinator.SubmitPrepared(viewer, frame, immediateWrites);
     });
 }
 workshopCoordinator.Close(players[0].Owner.Slot);
@@ -167,12 +168,56 @@ for (var tick = 1; tick < players.Length; tick++)
 Check(readyCallbacks.IsEmpty && players.Skip(1).All(workshopCoordinator.CanClick), "workshop did not go idle");
 var preparing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 var published = false;
-workshopCoordinator.QueuePreparedFrame(players[1], preparing.Task, () => published = true);
+workshopCoordinator.QueuePreparedFrame(players[1], preparing.Task, _ => published = true);
 Check(readyCallbacks.IsEmpty && !workshopCoordinator.CanClick(players[1]), "waiting for a worker polled the game thread or accepted input");
 preparing.SetResult();
 Check(SpinWait.SpinUntil(() => !readyCallbacks.IsEmpty, TimeSpan.FromSeconds(3)), "worker completion did not wake the game thread");
 while (readyCallbacks.TryDequeue(out var ready)) ready();
 Check(published && workshopCoordinator.CanClick(players[1]), "completed workshop frame did not release input");
+
+// The live applied state can change between rendering on the worker and publication.
+var delta = new HudDeltaQueue(k => k.Variable ? "" : "0");
+var origin = new Dictionary<HudWriteKey,string> { [variable] = "first", [oldClass] = "1" };
+var target = new Dictionary<HudWriteKey,string> { [variable] = "last", [newClass] = "1" };
+delta.Replace(origin, true);
+while (delta.TryPeek(out var w)) delta.Commit(w);
+var prepared = delta.Prepare(delta.SettledTarget, target);
+Check(prepared.Changes?.Count == 3, "worker missed a removed class or changed field");
+var transient = new HudWriteKey(true, "wp_root", "transient");
+var partial = new Dictionary<HudWriteKey,string> { [variable] = "partial", [transient] = "temporary", [oldClass] = "0" };
+delta.Replace(delta.Prepare(delta.SettledTarget, partial), false);
+Check(delta.SettledTarget == null && delta.TryPeek(out _), "unfinished target exposed to worker");
+delta.TryPeek(out var firstPartial); delta.Commit(firstPartial);
+delta.TryPeek(out var secondPartial); delta.Commit(secondPartial);
+delta.Replace(prepared, false);
+var seen = new List<HudWrite>();
+while (delta.TryPeek(out var w)) { seen.Add(w); delta.Commit(w); }
+Check(seen.SequenceEqual(new HudWrite[] { new(variable,"last"), new(transient,""), new(oldClass,"0"), new(newClass,"1") }), "stale plan used after partial commit");
+var identical = delta.Prepare(delta.SettledTarget, target);
+delta.Replace(identical, false);
+Check(delta.PendingCount == 0 && ReferenceEquals(delta.SettledTarget, target), "settled prepared frame rewrote unchanged fields");
+delta.Cancel();
+Check(delta.SettledTarget == null, "slot reuse retained a worker baseline");
+delta.Replace(identical, true);
+Check(delta.PendingCount == target.Count, "slot reuse skipped forced publication");
+
+// A previously revealed viewer needs a barrier only if the drain crosses a tick boundary.
+var compact = new HudSessionCoordinator(surface, readyCallbacks.Enqueue, _ => "", frameBudget:1, perViewerBudget:16);
+var compactViewer = compact.Open(1, stamp.SteamId, stamp.Controller, stamp.Pawn, stamp.MapGeneration);
+compact.Submit(compactViewer, new Dictionary<HudWriteKey,string>());
+void Publish(Dictionary<HudWriteKey,string> fields)
+{
+    var frame = compactViewer.Delta.Prepare(compactViewer.Delta.SettledTarget, fields);
+    compact.QueuePreparedFrame(compactViewer, Task.CompletedTask, budget => compact.SubmitPrepared(compactViewer, frame, budget));
+    readyCallbacks.TryDequeue(out var drain); drain!();
+}
+surface.Events.Clear();
+Publish(new() { [variable] = "one" });
+Check(surface.Events.SequenceEqual(new[] { "write:title:one" }) && compact.CanClick(compactViewer), "single-tick update toggled a visual barrier");
+Publish(new() { [variable] = "two", [newClass] = "1" });
+Check(compactViewer.FrameBlocked && !compact.CanClick(compactViewer), "global write budget failed to protect a partial frame");
+while (readyCallbacks.TryDequeue(out var drain)) drain();
+Check(surface.Events.Last()=="unblocked" && compact.CanClick(compactViewer), "multi-tick barrier leaked");
 Console.WriteLine("HUD queue, catalogue, identity, prompt, composition and input tests passed");
 
 

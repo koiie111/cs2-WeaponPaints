@@ -29,7 +29,7 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
         internal Action? FrameCommitted { get; set; }
         internal bool FirstFrame { get; set; } = true;
         internal Task? FramePreparation { get; set; }
-        internal Action? PublishPreparedFrame { get; set; }
+        internal Action<int>? PublishPreparedFrame { get; set; }
     }
     private readonly Dictionary<int, Session> _sessions = [];
     // Keep actual applied state per slot after close, so a reused slot is reset
@@ -73,7 +73,7 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
     internal bool CanClick(Session session) => IsLive(session) && session.Revealed && !session.Busy
         && session.FramePreparation == null && session.Delta.PendingCount == 0;
 
-    internal void QueuePreparedFrame(Session session, Task preparation, Action publish)
+    internal void QueuePreparedFrame(Session session, Task preparation, Action<int> publish)
     {
         session.FramePreparation = preparation;
         session.PublishPreparedFrame = publish;
@@ -96,11 +96,23 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
     internal void Submit(Session session, IReadOnlyDictionary<HudWriteKey, string> frame, Action? committed = null)
     {
         if (!IsLive(session)) return;
-        session.FramePreparation = null;
-        session.PublishPreparedFrame = null;
         // On slot reuse the engine may either retain or clear per-player
         // overrides. Rewriting every known/desired key makes both cases converge.
         session.Delta.Replace(frame, force: session.FirstFrame);
+        Present(session, committed, 0);
+    }
+
+    internal void SubmitPrepared(Session session, HudDeltaQueue.PreparedFrame frame, int immediateWrites)
+    {
+        if (!IsLive(session)) return;
+        session.Delta.Replace(frame, force: session.FirstFrame);
+        Present(session, null, immediateWrites);
+    }
+
+    private void Present(Session session, Action? committed, int immediateWrites)
+    {
+        session.FramePreparation = null;
+        session.PublishPreparedFrame = null;
         session.FirstFrame = false;
         session.FrameCommitted = committed;
         MaxPending = Math.Max(MaxPending, session.Delta.PendingCount);
@@ -116,7 +128,8 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
             var callback = session.FrameCommitted; session.FrameCommitted = null; callback?.Invoke();
             return;
         }
-        if (session.Revealed && !session.FrameBlocked)
+        // The current drain can finish small prepared frames before the engine advances.
+        if (session.Delta.PendingCount > immediateWrites && session.Revealed && !session.FrameBlocked)
         {
             if (!surface.SetFrameBlocked(session.Owner, true)) { Close(session.Owner.Slot); return; }
             session.FrameBlocked = true;
@@ -155,14 +168,14 @@ internal sealed class HudSessionCoordinator(IHudSessionSurface surface, Action<A
             var session = viewers[(offset + i) % viewers.Length];
             if (session.Delta.PendingCount == 0 && (published || session.FramePreparation is not { IsCompleted: true })) continue;
             if (!IsLive(session)) { Close(session.Owner.Slot); continue; }
-            // Diff at most one completed collections frame per game frame, across all viewers.
+            // Publish at most one completed collections frame per game frame, across all viewers.
             if (!published && session.FramePreparation is { IsCompleted: true })
             {
                 var publish = session.PublishPreparedFrame!;
                 session.FramePreparation = null;
                 session.PublishPreparedFrame = null;
                 published = true;
-                publish();
+                publish(Math.Min(remaining, perViewerBudget));
                 if (!IsLive(session)) continue;
             }
             var perViewer = perViewerBudget;
