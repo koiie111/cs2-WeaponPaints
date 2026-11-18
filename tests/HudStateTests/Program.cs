@@ -18,6 +18,23 @@ Check(q.PendingCount == 0, "queue must go idle");
 q.Replace(new Dictionary<HudWriteKey,string>{{variable,"C"}}, force:true);
 Check(q.TryPeek(out var forced) && forced.Key == variable && forced.Value == "C", "slot reuse must rewrite a previously applied value");
 q.Commit(forced);
+// An oversized replacement must leave the remaining part of the last valid frame intact.
+var budget = new HudDeltaQueue(_ => "");
+var full = Enumerable.Range(0, 2048).ToDictionary(i => new HudWriteKey(true, "wp_root", i.ToString()), _ => "on");
+budget.Replace(full);
+while (budget.TryPeek(out var write)) budget.Commit(write);
+var keep = new Dictionary<HudWriteKey, string>(full) { [variable] = "next" };
+keep.Remove(full.Keys.First());
+budget.Replace(keep);
+try { budget.Replace(new Dictionary<HudWriteKey, string> { [variable] = "oversized" }); throw new Exception("oversized delta accepted"); }
+catch (InvalidDataException) { }
+while (budget.TryPeek(out var pending))
+{
+    Check(keep.GetValueOrDefault(pending.Key, "") == pending.Value, "rejected delta corrupted pending writes");
+    budget.Commit(pending);
+}
+budget.Replace(keep);
+Check(budget.PendingCount == 0, "valid frame failed to commit after oversized replacement");
 var stamp = new HudViewerStamp(1, 123, 77, 88, 3, 4);
 var lease = new HudPromptLease(stamp, "wear", DateTimeOffset.UnixEpoch.AddSeconds(30));
 Check(lease.Accepts(stamp, DateTimeOffset.UnixEpoch), "live lease rejected");

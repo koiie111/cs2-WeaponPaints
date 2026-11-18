@@ -12,7 +12,8 @@ internal sealed class HudDeltaQueue
     private const int MaximumWrites = 2048;
     private readonly Func<HudWriteKey, string> _authored;
     private readonly Dictionary<HudWriteKey, string> _applied = new();
-    private Queue<HudWrite> _pending = new();
+    private readonly Queue<HudWrite> _pending = new();
+    private readonly List<HudWrite> _changes = new();
 
     internal HudDeltaQueue(Func<HudWriteKey, string> authored) => _authored = authored;
     internal int PendingCount => _pending.Count;
@@ -20,17 +21,22 @@ internal sealed class HudDeltaQueue
     internal void Replace(IReadOnlyDictionary<HudWriteKey, string> desired, bool force = false)
     {
         if (desired.Count > MaximumWrites) throw new InvalidDataException("HUD frame exceeds write budget");
-        var writes = new List<HudWrite>();
-        foreach (var key in _applied.Keys.Union(desired.Keys))
+        _changes.Clear();
+        foreach (var (key, old) in _applied)
         {
-            var baseline = _authored(key);
-            var old = _applied.GetValueOrDefault(key, baseline);
-            var next = desired.GetValueOrDefault(key, baseline);
-            if (force || !StringComparer.Ordinal.Equals(old, next)) writes.Add(new(key, next));
+            var next = desired.TryGetValue(key, out var value) ? value : _authored(key);
+            if (force || old != next) _changes.Add(new(key, next));
         }
+        foreach (var (key, next) in desired)
+            if (!_applied.ContainsKey(key) && (force || next != _authored(key))) _changes.Add(new(key, next));
+
+        if (_changes.Count > MaximumWrites) throw new InvalidDataException("HUD delta exceeds write budget");
         // Publish text before visual changes and clear obsolete classes before adding new ones.
-        if (writes.Count > MaximumWrites) throw new InvalidDataException("HUD delta exceeds write budget");
-        _pending = new Queue<HudWrite>(writes.OrderBy(w => w.Key.Variable ? 0 : w.Value == "0" ? 1 : 2));
+        _pending.Clear();
+        foreach (var write in _changes) if (write.Key.Variable) _pending.Enqueue(write);
+        foreach (var write in _changes) if (!write.Key.Variable && write.Value == "0") _pending.Enqueue(write);
+        foreach (var write in _changes) if (!write.Key.Variable && write.Value != "0") _pending.Enqueue(write);
+        _changes.Clear();
     }
 
     internal bool TryPeek(out HudWrite write) => _pending.TryPeek(out write);

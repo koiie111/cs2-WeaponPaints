@@ -172,8 +172,7 @@ public partial class WeaponPaints
         state.Failed = state.More = false;
         state.Loading = true;
         state.Manage = false;
-        RenderHud(session);
-        _ = Task.Run(async () =>
+        var read = Task.Run(async () =>
         {
             HudWorkshopPage? result = null;
             HudCollectionsEntry[] rows = [];
@@ -212,6 +211,22 @@ public partial class WeaponPaints
                 RenderHud(session);
             });
         }, token);
+        _ = ShowLoadingIfSlowAsync();
+
+        async Task ShowLoadingIfSlowAsync()
+        {
+            // Fast reads can publish their final frame directly. Only a slow read needs a loading frame.
+            try { await read.WaitAsync(TimeSpan.FromMilliseconds(100), token).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+            catch (TimeoutException) when (!read.IsFaulted)
+            {
+                Server.NextFrame(() =>
+                {
+                    if (!read.IsCompleted && state.Loading && session.Collections == state
+                        && _hudCoordinator?.IsQueryCurrent(session.Native, generation) == true) RenderHud(session);
+                });
+            }
+        }
     }
 
     private static HudCollectionsEntry ProjectCollection(HudWorkshopWork work, bool workshop, bool craft, HudCatalog? catalog)
