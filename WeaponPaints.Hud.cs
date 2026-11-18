@@ -1738,7 +1738,7 @@ public partial class WeaponPaints
                     catch (OperationCanceledException) when (token.IsCancellationRequested) { }
                 }, token);
             }
-            RequestPlayerRefresh(current, false, fromHud: true, completed: Once, cosmeticOnly: cosmeticOnly);
+            RequestPlayerRefresh(current, false, fromHud: true, hudCompleted: Once, cosmeticOnly: cosmeticOnly);
         }
         _ = Task.Run(async () =>
         {
