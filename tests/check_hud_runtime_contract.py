@@ -17,19 +17,27 @@ version = match.group(1)
 assert re.search(r'Layout\s*=\s*"panorama/layout/custom_game/weaponpaints_v"\s*\+\s*ResourceVersion\s*\+\s*"\.vxml_c"', surface), 'layout does not use resource version'
 assert re.search(r'ContractFile\s*=\s*"hud-live-contract-v"\s*\+\s*ResourceVersion\s*\+\s*"\.json"', surface), 'contract does not use resource version'
 assert re.search(r'HudLayoutContract\.Load\s*\(\s*Path\.Combine\s*\(\s*ModuleDirectory\s*,\s*"data"\s*,\s*HudSurface\.ContractFile\s*\)\s*\)', controller), 'runtime entrypoint does not load the versioned contract'
-name = f'hud-live-contract-v{version}.json'
-source = root / 'hud-mockup' / 'catalog' / name
 project = ET.parse(root / 'WeaponPaints.csproj').getroot()
-entries = [n for n in project.iter('None') if n.get('Link') == f'data/{name}']
-assert len(entries) == 1 and entries[0].get('Include') == f'hud-mockup/catalog/{name}' and entries[0].get('CopyToOutputDirectory') in ('Always', 'PreserveNewest'), 'project must copy the matching contract'
-contract = json.loads(source.read_text(encoding='utf-8'))
-output = Path(args.output) / 'data' / name
-assert output.read_bytes() == source.read_bytes(), 'built contract missing or different from source'
-layout = root / f'hud-mockup/live-addon-v{version}/panorama/layout/custom_game/weaponpaints_v{version}.xml'
-nodes = list(ET.parse(layout).getroot().iter())
-authored = {n.get('id'): n.get('class', '').split() for n in nodes if n.get('id')}
-assert len(authored) == sum(bool(n.get('id')) for n in nodes), 'duplicate layout panel IDs'
-variables = sorted({name for n in nodes for value in n.attrib.values() for name in re.findall(r'\{s:([A-Za-z0-9_-]+)\}', value)})
-buttons = sorted(n.get('id') for n in nodes if n.tag == 'Button' and n.get('id'))
-assert contract == {'version': 1, 'authoredClasses': authored, 'variables': variables, 'buttons': buttons}, 'contract differs from the versioned native XML'
-print(f'PASS: runtime layout v{version}, XML contract and built data agree')
+
+def check_layout(version):
+    name = f'hud-live-contract-v{version}.json'
+    source = root / 'hud-mockup' / 'catalog' / name
+    entries = [n for n in project.iter('None') if n.get('Link') == f'data/{name}']
+    assert len(entries) == 1 and entries[0].get('Include') == f'hud-mockup/catalog/{name}' and entries[0].get('CopyToOutputDirectory') in ('Always', 'PreserveNewest'), 'project must copy the matching contract'
+    contract = json.loads(source.read_text(encoding='utf-8'))
+    output = Path(args.output) / 'data' / name
+    assert output.read_bytes() == source.read_bytes(), 'built contract missing or different from source'
+    layout = root / f'hud-mockup/live-addon-v{version}/panorama/layout/custom_game/weaponpaints_v{version}.xml'
+    nodes = list(ET.parse(layout).getroot().iter())
+    authored = {n.get('id'): n.get('class', '').split() for n in nodes if n.get('id')}
+    assert len(authored) == sum(bool(n.get('id')) for n in nodes), 'duplicate layout panel IDs'
+    variables = sorted({name for n in nodes for value in n.attrib.values() for name in re.findall(r'\{s:([A-Za-z0-9_-]+)\}', value)})
+    buttons = sorted(n.get('id') for n in nodes if n.tag == 'Button' and n.get('id'))
+    assert contract == {'version': 1, 'authoredClasses': authored, 'variables': variables, 'buttons': buttons}, 'contract differs from the versioned native XML'
+    print(f'PASS: runtime layout v{version}, XML contract and built data agree')
+
+check_layout(version)
+collections = re.search(r'CollectionsLayout\s*=\s*"panorama/layout/custom_game/weaponpaints_v(\d+)\.vxml_c"', surface)
+assert collections, 'Collections layout missing from the runtime surface'
+assert f'CollectionsContractFile = "hud-live-contract-v{collections.group(1)}.json"' in surface
+check_layout(collections.group(1))

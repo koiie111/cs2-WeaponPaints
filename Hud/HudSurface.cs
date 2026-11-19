@@ -7,11 +7,15 @@ using CounterStrikeSharp.API.Modules.Utils;
 namespace WeaponPaints.Hud;
 
 /// <summary>Owns only its own entity. Every method is called on the game thread.</summary>
-internal sealed class HudSurface
+internal sealed class HudSurface(bool collectionsEnabled = false)
 {
     internal const string ResourceVersion = "10";
     internal const string Layout = "panorama/layout/custom_game/weaponpaints_v" + ResourceVersion + ".vxml_c";
     internal const string ContractFile = "hud-live-contract-v" + ResourceVersion + ".json";
+    internal const string CollectionsContractFile = "hud-live-contract-v12.json";
+    private const string CollectionsLayout = "panorama/layout/custom_game/weaponpaints_v12.vxml_c";
+    internal string ResourceLayout => collectionsEnabled ? CollectionsLayout : Layout;
+    internal string ResourceContract => collectionsEnabled ? CollectionsContractFile : ContractFile;
     internal const string Root = "wp_root";
     private CCSCustomHudLayout? _entity;
     private int _captureScanTick = -1;
@@ -24,12 +28,12 @@ internal sealed class HudSurface
         if (Ready) return true;
         // Never adopt or destroy an entity owned by another plugin instance.
         if (Utilities.FindAllEntitiesByDesignerName<CCSCustomHudLayout>("custom_hud_layout")
-            .Any(e => e.IsValid && e.StrLayout == Layout)) return false;
+            .Any(e => e.IsValid && e.StrLayout == ResourceLayout)) return false;
         var ptr = VirtualFunctions.UTIL_CreateEntityByName("custom_hud_layout", -1);
         if (ptr == IntPtr.Zero) return false;
         var entity = new CCSCustomHudLayout(ptr);
         using var kv = new CEntityKeyValues();
-        kv.SetString("layout", Layout);
+        kv.SetString("layout", ResourceLayout);
         kv.SetBool("observable", false);
         kv.SetVector("origin", 0, 0, 0);
         entity.DispatchSpawn(kv);

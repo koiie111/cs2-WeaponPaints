@@ -1,0 +1,979 @@
+{
+  "version": 1,
+  "authoredClasses": {
+    "wp_root": [
+      "app"
+    ],
+    "nav_weapons": [
+      "nav"
+    ],
+    "nav_knives": [
+      "nav"
+    ],
+    "nav_gloves": [
+      "nav"
+    ],
+    "nav_agents": [
+      "nav"
+    ],
+    "nav_music": [
+      "nav"
+    ],
+    "nav_pins": [
+      "nav"
+    ],
+    "nav_graffiti": [
+      "nav"
+    ],
+    "nav_pet": [
+      "nav"
+    ],
+    "nav_collections": [
+      "nav"
+    ],
+    "back": [
+      "back"
+    ],
+    "header_divider": [
+      "headerDivider"
+    ],
+    "team": [
+      "team"
+    ],
+    "close": [
+      "close"
+    ],
+    "home": [
+      "home",
+      "pane"
+    ],
+    "category_rifles": [
+      "mosaic",
+      "large",
+      "tier-d32ce6"
+    ],
+    "category_art_rifles": [
+      "tileImage",
+      "art",
+      "art-catalog-0"
+    ],
+    "category_pistols": [
+      "mosaic",
+      "wide",
+      "tier-8847ff",
+      "mosaicGap"
+    ],
+    "category_art_pistols": [
+      "tileImage",
+      "art",
+      "art-catalog-3"
+    ],
+    "category_smg": [
+      "mosaic",
+      "wide",
+      "tier-4b69ff"
+    ],
+    "category_art_smg": [
+      "tileImage",
+      "art",
+      "art-catalog-6"
+    ],
+    "category_shotguns": [
+      "mosaic",
+      "small",
+      "tier-b0c3d9"
+    ],
+    "category_art_shotguns": [
+      "tileImage",
+      "art",
+      "art-catalog-7"
+    ],
+    "category_snipers": [
+      "mosaic",
+      "small",
+      "tier-eb4b4b"
+    ],
+    "category_art_snipers": [
+      "tileImage",
+      "art",
+      "art-catalog-2"
+    ],
+    "category_heavy": [
+      "mosaic",
+      "small",
+      "tier-8847ff"
+    ],
+    "category_art_heavy": [
+      "tileImage",
+      "art",
+      "art-catalog-8"
+    ],
+    "category_zeus": [
+      "mosaic",
+      "small",
+      "tier-d32ce6",
+      "mosaicLast"
+    ],
+    "category_art_zeus": [
+      "tileImage",
+      "art",
+      "art-catalog-9"
+    ],
+    "catalog": [
+      "catalog",
+      "pane"
+    ],
+    "tab_standard": [
+      "tab",
+      "active"
+    ],
+    "tab_custom": [
+      "tab"
+    ],
+    "search": [
+      "search"
+    ],
+    "sort": [
+      "sort"
+    ],
+    "hero": [
+      "hero"
+    ],
+    "hero_art_panel": [
+      "heroArt"
+    ],
+    "hero_art": [
+      "heroImage",
+      "art",
+      "art-finishes-0"
+    ],
+    "configure": [
+      "configure"
+    ],
+    "grid": [
+      "grid"
+    ],
+    "grid_row_0": [
+      "cardRow"
+    ],
+    "item_0": [
+      "item"
+    ],
+    "image_0": [
+      "itemImage",
+      "art",
+      "art-finishes-0"
+    ],
+    "item_1": [
+      "item"
+    ],
+    "image_1": [
+      "itemImage",
+      "art",
+      "art-finishes-1"
+    ],
+    "item_2": [
+      "item"
+    ],
+    "image_2": [
+      "itemImage",
+      "art",
+      "art-finishes-2"
+    ],
+    "item_3": [
+      "item"
+    ],
+    "image_3": [
+      "itemImage",
+      "art",
+      "art-finishes-3"
+    ],
+    "item_4": [
+      "item"
+    ],
+    "image_4": [
+      "itemImage",
+      "art",
+      "art-finishes-4"
+    ],
+    "grid_row_1": [
+      "cardRow"
+    ],
+    "item_5": [
+      "item"
+    ],
+    "image_5": [
+      "itemImage",
+      "art",
+      "art-finishes-5"
+    ],
+    "item_6": [
+      "item"
+    ],
+    "image_6": [
+      "itemImage",
+      "art",
+      "art-finishes-6"
+    ],
+    "item_7": [
+      "item"
+    ],
+    "image_7": [
+      "itemImage",
+      "art",
+      "art-finishes-7"
+    ],
+    "item_8": [
+      "item"
+    ],
+    "image_8": [
+      "itemImage",
+      "art",
+      "art-finishes-8"
+    ],
+    "item_9": [
+      "item"
+    ],
+    "image_9": [
+      "itemImage",
+      "art",
+      "art-finishes-9"
+    ],
+    "grid_row_2": [
+      "cardRow",
+      "thirdRow"
+    ],
+    "item_10": [
+      "item"
+    ],
+    "image_10": [
+      "itemImage",
+      "art",
+      "art-finishes-0"
+    ],
+    "item_11": [
+      "item"
+    ],
+    "image_11": [
+      "itemImage",
+      "art",
+      "art-finishes-1"
+    ],
+    "item_12": [
+      "item"
+    ],
+    "image_12": [
+      "itemImage",
+      "art",
+      "art-finishes-2"
+    ],
+    "item_13": [
+      "item"
+    ],
+    "image_13": [
+      "itemImage",
+      "art",
+      "art-finishes-3"
+    ],
+    "item_14": [
+      "item"
+    ],
+    "image_14": [
+      "itemImage",
+      "art",
+      "art-finishes-4"
+    ],
+    "catalog_footer": [
+      "catalogFooter"
+    ],
+    "prev": [
+      "page"
+    ],
+    "next": [
+      "page"
+    ],
+    "settings": [
+      "settings",
+      "pane"
+    ],
+    "preview_panel": [
+      "previewColumn"
+    ],
+    "preview_art": [
+      "previewImage",
+      "art",
+      "art-catalog-0"
+    ],
+    "row_nametag": [
+      "settingRow"
+    ],
+    "nametag": [
+      "settingValue"
+    ],
+    "row_wear": [
+      "settingRow"
+    ],
+    "wear_minus": [
+      "step"
+    ],
+    "wear": [
+      "valueInput"
+    ],
+    "wear_plus": [
+      "step"
+    ],
+    "presets": [
+      "presetRow"
+    ],
+    "wear_fn": [
+      "preset"
+    ],
+    "wear_mw": [
+      "preset"
+    ],
+    "wear_ft": [
+      "preset"
+    ],
+    "wear_ww": [
+      "preset"
+    ],
+    "wear_bs": [
+      "preset"
+    ],
+    "row_seed": [
+      "settingRow"
+    ],
+    "seed_minus": [
+      "step"
+    ],
+    "seed": [
+      "valueInput"
+    ],
+    "seed_plus": [
+      "step"
+    ],
+    "row_stattrak": [
+      "settingRow"
+    ],
+    "stattrak": [
+      "settingValue"
+    ],
+    "row_decor": [
+      "settingRow"
+    ],
+    "decor": [
+      "settingValue"
+    ],
+    "decor_slots": [
+      "decorRow",
+      "decorStrip"
+    ],
+    "decor_0": [
+      "decorSlot"
+    ],
+    "decor_art_0": [
+      "decorThumb",
+      "art"
+    ],
+    "decor_1": [
+      "decorSlot"
+    ],
+    "decor_art_1": [
+      "decorThumb",
+      "art"
+    ],
+    "decor_2": [
+      "decorSlot"
+    ],
+    "decor_art_2": [
+      "decorThumb",
+      "art"
+    ],
+    "decor_3": [
+      "decorSlot"
+    ],
+    "decor_art_3": [
+      "decorThumb",
+      "art"
+    ],
+    "decor_4": [
+      "decorSlot"
+    ],
+    "decor_art_4": [
+      "decorThumb",
+      "art"
+    ],
+    "row_charm": [
+      "settingRow"
+    ],
+    "charm": [
+      "settingValue",
+      "charmValue"
+    ],
+    "charm_art": [
+      "charmThumb",
+      "art"
+    ],
+    "feature": [
+      "feature"
+    ],
+    "feature_context": [
+      "featureContext"
+    ],
+    "feature_art": [
+      "featureIcon",
+      "art",
+      "art-stickers-0"
+    ],
+    "feature_row_0": [
+      "featureRow"
+    ],
+    "feature_minus_0": [
+      "step"
+    ],
+    "feature_value_0": [
+      "featureInput"
+    ],
+    "feature_plus_0": [
+      "step"
+    ],
+    "feature_row_1": [
+      "featureRow"
+    ],
+    "feature_minus_1": [
+      "step"
+    ],
+    "feature_value_1": [
+      "featureInput"
+    ],
+    "feature_plus_1": [
+      "step"
+    ],
+    "feature_row_2": [
+      "featureRow"
+    ],
+    "feature_minus_2": [
+      "step"
+    ],
+    "feature_value_2": [
+      "featureInput"
+    ],
+    "feature_plus_2": [
+      "step"
+    ],
+    "feature_row_3": [
+      "featureRow"
+    ],
+    "feature_minus_3": [
+      "step"
+    ],
+    "feature_value_3": [
+      "featureInput"
+    ],
+    "feature_plus_3": [
+      "step"
+    ],
+    "feature_row_4": [
+      "featureRow"
+    ],
+    "feature_minus_4": [
+      "step"
+    ],
+    "feature_value_4": [
+      "featureInput"
+    ],
+    "feature_plus_4": [
+      "step"
+    ],
+    "feature_row_5": [
+      "featureRow"
+    ],
+    "feature_minus_5": [
+      "step"
+    ],
+    "feature_value_5": [
+      "featureInput"
+    ],
+    "feature_plus_5": [
+      "step"
+    ],
+    "feature_row_6": [
+      "featureRow"
+    ],
+    "feature_minus_6": [
+      "step"
+    ],
+    "feature_value_6": [
+      "featureInput"
+    ],
+    "feature_plus_6": [
+      "step"
+    ],
+    "feature_row_7": [
+      "featureRow"
+    ],
+    "feature_minus_7": [
+      "step"
+    ],
+    "feature_value_7": [
+      "featureInput"
+    ],
+    "feature_plus_7": [
+      "step"
+    ],
+    "feature_slots": [
+      "decorRow"
+    ],
+    "feature_slot_0": [
+      "decorSlot"
+    ],
+    "feature_slot_1": [
+      "decorSlot"
+    ],
+    "feature_slot_2": [
+      "decorSlot"
+    ],
+    "plus": [
+      "plus"
+    ],
+    "plus_link": [
+      "plusLink"
+    ],
+    "apply": [
+      "apply"
+    ],
+    "wc_pane": [
+      "pane",
+      "wcPane"
+    ],
+    "wc_mine": [
+      "wcButton",
+      "wcTab"
+    ],
+    "wc_feed": [
+      "wcButton",
+      "wcTab"
+    ],
+    "wc_crafts": [
+      "wcButton",
+      "wcTab"
+    ],
+    "wc_tools": [
+      "wcTools"
+    ],
+    "wc_type": [
+      "wcButton",
+      "wcFilter"
+    ],
+    "wc_search": [
+      "wcButton",
+      "wcFilter"
+    ],
+    "wc_sort": [
+      "wcButton",
+      "wcFilter"
+    ],
+    "wc_create": [
+      "wcButton"
+    ],
+    "wc_row_0": [
+      "wcRow"
+    ],
+    "wc_thumb_0": [
+      "wcThumb",
+      "art"
+    ],
+    "wc_row_1": [
+      "wcRow"
+    ],
+    "wc_thumb_1": [
+      "wcThumb",
+      "art"
+    ],
+    "wc_row_2": [
+      "wcRow"
+    ],
+    "wc_thumb_2": [
+      "wcThumb",
+      "art"
+    ],
+    "wc_row_3": [
+      "wcRow"
+    ],
+    "wc_thumb_3": [
+      "wcThumb",
+      "art"
+    ],
+    "wc_row_4": [
+      "wcRow"
+    ],
+    "wc_thumb_4": [
+      "wcThumb",
+      "art"
+    ],
+    "wc_row_5": [
+      "wcRow"
+    ],
+    "wc_thumb_5": [
+      "wcThumb",
+      "art"
+    ],
+    "wc_prev": [
+      "wcButton"
+    ],
+    "wc_next": [
+      "wcButton"
+    ],
+    "wc_reload": [
+      "wcButton"
+    ],
+    "wc_detail": [
+      "wcDetail"
+    ],
+    "wc_cover": [
+      "wcCover"
+    ],
+    "wc_cover_art": [
+      "wcCoverArt",
+      "art"
+    ],
+    "wc_ct": [
+      "wcButton"
+    ],
+    "wc_t": [
+      "wcButton"
+    ],
+    "wc_slot_0": [
+      "wcSlot"
+    ],
+    "wc_slot_art_0": [
+      "wcSlotArt",
+      "art"
+    ],
+    "wc_slot_1": [
+      "wcSlot"
+    ],
+    "wc_slot_art_1": [
+      "wcSlotArt",
+      "art"
+    ],
+    "wc_slot_2": [
+      "wcSlot"
+    ],
+    "wc_slot_art_2": [
+      "wcSlotArt",
+      "art"
+    ],
+    "wc_slot_3": [
+      "wcSlot"
+    ],
+    "wc_slot_art_3": [
+      "wcSlotArt",
+      "art"
+    ],
+    "wc_slot_4": [
+      "wcSlot"
+    ],
+    "wc_slot_art_4": [
+      "wcSlotArt",
+      "art"
+    ],
+    "wc_slot_5": [
+      "wcSlot"
+    ],
+    "wc_slot_art_5": [
+      "wcSlotArt",
+      "art"
+    ],
+    "wc_detail_next": [
+      "wcButton"
+    ],
+    "wc_primary": [
+      "wcButton"
+    ],
+    "wc_secondary": [
+      "wcButton"
+    ],
+    "wc_manage": [
+      "wcButton"
+    ],
+    "wc_link": [
+      "wcButton"
+    ],
+    "wc_rename": [
+      "wcButton"
+    ],
+    "wc_tags": [
+      "wcButton"
+    ],
+    "wc_publish": [
+      "wcButton"
+    ],
+    "wc_delete": [
+      "wcButton"
+    ],
+    "wc_set_cover": [
+      "wcButton"
+    ],
+    "modal_layer": [
+      "modalLayer"
+    ],
+    "modal_shield": [
+      "modalBackdrop"
+    ],
+    "overlay": [
+      "overlay"
+    ],
+    "offer": [
+      "offer"
+    ],
+    "state_0": [
+      "stateButton"
+    ],
+    "state_1": [
+      "stateButton"
+    ],
+    "state_2": [
+      "stateButton"
+    ]
+  },
+  "variables": [
+    "breadcrumb",
+    "charm",
+    "count",
+    "decor",
+    "feature_context",
+    "feature_label_0",
+    "feature_label_1",
+    "feature_label_2",
+    "feature_label_3",
+    "feature_label_4",
+    "feature_label_5",
+    "feature_label_6",
+    "feature_label_7",
+    "feature_name",
+    "feature_value_0",
+    "feature_value_1",
+    "feature_value_2",
+    "feature_value_3",
+    "feature_value_4",
+    "feature_value_5",
+    "feature_value_6",
+    "feature_value_7",
+    "hero_seed",
+    "hero_stattrak",
+    "hero_subtitle",
+    "hero_title",
+    "hero_wear",
+    "item_0",
+    "item_1",
+    "item_10",
+    "item_11",
+    "item_12",
+    "item_13",
+    "item_14",
+    "item_2",
+    "item_3",
+    "item_4",
+    "item_5",
+    "item_6",
+    "item_7",
+    "item_8",
+    "item_9",
+    "nametag",
+    "offer_action",
+    "offer_item",
+    "offer_url",
+    "page",
+    "preview_name",
+    "seed",
+    "sort",
+    "state_0",
+    "state_1",
+    "state_2",
+    "state_text",
+    "state_title",
+    "stattrak",
+    "sub_0",
+    "sub_1",
+    "sub_10",
+    "sub_11",
+    "sub_12",
+    "sub_13",
+    "sub_14",
+    "sub_2",
+    "sub_3",
+    "sub_4",
+    "sub_5",
+    "sub_6",
+    "sub_7",
+    "sub_8",
+    "sub_9",
+    "team",
+    "title",
+    "wc_action_create",
+    "wc_action_delete",
+    "wc_action_link",
+    "wc_action_manage",
+    "wc_action_primary",
+    "wc_action_publish",
+    "wc_action_rename",
+    "wc_action_secondary",
+    "wc_action_set_cover",
+    "wc_action_tags",
+    "wc_detail_footer",
+    "wc_detail_heading",
+    "wc_detail_meta",
+    "wc_detail_page",
+    "wc_detail_title",
+    "wc_meta_0",
+    "wc_meta_1",
+    "wc_meta_2",
+    "wc_meta_3",
+    "wc_meta_4",
+    "wc_meta_5",
+    "wc_page",
+    "wc_search",
+    "wc_slot_0",
+    "wc_slot_1",
+    "wc_slot_2",
+    "wc_slot_3",
+    "wc_slot_4",
+    "wc_slot_5",
+    "wc_sort",
+    "wc_status",
+    "wc_summary",
+    "wc_title_0",
+    "wc_title_1",
+    "wc_title_2",
+    "wc_title_3",
+    "wc_title_4",
+    "wc_title_5",
+    "wc_type",
+    "wear"
+  ],
+  "buttons": [
+    "apply",
+    "back",
+    "category_heavy",
+    "category_pistols",
+    "category_rifles",
+    "category_shotguns",
+    "category_smg",
+    "category_snipers",
+    "category_zeus",
+    "charm",
+    "close",
+    "configure",
+    "decor",
+    "decor_0",
+    "decor_1",
+    "decor_2",
+    "decor_3",
+    "decor_4",
+    "feature_minus_0",
+    "feature_minus_1",
+    "feature_minus_2",
+    "feature_minus_3",
+    "feature_minus_4",
+    "feature_minus_5",
+    "feature_minus_6",
+    "feature_minus_7",
+    "feature_plus_0",
+    "feature_plus_1",
+    "feature_plus_2",
+    "feature_plus_3",
+    "feature_plus_4",
+    "feature_plus_5",
+    "feature_plus_6",
+    "feature_plus_7",
+    "feature_slot_0",
+    "feature_slot_1",
+    "feature_slot_2",
+    "feature_value_0",
+    "feature_value_1",
+    "feature_value_2",
+    "feature_value_3",
+    "feature_value_4",
+    "feature_value_5",
+    "feature_value_6",
+    "feature_value_7",
+    "item_0",
+    "item_1",
+    "item_10",
+    "item_11",
+    "item_12",
+    "item_13",
+    "item_14",
+    "item_2",
+    "item_3",
+    "item_4",
+    "item_5",
+    "item_6",
+    "item_7",
+    "item_8",
+    "item_9",
+    "modal_shield",
+    "nametag",
+    "nav_agents",
+    "nav_collections",
+    "nav_gloves",
+    "nav_graffiti",
+    "nav_knives",
+    "nav_music",
+    "nav_pet",
+    "nav_pins",
+    "nav_weapons",
+    "next",
+    "plus_link",
+    "prev",
+    "search",
+    "seed",
+    "seed_minus",
+    "seed_plus",
+    "sort",
+    "state_0",
+    "state_1",
+    "state_2",
+    "stattrak",
+    "tab_custom",
+    "tab_standard",
+    "team",
+    "wc_crafts",
+    "wc_create",
+    "wc_ct",
+    "wc_delete",
+    "wc_detail_next",
+    "wc_feed",
+    "wc_link",
+    "wc_manage",
+    "wc_mine",
+    "wc_next",
+    "wc_prev",
+    "wc_primary",
+    "wc_publish",
+    "wc_reload",
+    "wc_rename",
+    "wc_row_0",
+    "wc_row_1",
+    "wc_row_2",
+    "wc_row_3",
+    "wc_row_4",
+    "wc_row_5",
+    "wc_search",
+    "wc_secondary",
+    "wc_set_cover",
+    "wc_sort",
+    "wc_t",
+    "wc_tags",
+    "wc_type",
+    "wear",
+    "wear_bs",
+    "wear_fn",
+    "wear_ft",
+    "wear_minus",
+    "wear_mw",
+    "wear_plus",
+    "wear_ww"
+  ]
+}

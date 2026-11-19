@@ -2,8 +2,8 @@ namespace WeaponPaints.Hud;
 
 // Immutable render inputs. They contain presentation state only; selection,
 // authorization, persistence and event handling belong to the controller.
-internal enum HudScreen { Home, Category, Models, Finishes, Settings }
-internal enum HudSection { Weapons, Knives, Gloves, Agents, Music, Pins, Graffiti, Pet }
+internal enum HudScreen { Home, Category, Models, Finishes, Settings, Collections }
+internal enum HudSection { Weapons, Knives, Gloves, Agents, Music, Pins, Graffiti, Pet, Collections }
 internal enum HudSize { Normal, Compact, Small }
 internal enum HudFeatureKind { None, Sticker, Charm, Slab, AgentPatches, Custom, Pet, Cosmetic }
 
@@ -32,4 +32,22 @@ internal sealed record HudViewModel(
     bool CustomTab = false, bool TeamVisible = true, bool BackVisible = true,
     bool TabsVisible = true, bool SearchVisible = true, bool SortVisible = true,
     HudSize Size = HudSize.Normal, string SortLabel = "По названию ↑",
-    IReadOnlyDictionary<string, HudHomeArtwork>? HomeImages = null);
+    IReadOnlyDictionary<string, HudHomeArtwork>? HomeImages = null,
+    HudCollectionsView? Collections = null);
+
+internal enum HudCollectionsTab { Mine, Workshop, Crafts }
+internal enum HudWorkshopSort { Newest, Week, Likes, Installs }
+internal sealed record HudWorkshopFilter(bool OwnCrafts = false, string Search = "", HudWorkshopSort Sort = HudWorkshopSort.Newest)
+{
+    internal bool IsPublic(HudCollectionsTab tab) =>
+        tab == HudCollectionsTab.Workshop || tab == HudCollectionsTab.Crafts && !OwnCrafts;
+    internal string SortLabel => Sort switch
+    {
+        HudWorkshopSort.Week => "За неделю", HudWorkshopSort.Likes => "По лайкам",
+        HudWorkshopSort.Installs => "По установкам", _ => "Новые"
+    };
+}
+internal sealed record HudCollectionsView(HudCollectionsTab Tab, string Summary, IReadOnlyList<HudCard> Rows,
+    int Selected, int Page, bool More, bool Failed, bool AccountFailed, bool Loading, int Team,
+    IReadOnlyList<HudCard> Composition, int CompositionCount, bool Craft, int DetailPage, HudWorkshopFilter Filter,
+    IReadOnlyDictionary<string, string> Actions, string Status, string Usage);
