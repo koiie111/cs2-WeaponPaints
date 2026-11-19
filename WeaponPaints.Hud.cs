@@ -547,9 +547,9 @@ public partial class WeaponPaints
         if (button == "tab_custom" && session.Browser.Level == HudBrowserLevel.Finishes && session.Selected is { WeaponName: { } weapon, Definition: int definition })
         {
             if (Config.PanoramaHud.CustomWeaponsIntegration != "required") return;
-            try { session.Custom = HudCustomBridge.Snapshot(weapon, definition); }
+            try { session.Custom = HudCustomBridge.Snapshot(weapon, definition, Config.PanoramaHud.CustomFinishesEnabled); }
             catch (Exception error) { Logger.LogWarning(error, "Unable to browse CustomWeapons models"); session.Custom = null; }
-            if (session.Custom?.Supported != true)
+            if (session.Custom is not { AllModels.Count: > 0 })
             {
                 session.Message = new("Кастомные скины недоступны", "Сервис временно недоступен для этого оружия.", ["Понятно"]);
                 RenderHud(session); return;
@@ -663,7 +663,7 @@ public partial class WeaponPaints
     private void FilterHudCustom(HudControllerSession session, string search)
     {
         if (_hudCoordinator?.IsLive(session.Native) != true || session.Custom == null) return;
-        var names = session.Custom.Names;
+        var names = session.Custom.Names.Where(pair => session.Products?.ById.ContainsKey(pair.Key) == true).ToArray();
         var cleaned = HudInput.CleanText(search, 128);
         session.CustomSearch = cleaned;
         var descending = session.CustomDescending;
@@ -718,7 +718,7 @@ public partial class WeaponPaints
         {
             var definitions = WeaponDefindex.GroupBy(pair => pair.Value, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First().Key, StringComparer.Ordinal);
-            captured = HudCustomBridge.CaptureAll(definitions);
+            captured = HudCustomBridge.CaptureAll(definitions, Config.PanoramaHud.CustomFinishesEnabled);
         }
         catch (Exception error) { Logger.LogWarning(error, "CustomWeapons product prefetch unavailable"); return; }
         if (captured == null) return;
@@ -1366,13 +1366,14 @@ public partial class WeaponPaints
         HudCustomState? custom = null;
         var mode = Config.PanoramaHud.CustomWeaponsIntegration;
         if (mode is not ("required" or "disabled")) return;
-        try { if (mode == "required") custom = HudCustomBridge.Snapshot(weapon, definition); }
+        try { if (mode == "required") custom = HudCustomBridge.Snapshot(weapon, definition, Config.PanoramaHud.CustomFinishesEnabled); }
         catch (Exception error)
         { Logger.LogWarning("CustomWeapons HUD capability unavailable: {Error}", error.GetType().Name); }
         if (mode == "required" && custom == null)
         { Utilities.GetPlayerFromSlot(session.Native.Owner.Slot)?.PrintToChat(" [Скины] CustomWeapons временно недоступен."); return; }
         var choice = session.CustomTab ? session.CustomChoice : null;
         if (choice != null && (custom == null || !custom.Models.ContainsKey(choice))) return;
+        var selectedFinish = choice != null && custom!.Models[choice].FinishPaint != null ? custom.Models[choice] : null;
         var store = custom == null ? WeaponSync.CreateHudSkinStore() : WeaponSync.CreateHudSkinStore(custom.ServerId, custom.Database);
         var teams = session.Browser.Team == 0 ? new[] { 2, 3 } : [session.Browser.Team];
         var defaultKnife = equipmentKind == HudEquipmentKind.Knife && item.Base && definition is 42 or 59;
@@ -1405,7 +1406,14 @@ public partial class WeaponPaints
                 {
                     var native = choice == null && (defaultKnife || defaultGlove || equipmentKind == HudEquipmentKind.None && (item.Kit ?? 0) == 0);
                     var draft = native ? new HudSkinDraft { Wear = 0.000001f } : HudSkinCodec.Decode(snapshot).Draft;
-                    draft.SelectCustom(choice);
+                    draft.SelectCustom(selectedFinish == null ? choice : null);
+                    if (selectedFinish?.FinishPaint is int finishPaint)
+                    {
+                        draft.Paint = finishPaint;
+                        draft.Nametag = selectedFinish.FinishName!;
+                        draft.Seed = 0;
+                        draft.Wear = Math.Clamp(0.001f, limits.Wear.Min, limits.Wear.Max);
+                    }
                     if (choice == null)
                     {
                         var paintChanged = draft.Paint != (item.Kit ?? 0);
@@ -1450,18 +1458,21 @@ public partial class WeaponPaints
         var prepareStarted = diagnostics ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var stickers = catalog.KitIds("stickers");
         var charms = catalog.KitIds("charms");
+        var finish = session.CustomTab && session.CustomChoice is { } finishChoice
+            && session.Custom?.Models.TryGetValue(finishChoice, out var chosenModel) == true
+            && chosenModel.FinishPaint != null ? chosenModel : null;
         var targets = snapshots.Select((snapshot, index) => new HudSkinTarget(snapshot, drafts[index], limits, stickers, charms,
             PaintKnown: (item.Definition == snapshot.Key.Definition || item.Category == "knives" && item.Base
                 && item.Definition is 42 or 59 && snapshot.Key.Definition == (snapshot.Key.Team == 2 ? 59 : 42)
                 || item.Category == "gloves" && item.Base && item.Definition is 5028 or 5029
                 && snapshot.Key.Definition == (snapshot.Key.Team == 2 ? 5028 : 5029))
-                && (item.Kit ?? 0) == drafts[index].Paint,
+                && (finish?.FinishPaint ?? item.Kit ?? 0) == drafts[index].Paint,
             Equipment: snapshot.Key.EquipmentKind switch
             {
                 HudEquipmentKind.Knife => snapshot.Key.Weapon,
                 HudEquipmentKind.Glove => snapshot.Key.Definition.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 _ => null
-            })).ToArray();
+            }, FinishKey: finish?.Key)).ToArray();
         foreach (var target in targets)
         {
             if (target.Draft.CustomModel != null) continue;
@@ -1494,7 +1505,7 @@ public partial class WeaponPaints
         {
             using var customTiming = _hudMetrics.TimeMainThread(diagnostics, HudMainThreadPhase.ApplyCustomSnapshot);
             HudCustomState? current;
-            try { current = HudCustomBridge.Snapshot(custom.Weapon, item.Definition!.Value); }
+            try { current = HudCustomBridge.Snapshot(custom.Weapon, item.Definition!.Value, Config.PanoramaHud.CustomFinishesEnabled); }
             catch (Exception error) { Logger.LogWarning(error, "CustomWeapons capability check failed"); current = null; }
             if (current == null || current.Generation != custom.Generation || current.ServerId != custom.ServerId || current.Database != custom.Database || current.Supported != custom.Supported || current.Fingerprint != custom.Fingerprint
                 || current.Models.Count != custom.Models.Count || current.Models.Any(entry => !custom.Models.TryGetValue(entry.Key, out var model) || model != entry.Value))

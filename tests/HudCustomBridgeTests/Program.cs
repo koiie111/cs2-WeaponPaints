@@ -17,6 +17,12 @@ try {
  TestCapability.Available=false;Check(!HudCustomBridge.Effective(owner,2,"weapon_ak47").Known,"missing V2 fails closed");TestCapability.Available=true;
  var original=service.Snapshot;
  var state=HudCustomBridge.Snapshot("weapon_ak47",7)!;
+ var finishes = HudCustomBridge.Snapshot("weapon_ak47", 7, true)!;
+ Check(finishes.Models["ak47_bluegem"] is { FinishPaint: 2, FinishName: "Bluegem" }
+    && finishes.Models["nebula_7"] is { FinishPaint: 3, FinishName: "Nebula" }, "Shared AK finish metadata");
+ Check(HudCustomBridge.Snapshot("weapon_knife_butterfly", 515, true) is { Supported: false } knife
+    && knife.Models["nebula_515"].FinishPaint == 3, "A knife without custom models still has its finish");
+
  Check(state.Supported && state.ServerId==33 && state.Database.Database=="cw" && state.Models.ContainsKey("precached") && state.AllModels.ContainsKey("notready") && !state.Models.ContainsKey("notready"),"precached model and immutable source identity");
  Check(HudCustomBridge.Snapshot("weapon_awp",9) is { Supported:false,Models.Count:0 },"unsupported weapon");
  foreach(var s in new[]{original with {Loaded=false},original with {MapReady=false},original with {WebsiteEnabled=false},original with {DatabaseReady=false},original with {ServerId=0},original with {DatabaseServerUuid=null},original with {DatabaseName=null}}) {
