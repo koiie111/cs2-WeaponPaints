@@ -5,7 +5,7 @@ using MySqlConnector;
 namespace WeaponPaints.Hud;
 
 internal enum HudCustomProductStatus { Available, Unowned, Disabled, Ambiguous }
-internal sealed record HudCustomProductSpec(string Id,string Name,bool Private);
+internal sealed record HudCustomProductSpec(string Id,string Name,bool Private,bool Finish = false);
 internal sealed record HudCustomProduct(string Id,string Name,bool Private,HudCustomProductStatus Status,decimal? BasePrice,long? ExpiresAtUnix)
 {
     internal bool AvailableNow => Status==HudCustomProductStatus.Available && (ExpiresAtUnix is null || ExpiresAtUnix > DateTimeOffset.UtcNow.ToUnixTimeSeconds());
@@ -17,7 +17,7 @@ internal sealed class HudCustomProducts
     internal IReadOnlyDictionary<string,HudCustomProduct> ById { get; }
     private HudCustomProducts(Dictionary<string,HudCustomProduct> products) => ById=products.ToFrozenDictionary(StringComparer.Ordinal);
 
-    internal static async Task<HudCustomProducts> LoadAsync(Func<Task<MySqlConnection>> connect,HudDatabaseIdentity expected,int serverId,string steamId,IReadOnlyList<HudCustomProductSpec> models,CancellationToken token=default)
+    internal static async Task<HudCustomProducts> LoadAsync(Func<Task<MySqlConnection>> connect,HudDatabaseIdentity expected,int serverId,string steamId,IReadOnlyList<HudCustomProductSpec> models,CancellationToken token=default, string finishPilot="")
     {
         var input=models.ToArray();
         if(expected==null || !Guid.TryParseExact(expected.ServerUuid,"D",out var expectedUuid) || expectedUuid==Guid.Empty || string.IsNullOrEmpty(expected.Database) || serverId<1 || steamId.Length!=17 || !steamId.All(char.IsAsciiDigit) || input.Any(x=>string.IsNullOrWhiteSpace(x.Id) || x.Id.Length>64 || x.Name==null) || input.Select(x=>x.Id).Distinct(StringComparer.Ordinal).Count()!=input.Length) throw new ArgumentException("Invalid custom product source");
@@ -32,14 +32,18 @@ internal sealed class HudCustomProducts
             var identity=await db.QuerySingleAsync<(string? Uuid,string? Db)>(new CommandDefinition("SELECT @@server_uuid AS Uuid, DATABASE() AS Db",transaction:tx,cancellationToken:token)).ConfigureAwait(false);
             if(!Guid.TryParseExact(identity.Uuid,"D",out var actual) || actual!=expectedUuid || !string.Equals(identity.Db,expected.Database,StringComparison.Ordinal)) throw new InvalidOperationException("Custom product database identity mismatch");
             var rows=(await db.QueryAsync<ProductRow>(new CommandDefinition("SELECT model AS Model,name AS Name,active AS Active,price AS Price,event_only AS EventOnly FROM cw_skins WHERE model IS NOT NULL",transaction:tx,cancellationToken:token)).ConfigureAwait(false)).ToArray();
-            var grants=(await db.QueryAsync<GrantRow>(new CommandDefinition("SELECT model AS Model,expires AS Expires FROM cw_access WHERE steamid64=@steam AND sid IN (0,@serverId) AND (expires=0 OR expires>UNIX_TIMESTAMP())",new{steam=steamId,serverId},tx,cancellationToken:token)).ConfigureAwait(false)).ToArray();
+            var grants=(await db.QueryAsync<GrantRow>(new CommandDefinition("SELECT model AS Model,expires AS Expires,sid AS Sid FROM cw_access WHERE steamid64=@steam AND sid IN (0,@serverId,1) AND (expires=0 OR expires>UNIX_TIMESTAMP())",new{steam=steamId,serverId},tx,cancellationToken:token)).ConfigureAwait(false)).ToArray();
             var byModel=rows.GroupBy(r=>r.Model,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.Distinct().ToArray(),StringComparer.Ordinal);
-            var access=grants.GroupBy(r=>r.Model,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.Any(x=>x.Expires==0)?(long?)null:g.Max(x=>x.Expires),StringComparer.Ordinal);
+            var access=grants.GroupBy(r=>r.Model,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.ToArray(),StringComparer.Ordinal);
             var result=new Dictionary<string,HudCustomProduct>(StringComparer.Ordinal);
             foreach(var model in input) {
                 byModel.TryGetValue(model.Id,out var records); var row=records is {Length:1}?records[0]:null;
                 var ambiguous=records is {Length:>1}; var disabled=row!=null && row.Active!=1;
-                bool hasGrant=access.TryGetValue(model.Id,out var expiry);
+                var matching = access.GetValueOrDefault(model.Id)?.Where(x => x.Sid == 0 || x.Sid == serverId || model.Finish && x.Sid == 1).ToArray() ?? [];
+                bool hasGrant = matching.Length != 0;
+                long? expiry = !hasGrant || matching.Any(x => x.Expires == 0) ? null : matching.Max(x => x.Expires);
+                if (model.Finish && (row == null || (disabled && !(steamId == finishPilot && hasGrant)))) continue;
+                if (model.Finish && steamId == finishPilot && hasGrant) disabled=false;
                 var status=ambiguous?HudCustomProductStatus.Ambiguous:disabled?HudCustomProductStatus.Disabled:(!model.Private || hasGrant)?HudCustomProductStatus.Available:HudCustomProductStatus.Unowned;
                 decimal? price=row is {Active:1,EventOnly:0,Price:>=0}?row.Price:null;
                 if(ambiguous) price=null;
@@ -67,5 +71,6 @@ internal sealed class HudCustomProducts
     {
         public string Model { get; set; } = "";
         public long Expires { get; set; }
+        public int Sid { get; set; }
     }
 }

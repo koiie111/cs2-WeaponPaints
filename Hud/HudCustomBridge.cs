@@ -38,7 +38,7 @@ internal static class HudCustomBridge
     }
 
 
-    internal static HudCustomPrefetch? CaptureAll(IReadOnlyDictionary<string, int> definitions)
+    internal static HudCustomPrefetch? CaptureAll(IReadOnlyDictionary<string, int> definitions, bool finishes = false)
     {
         var bridge = Get();
         if (bridge == null || !ReferenceEquals(bridge, HudBridgeRegistry.Instance)) return null;
@@ -50,32 +50,32 @@ internal static class HudCustomBridge
             || string.IsNullOrEmpty(snapshot.DatabaseName)) return null;
         var identity = new HudDatabaseIdentity(uuid.ToString("D"), snapshot.DatabaseName);
         var states = new Dictionary<string, HudCustomState>(StringComparer.Ordinal);
-        foreach (var weapon in snapshot.Models.Select(model => model.Weapon).Distinct(StringComparer.Ordinal))
+        foreach (var weapon in (finishes ? snapshot.Models.Select(model => model.Weapon).Concat(definitions.Keys) : snapshot.Models.Select(model => model.Weapon)).Distinct(StringComparer.Ordinal))
         {
             if (!definitions.TryGetValue(weapon, out var definition)) continue;
-            var state = BuildSnapshot(bridge, snapshot, generation, weapon, definition);
+            var state = BuildSnapshot(bridge, snapshot, generation, weapon, definition, finishes);
             if (state == null || state.Database != identity || state.ServerId != (int)snapshot.ServerId) return null;
-            states.Add(weapon, state);
+            if (state.AllModels.Count != 0) states.Add(weapon, state);
         }
         var specs = states.Values.SelectMany(state => state.AllModels.Values.Select(model =>
-            new HudCustomProductSpec(model.Key, state.Names[model.Key], model.Private))).ToArray();
+            new HudCustomProductSpec(model.Key, state.Names[model.Key], model.Private, model.FinishPaint != null))).ToArray();
         if (specs.Select(spec => spec.Id).Distinct(StringComparer.Ordinal).Count() != specs.Length) return null;
         if (generation != HudBridgeRegistry.Instance.Generation) return null;
         return new HudCustomPrefetch(identity, (int)snapshot.ServerId, generation, states.ToFrozenDictionary(StringComparer.Ordinal), Array.AsReadOnly(specs));
     }
 
-    internal static HudCustomState? Snapshot(string weapon, int definition)
+    internal static HudCustomState? Snapshot(string weapon, int definition, bool finishes = false)
     {
         var bridge = Get();
         if (bridge == null || !ReferenceEquals(bridge, HudBridgeRegistry.Instance)) return null;
         var generation = HudBridgeRegistry.Instance.Generation;
         var snapshot = bridge.GetSnapshot();
         if (generation != HudBridgeRegistry.Instance.Generation) return null;
-        var result = BuildSnapshot(bridge, snapshot, generation, weapon, definition);
+        var result = BuildSnapshot(bridge, snapshot, generation, weapon, definition, finishes);
         return generation == HudBridgeRegistry.Instance.Generation ? result : null;
     }
 
-    private static HudCustomState? BuildSnapshot(IHudBridge bridge, HudSnapshot snapshot, long generation, string weapon, int definition)
+    private static HudCustomState? BuildSnapshot(IHudBridge bridge, HudSnapshot snapshot, long generation, string weapon, int definition, bool finishes)
     {
         if (!snapshot.Loaded || !snapshot.MapReady || !snapshot.WebsiteEnabled || !snapshot.DatabaseReady
             || snapshot.ServerId is 0 or > int.MaxValue || !Guid.TryParseExact(snapshot.DatabaseServerUuid, "D", out var uuid)
@@ -87,6 +87,10 @@ internal static class HudCustomBridge
             .ToDictionary(model => model.Id, model => new HudCustomModel(model.Id, definition, model.Private), StringComparer.Ordinal);
         var allModels = matching.ToDictionary(model => model.Id, model => new HudCustomModel(model.Id, definition, model.Private), StringComparer.Ordinal);
         var names = matching.ToDictionary(model => model.Id, model => model.Name, StringComparer.Ordinal);
+        foreach (var finish in finishes ? HudCustomFinishes.For(weapon, definition) : [])
+        {
+            if (!models.TryAdd(finish.Model.Key, finish.Model) || !allModels.TryAdd(finish.Model.Key, finish.Model) || !names.TryAdd(finish.Model.Key, finish.Name)) return null;
+        }
         var fingerprint = System.Text.Json.JsonSerializer.Serialize(matching.OrderBy(model => model.Id, StringComparer.Ordinal)
             .Select(model => new { model.Id, model.Name, model.Resource, model.Private, model.Precached }));
         return new HudCustomState((int)snapshot.ServerId, new HudDatabaseIdentity(uuid.ToString("D"), snapshot.DatabaseName), generation, weapon, definition,
@@ -109,7 +113,7 @@ internal static class HudCustomBridge
             var snapshot = bridge!.GetSnapshot();
             if (state.Generation != HudBridgeRegistry.Instance.Generation) return HudCustomRefreshOutcome.Failed;
             if (!snapshot.Loaded || !snapshot.MapReady || !snapshot.DatabaseReady) return HudCustomRefreshOutcome.Deferred;
-            var fresh = BuildSnapshot(bridge, snapshot, state.Generation, state.Weapon, state.Definition);
+            var fresh = BuildSnapshot(bridge, snapshot, state.Generation, state.Weapon, state.Definition, state.Models.Values.Any(model => model.FinishPaint != null));
             var same = fresh != null && fresh.Generation == state.Generation && fresh.ServerId == state.ServerId && fresh.Database == state.Database
                 && fresh.Supported == state.Supported && fresh.Fingerprint == state.Fingerprint && fresh.Models.Count == state.Models.Count
                 && fresh.Models.All(pair => state.Models.TryGetValue(pair.Key, out var model) && model == pair.Value);

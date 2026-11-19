@@ -12,6 +12,6 @@ namespace CounterStrikeSharp.API.Core.Capabilities
 namespace WeaponPaints.Hud
 {
     internal sealed record HudDatabaseIdentity(string ServerUuid,string Database);
-    internal sealed record HudCustomModel(string Key,int Definition,bool Private);
-    internal sealed record HudCustomProductSpec(string Id,string Name,bool Private);
+    internal sealed record HudCustomModel(string Key,int Definition,bool Private,int? FinishPaint = null,string? FinishName = null);
+    internal sealed record HudCustomProductSpec(string Id,string Name,bool Private,bool Finish = false);
 }

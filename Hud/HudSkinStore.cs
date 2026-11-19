@@ -8,7 +8,7 @@ namespace WeaponPaints.Hud;
 internal enum HudEquipmentKind { None, Knife, Glove }
 internal sealed record HudSkinKey(string SteamId, int Team, int Definition, string Weapon, bool CustomSupported,
     HudEquipmentKind EquipmentKind = HudEquipmentKind.None);
-internal sealed record HudCustomModel(string Key, int Definition, bool Private);
+internal sealed record HudCustomModel(string Key, int Definition, bool Private, int? FinishPaint = null, string? FinishName = null);
 internal sealed record HudCustomRevision(string Model, long Revision, int SourceTeam);
 internal sealed record HudDatabaseIdentity(string ServerUuid, string Database);
 internal sealed record HudStoredSkin(HudSkinKey Key, int? SourceTeam, string?[] Fields, int KillCount,
@@ -19,12 +19,12 @@ internal sealed record HudStoredSkin(HudSkinKey Key, int? SourceTeam, string?[] 
 }
 internal sealed record HudSkinTarget(HudStoredSkin Expected, HudSkinDraft Draft,
     HudCompositionLimits Limits, IReadOnlySet<uint> Stickers, IReadOnlySet<uint> Keychains,
-    bool PaintKnown, string? Equipment);
+    bool PaintKnown, string? Equipment, string? FinishKey = null);
 internal enum HudApplyResult { Saved, Conflict, CustomUnavailable, Invalid }
 
 /// <summary>Transaction adapter; constructed with the plugin's existing per-account FIFO and stripe lock.</summary>
 internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedOperations operations,
-    Func<string, SemaphoreSlim> stripe, int customServerId, HudDatabaseIdentity? customIdentity = null)
+    Func<string, SemaphoreSlim> stripe, int customServerId, HudDatabaseIdentity? customIdentity = null, string finishPilot = "")
 {
     private static readonly string[] Columns = ["weapon_paint_id", "weapon_seed", "weapon_wear", "weapon_nametag", "weapon_stattrak",
         "weapon_sticker_0", "weapon_sticker_1", "weapon_sticker_2", "weapon_sticker_3", "weapon_sticker_4", "weapon_keychain", "weapon_keychain_sticker", "weapon_composition_version"];
@@ -124,6 +124,10 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
         {
             var decoded = HudSkinCodec.Decode(target.Expected);
             var original = decoded.Draft;
+            if (target.FinishKey is { } finishKey
+                && (!customModels.TryGetValue(finishKey, out var finish) || finish.Definition != first.Definition
+                    || finish.FinishPaint != target.Draft.Paint || finish.FinishName != target.Draft.Nametag
+                    || target.Draft.CustomModel != null || !target.PaintKnown)) return HudApplyResult.CustomUnavailable;
             if (!target.PaintKnown && target.Draft.CustomModel == null && target.Draft.Paint != original.Paint) return HudApplyResult.Invalid;
             if (target.Draft.CustomModel is { } model)
             {
@@ -156,7 +160,7 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
                     if (first.CustomSupported && !await MatchesCustomDatabase(connection, transaction, customIdentity, cancellationToken).ConfigureAwait(false))
                         return await Rollback(transaction, HudApplyResult.CustomUnavailable).ConfigureAwait(false);
                     foreach (var target in targets)
-                        if (target.Draft.CustomModel is { } model && !await CustomAllowedAsync(connection, transaction, first.SteamId, customModels[model], cancellationToken).ConfigureAwait(false))
+                        if ((target.Draft.CustomModel ?? target.FinishKey) is { } model && !await CustomAllowedAsync(connection, transaction, first.SteamId, customModels[model], cancellationToken).ConfigureAwait(false))
                             return await Rollback(transaction, HudApplyResult.CustomUnavailable).ConfigureAwait(false);
                     var current = new List<HudStoredSkin>();
                     foreach (var target in targets.OrderBy(x => x.Expected.Key.Team))
@@ -192,7 +196,7 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
                         }
                     }
                     foreach (var target in targets)
-                        if (target.Draft.CustomModel is { } model && !await CustomAllowedAsync(connection, transaction, first.SteamId, customModels[model], cancellationToken).ConfigureAwait(false))
+                        if ((target.Draft.CustomModel ?? target.FinishKey) is { } model && !await CustomAllowedAsync(connection, transaction, first.SteamId, customModels[model], cancellationToken).ConfigureAwait(false))
                             return await Rollback(transaction, HudApplyResult.CustomUnavailable).ConfigureAwait(false);
                     // Once commit is sent its outcome must not be misreported as cancelled.
                     cancellationToken.ThrowIfCancellationRequested();
@@ -227,9 +231,10 @@ internal sealed class HudSkinStore(Func<Task<MySqlConnection>> connect, OrderedO
     {
         var rows = await connection.QueryAsync<(string Name, int Active)>(new CommandDefinition("SELECT name,active FROM cw_skins WHERE BINARY model=@model FOR UPDATE", new { model = model.Key }, transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
         var identities = rows.Distinct().ToArray();
-        if (identities.Length > 1 || identities.Length == 1 && identities[0].Active != 1) return false;
+        if (identities.Length > 1 || model.FinishPaint != null && identities.Length != 1 ||
+            identities.Length == 1 && identities[0].Active != 1 && !(model.FinishPaint != null && steam == finishPilot)) return false;
         if (!model.Private) return true;
-        var grants = await connection.QueryAsync<int>(new CommandDefinition("SELECT 1 FROM cw_access WHERE steamid64=@steam AND BINARY model=@model AND sid IN (0,@sid) AND (expires=0 OR expires>UNIX_TIMESTAMP()) FOR UPDATE", new { steam, model = model.Key, sid = customServerId }, transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
+        var grants = await connection.QueryAsync<int>(new CommandDefinition("SELECT 1 FROM cw_access WHERE steamid64=@steam AND BINARY model=@model AND (sid IN (0,@sid) OR (@finish=1 AND sid=1)) AND (expires=0 OR expires>UNIX_TIMESTAMP()) FOR UPDATE", new { steam, model = model.Key, sid = customServerId, finish = model.FinishPaint != null }, transaction, cancellationToken: cancellationToken)).ConfigureAwait(false);
         return grants.Any();
     }
 

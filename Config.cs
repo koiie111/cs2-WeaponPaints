@@ -82,6 +82,8 @@ namespace WeaponPaints
         public string CollectionsApiCertificateSha256 { get; set; } = "";
         public string DefaultScale { get; set; } = "normal";
         public string CustomWeaponsIntegration { get; set; } = "required";
+        public bool CustomFinishesEnabled { get; set; }
+        public string CustomFinishPilotSteamId { get; set; } = "";
         public bool DiagnosticsEnabled { get; set; } = false;
         public int SaveTimeoutSeconds { get; set; } = 30;
         public int RefreshTimeoutSeconds { get; set; } = 30;
